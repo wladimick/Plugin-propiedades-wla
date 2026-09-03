@@ -8,19 +8,20 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Tema de referencia: WLA Inmo Light
 - Etapa actual: `PHASE-1 / CORE`
 - Fase 0: `DONE`
-- Fase 1: `PLANNED / ENTRY APPROVED`
-- Código de producto: aún no iniciado
+- Fase 1: `IN_PROGRESS`
+- Código de producto: iniciado — bootstrap `0.1.0-alpha.1`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - Issue de cierre Fase 0: #2
+- Issue activo Fase 1.1: #4
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | PLANNED | `PHASE-1-BACKLOG.md` |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, Issue #4, `docs/evidence/phase-1/PR-1.1-BOOTSTRAP.md` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -68,6 +69,27 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - [x] Definir estrategia API/hooks
 - [x] Aprobar entrada a Fase 1
 
+## Progreso de Fase 1
+
+### PR 1.1 — Bootstrap y build
+
+Estado: `IN_PROGRESS / QA PENDING`
+
+Alcance implementado en rama `feat/phase1-bootstrap-build`:
+
+- bootstrap principal;
+- Composer PSR-4;
+- requisitos PHP 8.1+ / WP 6.6+;
+- activación y desactivación seguras;
+- uninstall no destructivo;
+- build ZIP;
+- smoke tests;
+- workflow mínimo de build/smoke.
+
+Evidencia: Issue #4 y `docs/evidence/phase-1/PR-1.1-BOOTSTRAP.md`.
+
+No marcar PR 1.1 como `DONE` hasta que la PR correspondiente esté mergeada y sus checks estén validados.
+
 ## Decisiones aceptadas
 
 Los ADR aceptados son:
@@ -92,7 +114,7 @@ El detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
 
 **Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`.
 
-La primera implementación debe comenzar por bootstrap/build y no por migración del sitio productivo.
+La implementación comenzó por bootstrap/build y no por migración del sitio productivo.
 
 ## Riesgos trasladados a implementación
 

@@ -1,0 +1,11 @@
+# Build artifacts
+dist/
+
+# Composer dependencies are generated for local development/builds.
+plugin/wla-inmo/vendor/
+
+# Local tooling
+.phpunit.result.cache
+.phpunit.cache/
+composer.phar
+.DS_Store

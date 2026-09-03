@@ -1,0 +1,56 @@
+name: Bootstrap Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/**'
+      - 'bin/**'
+      - 'tests/smoke/**'
+      - '.github/workflows/bootstrap-smoke.yml'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-smoke:
+    name: PHP 8.1 / Build Smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-lock --working-dir=plugin/wla-inmo
+
+      - name: PHP syntax
+        run: find plugin/wla-inmo tests/smoke -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Requirement smoke tests
+        run: php tests/smoke/requirements.php
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Release ZIP smoke tests
+        run: bash bin/smoke-plugin.sh "${{ steps.build.outputs.zip_path }}"
+
+      - name: Upload installable plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: wla-inmo-0.1.0-alpha.1
+          path: dist/wla-inmo-0.1.0-alpha.1.zip
+          if-no-files-found: error
