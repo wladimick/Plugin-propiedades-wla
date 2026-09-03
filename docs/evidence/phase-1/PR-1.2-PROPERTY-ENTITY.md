@@ -1,13 +1,14 @@
 # Evidencia — Fase 1 / PR 1.2 Entidad Property
 
-Estado documental: `IN_PROGRESS`.
+Estado documental: `DONE`.
 
-Issue: #7  
-Rama: `feat/phase1-property-entity`
+Issue: #7 — cerrada  
+PR: #8 — squash merge  
+Merge commit: `da989ef50a9d066023ae2c00d776d05af3d3499c`
 
 ## Objetivo
 
-Registrar `wla_property` como entidad inmobiliaria nativa de WordPress y eliminar cualquier necesidad conceptual de usar productos WooCommerce como modelo de propiedad.
+Registrar `wla_property` como entidad inmobiliaria nativa de WordPress y eliminar la dependencia conceptual de productos WooCommerce como modelo de propiedad.
 
 ## Implementación incluida
 
@@ -27,56 +28,36 @@ Registrar `wla_property` como entidad inmobiliaria nativa de WordPress y elimina
 
 ## Contrato de capabilities
 
-La entidad deja definidos nombres propios como:
+Quedaron definidos permisos propios como `edit_wla_property`, `edit_wla_properties`, `edit_others_wla_properties`, `publish_wla_properties` y `read_private_wla_properties`, además de los permisos de edición/eliminación privada/publicada.
 
-- `edit_wla_property`;
-- `edit_wla_properties`;
-- `edit_others_wla_properties`;
-- `publish_wla_properties`;
-- `read_private_wla_properties`;
-- capabilities de delete/edit private/published.
+La asignación a roles se mantiene correctamente fuera de alcance hasta PR 1.6.
 
-La asignación efectiva a Administrador inmobiliario / Editor de propiedades pertenece a PR 1.6 y no se adelanta aquí.
+## QA final
 
-## Tests definidos
+Workflow: `Bootstrap Smoke`  
+Run: `33818077411`  
+Resultado: `SUCCESS`
 
-`tests/smoke/post-type.php` valida:
+Validaciones relevantes:
 
-- clave del CPT;
-- archive/rewrite;
-- exposición REST;
-- soportes editoriales;
-- `delete_with_user`;
-- `map_meta_cap`;
-- mapa explícito de capabilities;
-- ausencia de `edit_posts` genérico como capability concedida;
-- llamada real a `register_post_type()` mediante stub de smoke.
+- PHP syntax: PASS;
+- requirements smoke: PASS;
+- `post-type.php`: PASS;
+- build ZIP: PASS;
+- release ZIP smoke: PASS;
+- Composer autoload de `PostType` y `Capabilities`: PASS.
 
-El workflow se actualiza para ejecutar todos los archivos `tests/smoke/*.php` y el smoke del ZIP exige que `PostType.php` y `Capabilities.php` estén presentes y sean autoloadables.
+## Artefacto
 
-## Seguridad / datos
+- Nombre: `wla-inmo-0.1.0-alpha.1`
+- Artifact ID: `9917250717`
+- Tamaño: `17095` bytes
+- Digest: `sha256:984963e62be5e98919f27015b98ea9ee2b0a403819901ea0c8ed550ca081b77e`
 
-- No hay metadatos aún.
-- No hay endpoints de escritura propios.
-- No se asignan permisos a roles todavía.
-- Eliminar un usuario no borra automáticamente las propiedades.
-- Desactivar/desinstalar conserva los datos.
+## Seguridad / producción
 
-## SEO / URLs
-
-Se establece como contrato inicial:
-
-- archivo: `/propiedades/`;
-- singles bajo la base `/propiedades/...`;
-- `with_front = false`;
-- feeds del CPT deshabilitados inicialmente.
-
-La base podrá hacerse configurable en PR 1.7 sin cambiar la identidad interna `wla_property`.
-
-## Producción
-
-No afectada. No existe despliegue ni migración sobre Propiedades Martínez en esta etapa.
+No se asignaron permisos a roles, no se crearon metadatos ni migraciones y eliminar un usuario no elimina sus propiedades. Producción no fue afectada.
 
 ## Cierre
 
-Completar con PR, workflow run, artifact y digest después del QA/merge.
+PR 1.2 completada y auditada. El siguiente alcance es PR 1.3 — taxonomías base.
