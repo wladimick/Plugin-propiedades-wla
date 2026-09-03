@@ -3,11 +3,18 @@
 namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Properties\PostType;
+use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
 final class Deactivator
 {
 	public static function deactivate(): void
 	{
+		foreach (TaxonomyRegistry::keys() as $taxonomy) {
+			if (taxonomy_exists($taxonomy)) {
+				unregister_taxonomy($taxonomy);
+			}
+		}
+
 		if (post_type_exists(PostType::POST_TYPE)) {
 			unregister_post_type(PostType::POST_TYPE);
 		}
