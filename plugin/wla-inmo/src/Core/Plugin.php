@@ -2,6 +2,8 @@
 
 namespace WLA\Inmo\Core;
 
+use WLA\Inmo\Properties\PostType;
+
 final class Plugin
 {
 	private static ?self $instance = null;
@@ -30,6 +32,7 @@ final class Plugin
 		$this->booted = true;
 
 		add_action('init', array($this, 'loadTextDomain'), 0);
+		add_action('init', array(PostType::class, 'register'), 5);
 
 		/**
 		 * Fires after WLA Inmo Core has completed its bootstrap.
