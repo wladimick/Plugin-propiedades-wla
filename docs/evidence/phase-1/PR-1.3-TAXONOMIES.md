@@ -1,9 +1,10 @@
 # Evidencia — Fase 1 / PR 1.3 Taxonomías base
 
-Estado documental: `IN_PROGRESS`.
+Estado documental: `DONE`.
 
-Issue: #9  
-Rama: `feat/phase1-taxonomies`
+Issue: #9 — cerrada  
+PR: #10 — squash merge  
+Merge commit: `61954bfbab9827b6d07d6b6151b9095677951dee`
 
 ## Objetivo
 
@@ -19,7 +20,7 @@ Registrar clasificaciones inmobiliarias nativas y reutilizables sobre `wla_prope
 | `wla_commune` | comuna | No | `comuna` | `wla-communes` |
 | `wla_sector` | sector/barrio | No | `sector` | `wla-sectors` |
 
-No se crean términos predeterminados en esta PR. Chile será un preset desacoplado en PR 1.7.
+No se crearon términos predeterminados; Chile sigue siendo un preset desacoplado reservado para PR 1.7.
 
 ## Capabilities
 
@@ -30,7 +31,7 @@ No se crean términos predeterminados en esta PR. Chile será un preset desacopl
 - `delete_wla_property_terms`;
 - `assign_wla_property_terms`.
 
-La asignación a roles queda para PR 1.6.
+La asignación a roles continúa correctamente reservada para PR 1.6.
 
 ## Lifecycle
 
@@ -40,25 +41,34 @@ La asignación a roles queda para PR 1.6.
 - Desactivación las unregister antes del flush.
 - No hay `flush_rewrite_rules()` en requests normales.
 
-## Tests
+## QA final
 
-`tests/smoke/taxonomies.php` valida:
+Workflow: `Bootstrap Smoke`  
+Run: `33818338049`  
+Resultado: `SUCCESS`
 
-- cinco claves exactas;
-- ausencia de `product_cat`;
-- jerarquía;
-- slugs;
-- REST;
-- capabilities;
-- asociación exclusiva con `wla_property`;
-- ejecución de `register_taxonomy()` mediante stub.
+Pasaron:
 
-El smoke del ZIP valida archivos y Composer autoload de `Taxonomies\\Registry` y `Taxonomies\\Capabilities`.
+- PHP syntax;
+- requirements smoke;
+- post type smoke;
+- taxonomy smoke;
+- build ZIP;
+- release ZIP smoke;
+- Composer autoload;
+- artifact upload.
+
+## Artefacto
+
+- Nombre: `wla-inmo-0.1.0-alpha.1`
+- Artifact ID: `9917328550`
+- Tamaño: `18883` bytes
+- Digest: `sha256:67c1e9ba7be704e3622e978ef979d3a8b9e67b9bc84478ea33f30c2b7514a191`
 
 ## Riesgo / producción
 
-No existen términos precargados, meta schema ni migración. Producción no se toca.
+No se crearon términos, metadatos, tablas ni migraciones. Producción no fue afectada.
 
 ## Cierre
 
-Completar con PR, CI, artifact y digest después de QA/merge.
+PR 1.3 completada y auditada. El siguiente alcance es PR 1.4 — meta schema canónico y validación.

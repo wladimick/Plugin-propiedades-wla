@@ -16,14 +16,15 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Issue de cierre Fase 0: #2
 - PR 1.1: #5 `DONE`
 - PR 1.2: #8 `DONE`
-- Issue activo Fase 1.3: #9
+- PR 1.3: #10 `DONE`
+- Issue activo Fase 1.4: #11
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, PR #8, Issue #9, `docs/evidence/phase-1/` |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, PR #8, PR #10, Issue #11, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -92,22 +93,34 @@ Estado: `DONE`
 
 ### PR 1.3 — Taxonomías base
 
+Estado: `DONE`
+
+- PR #10 — squash merge `61954bfbab9827b6d07d6b6151b9095677951dee`.
+- CI run `33818338049`: SUCCESS.
+- Cinco taxonomías inmobiliarias base y capabilities de términos incorporadas.
+- Evidencia: `docs/evidence/phase-1/PR-1.3-TAXONOMIES.md`.
+
+### PR 1.4 — Meta schema canónico y validación
+
 Estado: `IN_PROGRESS / QA PENDING`
 
-Issue: #9  
-Rama: `feat/phase1-taxonomies`
+Issue: #11  
+Rama: `feat/phase1-meta-schema`
 
 Alcance:
 
-- `wla_operation`;
-- `wla_property_type`;
-- `wla_region`;
-- `wla_commune`;
-- `wla_sector`;
-- capabilities de términos;
-- lifecycle y smoke tests.
+- `Properties\\MetaSchema`;
+- meta keys protegidos `_wla_inmo_*`;
+- `Properties\\Sanitizer`;
+- `Properties\\Validator`;
+- separación de campos públicos/internos;
+- datos geográficos/monetarios/multimedia normalizados;
+- raw postmeta no expuesto por REST;
+- smoke tests del contrato.
 
-No marcar PR 1.3 como `DONE` hasta que su PR esté mergeada y CI esté verde.
+Regla de diseño: operación, tipo, región, comuna y sector continúan exclusivamente como taxonomías y no se duplican en postmeta.
+
+No marcar PR 1.4 como `DONE` hasta que su PR esté mergeada y CI esté verde.
 
 ## Decisiones aceptadas
 
