@@ -1,8 +1,9 @@
 # Evidencia — Fase 1 / PR 1.1 Bootstrap y build
 
-Estado documental: `IN_PROGRESS` hasta que la PR sea mergeada.
+Estado documental: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #4  
+PR: #5  
 Rama: `feat/phase1-bootstrap-build`
 
 ## Objetivo
@@ -35,17 +36,34 @@ Crear el primer WLA Inmo Core instalable sin introducir todavía modelo Property
 - ADR-011: tests automatizados, build auditable y ZIP instalable.
 - ADR-013: WLA Inmo Light no participa en el bootstrap del core.
 
-## Controles de smoke definidos
+## Controles de smoke ejecutados
 
-1. `composer validate --no-check-lock`.
-2. `php -l` sobre PHP del plugin/tests.
-3. `php tests/smoke/requirements.php`.
-4. `bash bin/build-plugin.sh`.
-5. `bash bin/smoke-plugin.sh <zip>`.
-6. Verificación de archivos obligatorios dentro del ZIP.
-7. Verificación de autoload Composer en artefacto.
-8. Rechazo de referencias runtime a WooCommerce, Elementor, WPCode o `get_field()` en el core actual.
-9. Publicación del ZIP como artifact del workflow.
+Workflow run: `33817665522`  
+Job: `PHP 8.1 / Build Smoke`  
+Resultado: `SUCCESS`
+
+Pasaron correctamente:
+
+1. Setup PHP 8.1 / Composer 2.
+2. `composer validate --no-check-lock`.
+3. `php -l` sobre PHP del plugin/tests.
+4. `php tests/smoke/requirements.php`.
+5. `bash bin/build-plugin.sh`.
+6. `bash bin/smoke-plugin.sh <zip>`.
+7. Verificación de archivos obligatorios dentro del ZIP.
+8. Verificación de autoload Composer en artefacto.
+9. Rechazo de referencias runtime a WooCommerce, Elementor, WPCode o `get_field()` en el core actual.
+10. Publicación del ZIP como artifact del workflow.
+
+## Artefacto
+
+- Nombre: `wla-inmo-0.1.0-alpha.1`
+- Artifact ID: `9917111397`
+- Tamaño del artifact: `14970` bytes
+- Digest: `sha256:0f4bd1aac5c278bce2cc6f2399ee236149cf722eec439d149087562c714d9fb9`
+- Expiración informada por GitHub Actions: 2026-12-02
+
+El ZIP dentro del artifact fue construido en CI y pasó el smoke de release antes de subirse.
 
 ## Riesgo
 
@@ -57,4 +75,4 @@ No afectada. Esta implementación existe únicamente en el repositorio/artefacto
 
 ## Cierre
 
-Completar después del merge con la PR como evidencia canónica. La Fase 1 permanece `IN_PROGRESS`; el siguiente alcance es PR 1.2 — entidad `wla_property`.
+La evidencia técnica requerida para merge está verde. Después del merge, PR #5 será la evidencia canónica de cierre de PR 1.1. La Fase 1 permanece `IN_PROGRESS`; el siguiente alcance es PR 1.2 — entidad `wla_property`.
