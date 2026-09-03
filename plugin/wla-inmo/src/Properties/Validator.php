@@ -40,7 +40,7 @@ final class Validator
 		$limits = array(
 			'property_code'   => 100,
 			'external_id'     => 191,
-			'commercial_status' => 40,
+			'status'          => 40,
 			'locality'        => 191,
 			'public_address'  => 255,
 			'private_address' => 255,
@@ -75,12 +75,12 @@ final class Validator
 	 */
 	private static function validateStatus(array $values, array &$errors): void
 	{
-		if (!array_key_exists('commercial_status', $values) || !self::isProvided($values['commercial_status'])) {
+		if (!array_key_exists('status', $values) || !self::isProvided($values['status'])) {
 			return;
 		}
 
-		if (Sanitizer::key($values['commercial_status']) === '') {
-			$errors['commercial_status'] = 'invalid_key';
+		if (Sanitizer::key($values['status']) === '') {
+			$errors['status'] = 'invalid_key';
 		}
 	}
 
