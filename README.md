@@ -16,6 +16,7 @@ El proyecto debe poder instalarse en distintos sitios y funcionar con cualquier 
 - Arquitectura reutilizable para distintas inmobiliarias.
 - Compatibilidad con cualquier tema WordPress.
 - Migración segura desde instalaciones existentes con WooCommerce/ACF.
+- Desarrollo auditable mediante PR, tests, evidencias y documentación continua.
 
 ## Principios del proyecto
 
@@ -28,6 +29,7 @@ El proyecto debe poder instalarse en distintos sitios y funcionar con cualquier 
 7. **La administración debe ser comprensible sin conocimientos técnicos de WordPress.**
 8. **La importación debe ser segura, validada, trazable y reversible cuando sea posible.**
 9. **SEO/GEO/AEO se diseña desde el modelo de datos, no como un parche posterior.**
+10. **Ninguna funcionalidad se considera terminada sin tests, evidencia y documentación aplicable.**
 
 ## Componentes
 
@@ -85,6 +87,8 @@ Podrá convivir temporalmente con ellos durante una migración.
 
 ```text
 Plugin-propiedades-wla/
+├── .github/
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── plugin/
 │   └── wla-inmo/
 │       ├── wla-inmo.php
@@ -105,15 +109,19 @@ Plugin-propiedades-wla/
 ├── theme/
 │   └── wla-inmo-light/
 ├── docs/
+│   ├── decisions/
+│   └── evidence/
+├── CONTRIBUTING.md
 └── README.md
 ```
 
-## Documentación
+## Documentación de producto
 
 - [Visión y requisitos](docs/PRODUCT-REQUIREMENTS.md)
 - [Arquitectura](docs/ARCHITECTURE.md)
 - [Modelo de datos](docs/DATA-MODEL.md)
 - [Administración y experiencia de usuario](docs/ADMIN-UX.md)
+- [Todas las secciones del administrador](docs/ADMIN-SECTIONS.md)
 - [Centro de ayuda](docs/HELP-CENTER.md)
 - [Importación y carga masiva](docs/IMPORT-EXPORT.md)
 - [SEO, GEO y AEO](docs/SEO-GEO-AEO.md)
@@ -122,6 +130,46 @@ Plugin-propiedades-wla/
 - [Migración desde el sitio actual](docs/MIGRATION.md)
 - [Roadmap](docs/ROADMAP.md)
 
+## Ingeniería, QA y auditoría
+
+- [Metodología de desarrollo](docs/DEVELOPMENT-METHODOLOGY.md)
+- [Fases de desarrollo](docs/DEVELOPMENT-PHASES.md)
+- [Stack técnico](docs/STACK.md)
+- [Estrategia de testing](docs/TESTING.md)
+- [Catálogo base de casos de prueba](docs/TEST-CASE-CATALOG.md)
+- [Quality Gates](docs/QUALITY-GATES.md)
+- [Definition of Done](docs/DEFINITION-OF-DONE.md)
+- [Flujo de Pull Requests](docs/PR-WORKFLOW.md)
+- [Auditoría y trazabilidad](docs/AUDIT-TRACEABILITY.md)
+- [Estándar de documentación](docs/DOCUMENTATION-STANDARD.md)
+- [CI/CD](docs/CI-CD.md)
+- [Proceso de releases](docs/RELEASE-PROCESS.md)
+- [Cómo contribuir](CONTRIBUTING.md)
+
+## Regla de trazabilidad
+
+Todo cambio funcional debe poder seguirse como:
+
+```text
+Requisito / Hallazgo
+        ↓
+Issue / tarea
+        ↓
+ADR cuando aplica
+        ↓
+Rama
+        ↓
+Pull Request
+        ↓
+Tests + QA + evidencia
+        ↓
+Merge
+        ↓
+Release / Changelog
+```
+
+Cuando se solicite una auditoría del proyecto, el repositorio y sus evidencias deben ser suficientes para reconstruir el estado real sin depender de conversaciones anteriores.
+
 ## Estado
 
-Proyecto en fase de definición y documentación. La primera implementación debe comenzar solamente después de validar el modelo de datos, la estrategia de migración y la experiencia administrativa.
+**Fase 0 — Gobierno y diseño.** El proyecto sigue en definición/documentación. La primera implementación del core debe comenzar solamente después de validar el modelo de datos, la estrategia de migración, la experiencia administrativa, el stack y los quality gates.
