@@ -9,20 +9,21 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Etapa actual: `PHASE-1 / CORE`
 - Fase 0: `DONE`
 - Fase 1: `IN_PROGRESS`
-- Código de producto: iniciado — `0.1.0-alpha.1`
+- Código de producto: `0.1.0-alpha.1`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - Issue de cierre Fase 0: #2
 - PR 1.1: #5 `DONE`
-- Issue activo Fase 1.2: #7
+- PR 1.2: #8 `DONE`
+- Issue activo Fase 1.3: #9
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, Issue #7, `docs/evidence/phase-1/` |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, PR #8, Issue #9, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -76,30 +77,37 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 
 Estado: `DONE`
 
-- PR: #5 — squash merge `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`.
-- CI final: `Bootstrap Smoke` SUCCESS.
-- Artefacto instalable generado y validado.
+- PR #5 — squash merge `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`.
+- CI: SUCCESS.
 - Evidencia: `docs/evidence/phase-1/PR-1.1-BOOTSTRAP.md`.
 
 ### PR 1.2 — Entidad Property
 
+Estado: `DONE`
+
+- PR #8 — squash merge `da989ef50a9d066023ae2c00d776d05af3d3499c`.
+- CI run `33818077411`: SUCCESS.
+- CPT `wla_property` y capabilities base incorporadas.
+- Evidencia: `docs/evidence/phase-1/PR-1.2-PROPERTY-ENTITY.md`.
+
+### PR 1.3 — Taxonomías base
+
 Estado: `IN_PROGRESS / QA PENDING`
 
-Issue: #7  
-Rama: `feat/phase1-property-entity`
+Issue: #9  
+Rama: `feat/phase1-taxonomies`
 
 Alcance:
 
-- CPT `wla_property`;
-- labels y rutas iniciales;
-- soportes editoriales nativos;
-- REST nativo;
-- contrato explícito de capabilities;
-- política `delete_with_user = false`;
-- lifecycle de rewrite rules;
-- smoke tests del contrato.
+- `wla_operation`;
+- `wla_property_type`;
+- `wla_region`;
+- `wla_commune`;
+- `wla_sector`;
+- capabilities de términos;
+- lifecycle y smoke tests.
 
-No marcar PR 1.2 como `DONE` hasta que su PR esté mergeada y CI esté verde.
+No marcar PR 1.3 como `DONE` hasta que su PR esté mergeada y CI esté verde.
 
 ## Decisiones aceptadas
 
@@ -125,7 +133,7 @@ El detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
 
 **Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`.
 
-La implementación comenzó por bootstrap/build y continúa por la entidad nativa Property. No se está migrando el sitio productivo.
+La implementación continúa sobre un core nativo y no está migrando el sitio productivo.
 
 ## Riesgos trasladados a implementación
 
