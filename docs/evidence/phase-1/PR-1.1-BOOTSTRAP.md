@@ -1,10 +1,10 @@
 # Evidencia — Fase 1 / PR 1.1 Bootstrap y build
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
-Issue: #4  
-PR: #5  
-Rama: `feat/phase1-bootstrap-build`
+Issue: #4 — cerrada  
+PR: #5 — mergeada mediante squash  
+Merge commit: `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`
 
 ## Objetivo
 
@@ -36,9 +36,9 @@ Crear el primer WLA Inmo Core instalable sin introducir todavía modelo Property
 - ADR-011: tests automatizados, build auditable y ZIP instalable.
 - ADR-013: WLA Inmo Light no participa en el bootstrap del core.
 
-## Controles de smoke ejecutados
+## Controles de smoke finales
 
-Workflow run: `33817665522`  
+Workflow run final de la PR: `33817719440`  
 Job: `PHP 8.1 / Build Smoke`  
 Resultado: `SUCCESS`
 
@@ -47,32 +47,26 @@ Pasaron correctamente:
 1. Setup PHP 8.1 / Composer 2.
 2. `composer validate --no-check-lock`.
 3. `php -l` sobre PHP del plugin/tests.
-4. `php tests/smoke/requirements.php`.
-5. `bash bin/build-plugin.sh`.
-6. `bash bin/smoke-plugin.sh <zip>`.
-7. Verificación de archivos obligatorios dentro del ZIP.
-8. Verificación de autoload Composer en artefacto.
-9. Rechazo de referencias runtime a WooCommerce, Elementor, WPCode o `get_field()` en el core actual.
-10. Publicación del ZIP como artifact del workflow.
+4. smoke de requisitos mínimos.
+5. build del ZIP.
+6. smoke del release ZIP.
+7. verificación de archivos obligatorios.
+8. verificación de autoload Composer.
+9. rechazo de referencias runtime a WooCommerce, Elementor, WPCode o `get_field()`.
+10. publicación del ZIP como artifact.
 
-## Artefacto
+## Artefacto final de PR #5
 
 - Nombre: `wla-inmo-0.1.0-alpha.1`
-- Artifact ID: `9917111397`
-- Tamaño del artifact: `14970` bytes
-- Digest: `sha256:0f4bd1aac5c278bce2cc6f2399ee236149cf722eec439d149087562c714d9fb9`
+- Artifact ID: `9917130469`
+- Tamaño: `14961` bytes
+- Digest: `sha256:2b55dabfe9f9392cf97436812c203fd1ea58daee961d7173e2ad832c3614cc86`
 - Expiración informada por GitHub Actions: 2026-12-02
 
-El ZIP dentro del artifact fue construido en CI y pasó el smoke de release antes de subirse.
+## Riesgo / producción
 
-## Riesgo
-
-Bajo. No registra CPT, taxonomías ni tablas. No modifica contenido del sitio actual y no realiza migraciones.
-
-## Producción
-
-No afectada. Esta implementación existe únicamente en el repositorio/artefacto de desarrollo.
+Bajo. PR #5 no registró CPT, taxonomías ni tablas y no realizó migraciones. Producción no fue afectada.
 
 ## Cierre
 
-La evidencia técnica requerida para merge está verde. Después del merge, PR #5 será la evidencia canónica de cierre de PR 1.1. La Fase 1 permanece `IN_PROGRESS`; el siguiente alcance es PR 1.2 — entidad `wla_property`.
+PR 1.1 está completada y auditada. La Fase 1 continúa `IN_PROGRESS`; el siguiente alcance es PR 1.2 — entidad `wla_property`.
