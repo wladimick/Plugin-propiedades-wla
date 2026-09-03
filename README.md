@@ -30,6 +30,7 @@ El proyecto debe poder instalarse en distintos sitios y funcionar con cualquier 
 8. **La importación debe ser segura, validada, trazable y reversible cuando sea posible.**
 9. **SEO/GEO/AEO se diseña desde el modelo de datos, no como un parche posterior.**
 10. **Ninguna funcionalidad se considera terminada sin tests, evidencia y documentación aplicable.**
+11. **Las decisiones estructurales aceptadas no se cambian silenciosamente; se reemplazan mediante ADR y PR.**
 
 ## Componentes
 
@@ -132,6 +133,9 @@ Plugin-propiedades-wla/
 
 ## Ingeniería, QA y auditoría
 
+- [Estado vivo del proyecto](docs/PROJECT-STATUS.md)
+- [Registro de decisiones D01–D75](docs/decisions/DECISION-REGISTER.md)
+- [Backlog de Fase 1](docs/PHASE-1-BACKLOG.md)
 - [Metodología de desarrollo](docs/DEVELOPMENT-METHODOLOGY.md)
 - [Fases de desarrollo](docs/DEVELOPMENT-PHASES.md)
 - [Stack técnico](docs/STACK.md)
@@ -172,4 +176,6 @@ Cuando se solicite una auditoría del proyecto, el repositorio y sus evidencias 
 
 ## Estado
 
-**Fase 0 — Gobierno y diseño.** El proyecto sigue en definición/documentación. La primera implementación del core debe comenzar solamente después de validar el modelo de datos, la estrategia de migración, la experiencia administrativa, el stack y los quality gates.
+**Fase 0 — Gobierno y diseño: DONE.** Las decisiones críticas D01–D75 fueron aprobadas y registradas en ADR-001–ADR-013.
+
+**Fase 1 — Core del plugin: entrada aprobada / PLANNED.** La implementación debe seguir `docs/PHASE-1-BACKLOG.md`, comenzar por bootstrap/build y mantenerse aislada del sitio productivo hasta que las fases de migración correspondientes estén aprobadas.
