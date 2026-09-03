@@ -2,6 +2,8 @@
 
 namespace WLA\Inmo\Core;
 
+use WLA\Inmo\Properties\PostType;
+
 final class Activator
 {
 	public static function activate(): void
@@ -24,6 +26,9 @@ final class Activator
 				array('back_link' => true)
 			);
 		}
+
+		PostType::register();
+		flush_rewrite_rules(false);
 
 		update_option('wla_inmo_version', WLA_INMO_VERSION, false);
 

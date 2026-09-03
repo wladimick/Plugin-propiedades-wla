@@ -35,8 +35,11 @@ jobs:
       - name: PHP syntax
         run: find plugin/wla-inmo tests/smoke -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Requirement smoke tests
-        run: php tests/smoke/requirements.php
+      - name: Source smoke tests
+        run: |
+          for test_file in tests/smoke/*.php; do
+            php "$test_file"
+          done
 
       - name: Build installable ZIP
         id: build
