@@ -3,6 +3,7 @@
 namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Properties\PostType;
+use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
 final class Activator
 {
@@ -28,6 +29,7 @@ final class Activator
 		}
 
 		PostType::register();
+		TaxonomyRegistry::register();
 		flush_rewrite_rules(false);
 
 		update_option('wla_inmo_version', WLA_INMO_VERSION, false);
