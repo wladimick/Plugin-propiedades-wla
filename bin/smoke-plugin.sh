@@ -27,11 +27,14 @@ PLUGIN_DIR="$STAGE_ROOT/wla-inmo"
 
 required_files=(
 	"wla-inmo.php"
+	"uninstall.php"
 	"vendor/autoload.php"
 	"src/Core/Plugin.php"
 	"src/Core/Requirements.php"
 	"src/Core/Activator.php"
 	"src/Core/Deactivator.php"
+	"src/Properties/PostType.php"
+	"src/Properties/Capabilities.php"
 )
 
 for relative in "${required_files[@]}"; do
@@ -45,7 +48,7 @@ while IFS= read -r -d '' php_file; do
 	php -l "$php_file" >/dev/null
 done < <(find "$PLUGIN_DIR" -type f -name '*.php' -print0)
 
-php -r "require '$PLUGIN_DIR/vendor/autoload.php'; if (!class_exists('WLA\\Inmo\\Core\\Requirements')) { fwrite(STDERR, 'Composer autoload failed.\\n'); exit(1); }"
+php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
 if grep -RIEq 'wc_get_|WooCommerce|Elementor|WPCode|get_field[[:space:]]*\(' "$PLUGIN_DIR/src" "$PLUGIN_DIR/wla-inmo.php"; then
 	echo "Forbidden runtime dependency reference found in core bootstrap/source." >&2
