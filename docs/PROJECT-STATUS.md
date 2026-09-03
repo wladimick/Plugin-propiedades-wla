@@ -6,17 +6,21 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 
 - Proyecto: WLA Inmo
 - Tema de referencia: WLA Inmo Light
-- Etapa actual: `PHASE-0 / GOVERNANCE & DESIGN`
-- Estado: `IN_PROGRESS`
+- Etapa actual: `PHASE-1 / CORE`
+- Fase 0: `DONE`
+- Fase 1: `PLANNED / ENTRY APPROVED`
 - Código de producto: aún no iniciado
 - Producción: no afectada
+- Decisiones críticas: D01–D75 `ACCEPTED`
+- Registro: `docs/decisions/DECISION-REGISTER.md`
+- Issue de cierre Fase 0: #2
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
-| 0 | Gobierno y diseño | IN_PROGRESS | `/docs`, PRs de documentación |
-| 1 | Core del plugin | PLANNED | pendiente |
+| 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
+| 1 | Core del plugin | PLANNED | `PHASE-1-BACKLOG.md` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -27,7 +31,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 9 | Migración Propiedades Martínez | PLANNED | pendiente |
 | 10 | Release 1.0 | PLANNED | pendiente |
 
-## Checklist de Fase 0
+## Checklist de Fase 0 — CERRADO
 
 - [x] Visión y requisitos iniciales
 - [x] Arquitectura inicial
@@ -55,24 +59,58 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - [x] Secciones completas del administrador
 - [x] Plantilla de PR
 - [x] Plantilla ADR
-- [ ] Validar decisiones críticas de arquitectura mediante ADR aceptados
-- [ ] Validar versión mínima PHP/WordPress
-- [ ] Definir esquema físico final del índice de búsqueda
-- [ ] Definir contrato público inicial (hooks/templates/API)
-- [ ] Aprobar entrada a Fase 1
+- [x] Validar decisiones críticas mediante ADR aceptados
+- [x] Validar versión mínima PHP/WordPress — PHP 8.1+ / WP 6.6+
+- [x] Aprobar arquitectura del índice de búsqueda como proyección canónica → índice
+- [x] Definir contrato plugin/tema inicial
+- [x] Definir proveedor de mapas de referencia
+- [x] Seleccionar estrategia XLSX
+- [x] Definir estrategia API/hooks
+- [x] Aprobar entrada a Fase 1
 
-## Riesgos abiertos de Fase 0
+## Decisiones aceptadas
 
-1. El esquema exacto de tabla índice aún es diseño, no implementación.
-2. La dependencia XLSX todavía debe seleccionarse mediante ADR.
-3. La estrategia exacta de mapas/proveedor no está fijada.
-4. La matriz mínima de PHP/WordPress debe confirmarse antes de CI definitivo.
-5. La convivencia con plugins SEO debe definirse con adaptadores/detección concreta.
+Los ADR aceptados son:
+
+- ADR-001 Plataforma, compatibilidad y dependencias.
+- ADR-002 Property, fuente de verdad, índice, taxonomías y precios.
+- ADR-003 Ubicación, mapas y multimedia.
+- ADR-004 Contrato plugin/tema y frontend.
+- ADR-005 Administración, revisiones e historial.
+- ADR-006 Importación, XLSX, jobs y rollback.
+- ADR-007 REST API, hooks y extensibilidad.
+- ADR-008 Leads, email e indicadores.
+- ADR-009 SEO, GEO, AEO y Schema.
+- ADR-010 Roles, seguridad operativa, datos, telemetría e internacionalización.
+- ADR-011 Accesibilidad, performance, testing, PR y releases.
+- ADR-012 Secrets, ayuda y diagnóstico.
+- ADR-013 WLA Inmo Light y compatibilidad con temas.
+
+El detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
+
+## Entrada a Fase 1
+
+**Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`.
+
+La primera implementación debe comenzar por bootstrap/build y no por migración del sitio productivo.
+
+## Riesgos trasladados a implementación
+
+No bloquean el cierre de Fase 0, pero deben validarse con evidencia en sus fases correspondientes:
+
+1. Índices SQL exactos se ajustarán con benchmarks reales; no sobreindexar anticipadamente.
+2. PhpSpreadsheet debe medirse en tamaño/memoria antes de 1.0.
+3. Proveedor de tiles/geocoding de OpenStreetMap debe definirse para instalaciones de tráfico relevante.
+4. Adaptadores concretos para plugins SEO se implementarán y probarán en Fase 6.
+5. Compatibilidad Multisite se valida progresivamente y no bloquea v0.1.
+6. Lighthouse ≥95 es budget de referencia; CWV reales requerirán RUM/datos productivos.
 
 ## Regla de actualización
 
 Cuando un ítem pase a `DONE` debe existir una PR, test, evidencia o documento que lo sustente. No marcar tareas como completas solo porque fueron conversadas.
 
+Una decisión `accepted` no se modifica silenciosamente: requiere nuevo ADR/PR con impacto y motivo.
+
 ## Auditoría
 
-Para una auditoría completa usar `AUDIT-TRACEABILITY.md`. Para una revisión rápida comenzar por este archivo, `DEVELOPMENT-PHASES.md`, PRs abiertas y `TEST-CASE-CATALOG.md`.
+Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar por este archivo, `docs/decisions/DECISION-REGISTER.md`, `DEVELOPMENT-PHASES.md`, PRs, `TEST-CASE-CATALOG.md` y evidencias.
