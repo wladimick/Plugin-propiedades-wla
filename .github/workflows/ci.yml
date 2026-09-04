@@ -30,7 +30,11 @@ jobs:
         run: composer validate --no-check-lock --working-dir=plugin/wla-inmo
 
       - name: PHP syntax
-        run: find plugin/wla-inmo tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+        run: |
+          {
+            find plugin/wla-inmo -path 'plugin/wla-inmo/vendor' -prune -o -type f -name '*.php' -print0
+            find tests -type f -name '*.php' -print0
+          } | xargs -0 -n1 php -l
 
       - name: WordPress Coding Standards security profile
         run: plugin/wla-inmo/vendor/bin/phpcs --standard=phpcs.xml.dist
@@ -139,7 +143,7 @@ jobs:
       - name: Install and activate release ZIP
         run: |
           cd /tmp/wla-wordpress
-          wp plugin install "$GITHUB_WORKSPACE/${{ steps.build.outputs.zip_path }}" --activate --allow-root
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
           wp plugin status wla-inmo --allow-root
 
       - name: Validate active plugin contracts
