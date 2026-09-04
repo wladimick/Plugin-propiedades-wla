@@ -1,0 +1,266 @@
+<?php
+
+namespace WLA\Inmo\Import;
+
+use Generator;
+use SplFileObject;
+
+final class CsvReader
+{
+	private const UTF8_BOM = "\xEF\xBB\xBF";
+	private const DETECTION_BYTES = 65536;
+
+	private int $maxRows;
+
+	private int $maxColumns;
+
+	private int $maxCellBytes;
+
+	private ?string $delimiter;
+
+	public function __construct(
+		int $maxRows = 10000,
+		int $maxColumns = 100,
+		int $maxCellBytes = 65535,
+		?string $delimiter = null
+	) {
+		if ($maxRows < 1 || $maxColumns < 1 || $maxCellBytes < 1) {
+			throw new \InvalidArgumentException('CSV limits must be positive integers.');
+		}
+
+		if ($delimiter !== null && !in_array($delimiter, self::supportedDelimiters(), true)) {
+			throw new \InvalidArgumentException('Unsupported CSV delimiter.');
+		}
+
+		$this->maxRows = $maxRows;
+		$this->maxColumns = $maxColumns;
+		$this->maxCellBytes = $maxCellBytes;
+		$this->delimiter = $delimiter;
+	}
+
+	/**
+	 * Read data rows incrementally.
+	 *
+	 * @return Generator<int,array{row_number:int,data:array<string,string>}>
+	 */
+	public function rows(string $path): Generator
+	{
+		$this->assertReadableFile($path);
+		$delimiter = $this->delimiter ?? $this->detectDelimiter($path);
+		$file = new SplFileObject($path, 'rb');
+		$file->setFlags(SplFileObject::READ_CSV | SplFileObject::DROP_NEW_LINE);
+		$file->setCsvControl($delimiter, '"', '\\');
+
+		$headers = null;
+		$recordNumber = 0;
+		$dataRows = 0;
+
+		while (!$file->eof()) {
+			$row = $file->fgetcsv();
+			++$recordNumber;
+
+			if (!is_array($row) || $row === array(null) || self::isEmptyRow($row)) {
+				continue;
+			}
+
+			$values = $this->normalizeCells($row, $recordNumber);
+
+			if ($headers === null) {
+				$headers = $this->normalizeHeaders($values, $recordNumber);
+				continue;
+			}
+
+			if (count($values) > count($headers)) {
+				throw new CsvException(
+					'column_count_mismatch',
+					'CSV row has more columns than the header.',
+					$recordNumber
+				);
+			}
+
+			if (count($values) < count($headers)) {
+				$values = array_pad($values, count($headers), '');
+			}
+
+			++$dataRows;
+			if ($dataRows > $this->maxRows) {
+				throw new CsvException(
+					'row_limit_exceeded',
+					'CSV row limit exceeded.',
+					$recordNumber
+				);
+			}
+
+			$data = array_combine($headers, $values);
+			if (!is_array($data)) {
+				throw new CsvException(
+					'column_count_mismatch',
+					'CSV row could not be mapped to the normalized header.',
+					$recordNumber
+				);
+			}
+
+			yield $dataRows => array(
+				'row_number' => $recordNumber,
+				'data'       => $data,
+			);
+		}
+
+		if ($headers === null) {
+			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+		}
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	public static function supportedDelimiters(): array
+	{
+		return array(',', ';', "\t");
+	}
+
+	private function assertReadableFile(string $path): void
+	{
+		if ($path === '' || !is_file($path) || !is_readable($path)) {
+			throw new CsvException('unreadable_file', 'CSV file is not readable.');
+		}
+	}
+
+	private function detectDelimiter(string $path): string
+	{
+		$handle = fopen($path, 'rb');
+		if ($handle === false) {
+			throw new CsvException('unreadable_file', 'CSV file is not readable.');
+		}
+
+		$sample = fgets($handle, self::DETECTION_BYTES);
+		fclose($handle);
+
+		if (!is_string($sample) || $sample === '') {
+			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+		}
+
+		$sample = self::stripBom($sample);
+		$this->assertUtf8($sample, 1);
+
+		$bestDelimiter = ',';
+		$bestCount = 1;
+
+		foreach (self::supportedDelimiters() as $delimiter) {
+			$parsed = str_getcsv($sample, $delimiter, '"', '\\');
+			$count = count($parsed);
+			if ($count > $bestCount) {
+				$bestCount = $count;
+				$bestDelimiter = $delimiter;
+			}
+		}
+
+		return $bestDelimiter;
+	}
+
+	/**
+	 * @param array<int,mixed> $row Raw CSV cells.
+	 * @return array<int,string>
+	 */
+	private function normalizeCells(array $row, int $recordNumber): array
+	{
+		if (count($row) > $this->maxColumns) {
+			throw new CsvException('column_limit_exceeded', 'CSV column limit exceeded.', $recordNumber);
+		}
+
+		$values = array();
+		foreach ($row as $index => $value) {
+			$cell = $value === null ? '' : (string) $value;
+			if ($recordNumber === 1 && $index === 0) {
+				$cell = self::stripBom($cell);
+			}
+
+			$this->assertUtf8($cell, $recordNumber);
+			if (strlen($cell) > $this->maxCellBytes) {
+				throw new CsvException('cell_limit_exceeded', 'CSV cell byte limit exceeded.', $recordNumber);
+			}
+
+			$values[] = $cell;
+		}
+
+		return $values;
+	}
+
+	/**
+	 * @param array<int,string> $values Header cells.
+	 * @return array<int,string>
+	 */
+	private function normalizeHeaders(array $values, int $recordNumber): array
+	{
+		if (count($values) > $this->maxColumns) {
+			throw new CsvException('column_limit_exceeded', 'CSV column limit exceeded.', $recordNumber);
+		}
+
+		$headers = array();
+		foreach ($values as $index => $value) {
+			if ($index === 0) {
+				$value = self::stripBom($value);
+			}
+
+			$header = self::normalizeHeader($value);
+			if ($header === '') {
+				throw new CsvException('empty_header', 'CSV contains an empty header after normalization.', $recordNumber);
+			}
+
+			if (in_array($header, $headers, true)) {
+				throw new CsvException('duplicate_header', 'CSV contains duplicate headers after normalization.', $recordNumber);
+			}
+
+			$headers[] = $header;
+		}
+
+		return $headers;
+	}
+
+	private function assertUtf8(string $value, int $recordNumber): void
+	{
+		if (preg_match('//u', $value) !== 1) {
+			throw new CsvException('invalid_utf8', 'CSV contains invalid UTF-8 data.', $recordNumber);
+		}
+	}
+
+	private static function normalizeHeader(string $value): string
+	{
+		$value = trim(strtolower($value));
+		$value = strtr(
+			$value,
+			array(
+				'á' => 'a',
+				'é' => 'e',
+				'í' => 'i',
+				'ó' => 'o',
+				'ú' => 'u',
+				'ü' => 'u',
+				'ñ' => 'n',
+			)
+		);
+		$value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? '';
+		$value = preg_replace('/_+/', '_', $value) ?? '';
+
+		return trim($value, '_');
+	}
+
+	/**
+	 * @param array<int,mixed> $row CSV row.
+	 */
+	private static function isEmptyRow(array $row): bool
+	{
+		foreach ($row as $value) {
+			if ($value !== null && trim((string) $value) !== '') {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private static function stripBom(string $value): string
+	{
+		return str_starts_with($value, self::UTF8_BOM) ? substr($value, 3) : $value;
+	}
+}
