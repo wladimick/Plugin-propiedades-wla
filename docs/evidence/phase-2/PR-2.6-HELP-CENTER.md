@@ -1,8 +1,9 @@
 # Evidencia — Fase 2 / PR 2.6 Centro de Ayuda
 
-Estado documental: `IN_PROGRESS / QA PENDING`.
+Estado documental: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #33  
+PR: #34  
 Rama: `feat/phase2-help-center`
 
 ## Objetivo
@@ -95,9 +96,38 @@ No se utiliza `update_option()` para progreso personal.
 - dismissed state aislado por usuario;
 - shape estable del checklist.
 
-Se incorpora workflow `Help Center Integration` para WordPress 6.6.2/PHP 8.1 y WordPress latest/PHP 8.3.
+El workflow `Help Center Integration` prueba WordPress 6.6.2/PHP 8.1 y WordPress latest/PHP 8.3.
 
 El release smoke exige `HelpCenter.php`, `Onboarding.php`, `help-center.css` y `help-center.js`, y verifica que Ayuda permanezca local y onboarding no use estado global.
+
+## QA final
+
+Head de código validado: `a40246b3cf0e9503b584a0536cdf6bfe104b0521`.
+
+- Phase 1 CI `33858810497`: `SUCCESS`;
+- Quality Gate / PHP 8.1: `SUCCESS`;
+- PHP syntax: `SUCCESS`;
+- WordPress Coding Standards security profile: `SUCCESS`;
+- PHPStan: `SUCCESS`;
+- PHPUnit: `3 tests / 40 assertions`;
+- todos los smoke tests, incluido Help Center: `SUCCESS`;
+- release ZIP smoke: `SUCCESS`;
+- WordPress 6.6.2 + PHP 8.1: `SUCCESS`;
+- WordPress latest + PHP 8.3: `SUCCESS`;
+- deactivate/uninstall preservan datos: `SUCCESS`;
+- Help Center Integration `33858810499`: `SUCCESS` en ambas matrices;
+- Catalogue Quality Integration `33858810510`: `SUCCESS` en ambas matrices;
+- Bootstrap Smoke `33858810523`: `SUCCESS`;
+- Artifact `9931277294`;
+- Artifact digest: `sha256:0fb49b519200f371512c74b2d4aa1f55b6d5d5ece13b31b48ba8b5fe69d0c31f`;
+- ZIP SHA-256: `cc7b2f3b325fb187eb11d0501e21ea70db86edb607149a66dd43690efaf3fb66`.
+
+## Findings corregidos
+
+1. El primer Quality Gate detectó que el array de pasos del onboarding se deserializaba antes de que WPCS pudiera reconocer la sanitización por elemento. Se dejó explícito el límite de confianza y cada step sigue pasando por `sanitize_key()` y una allowlist cerrada antes de persistir.
+2. Un release smoke posterior detectó que textos educativos del Centro de Ayuda contenían nombres que el guard histórico interpreta como marcadores de dependencia legacy. Se reescribió la copia para hablar de “plugins o constructores usados por el sitio anterior”, manteniendo el guard estricto sobre el runtime.
+
+No quedaron findings críticos ni altos abiertos dentro del alcance de PR 2.6. Los warnings de Node observados en GitHub Actions pertenecen a actions de terceros y no al runtime de WLA Inmo.
 
 ## Producción
 
@@ -105,4 +135,4 @@ El release smoke exige `HelpCenter.php`, `Onboarding.php`, `help-center.css` y `
 
 ## Cierre pendiente
 
-Antes de marcar PR 2.6 como `DONE` deben registrarse número de PR, CI final, integración Help final, artifact/checksum, findings/correcciones y squash merge.
+PR 2.6 queda `QA_PASSED / MERGE_PENDING`. Solo debe pasar a `DONE` después del squash merge efectivo de PR #34 y del registro del SHA final en `main`.
