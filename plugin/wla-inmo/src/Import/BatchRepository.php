@@ -57,6 +57,7 @@ final class BatchRepository
 			'created_by'     => $createdBy,
 			'total_rows'     => $totalRows,
 			'cursor_row'     => 0,
+			'cursor_offset'  => 0,
 			'processed_rows' => 0,
 			'created_count'  => 0,
 			'updated_count'  => 0,
@@ -70,7 +71,7 @@ final class BatchRepository
 			'completed_at'   => null,
 		);
 
-		$formats = array('%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s');
+		$formats = array('%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s');
 		$inserted = $this->wpdb->insert(BatchSchema::tableName($this->wpdb), $row, $formats);
 
 		return $inserted === false ? null : $batchUuid;
@@ -156,7 +157,8 @@ final class BatchRepository
 		int $expectedRevision,
 		int $cursorRow,
 		int $processedRows,
-		array $counters
+		array $counters,
+		?int $cursorOffset = null
 	): bool {
 		$current = $this->find($batchUuid);
 		if (
@@ -172,12 +174,16 @@ final class BatchRepository
 			return false;
 		}
 
+		$currentOffset = (int) ($current['cursor_offset'] ?? 0);
+		$cursorOffset = $cursorOffset ?? $currentOffset;
 		$totalRows = (int) $current['total_rows'];
 		if (
 			$cursorRow < (int) $current['cursor_row']
 			|| $processedRows < (int) $current['processed_rows']
+			|| $cursorOffset < $currentOffset
 			|| $cursorRow > $totalRows
 			|| $processedRows > $totalRows
+			|| $cursorOffset < 0
 		) {
 			return false;
 		}
@@ -202,6 +208,7 @@ final class BatchRepository
 
 		$data = array(
 			'cursor_row'     => $cursorRow,
+			'cursor_offset'  => $cursorOffset,
 			'processed_rows' => $processedRows,
 			'created_count'  => $normalizedCounters['created'],
 			'updated_count'  => $normalizedCounters['updated'],
@@ -220,7 +227,7 @@ final class BatchRepository
 				'status'     => BatchStatus::PROCESSING,
 				'revision'   => $expectedRevision,
 			),
-			array('%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s'),
+			array('%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s'),
 			array('%s', '%s', '%d')
 		);
 
@@ -234,13 +241,17 @@ final class BatchRepository
 	private static function normalizeRow(array $row): array
 	{
 		$integerFields = array(
-			'id', 'created_by', 'total_rows', 'cursor_row', 'processed_rows',
+			'id', 'created_by', 'total_rows', 'cursor_row', 'cursor_offset', 'processed_rows',
 			'created_count', 'updated_count', 'skipped_count', 'warning_count', 'error_count', 'revision',
 		);
 		foreach ($integerFields as $field) {
 			if (array_key_exists($field, $row)) {
 				$row[$field] = (int) $row[$field];
 			}
+		}
+
+		if (!array_key_exists('cursor_offset', $row)) {
+			$row['cursor_offset'] = 0;
 		}
 
 		return $row;
