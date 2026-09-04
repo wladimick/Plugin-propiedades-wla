@@ -173,7 +173,7 @@ final class DryRunEngine
 		}
 
 		$raw = $sourceRow[$headers[0]] ?? '';
-		if ($raw === null || (is_string($raw) && trim($raw) === '')) {
+		if (is_string($raw) && trim($raw) === '') {
 			return '';
 		}
 
