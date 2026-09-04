@@ -8,7 +8,8 @@ final class Assets
 {
 	public static function enqueue(string $hookSuffix): void
 	{
-		if (!self::isWlaContext($hookSuffix)) {
+		$screen = function_exists('get_current_screen') ? get_current_screen() : null;
+		if (!self::isWlaContext($hookSuffix, $screen)) {
 			return;
 		}
 
@@ -17,6 +18,25 @@ final class Assets
 			WLA_INMO_URL . 'assets/admin/admin.css',
 			array(),
 			WLA_INMO_VERSION
+		);
+
+		if (!PropertyMedia::isPropertyEditorContext($hookSuffix, $screen)) {
+			return;
+		}
+
+		wp_enqueue_media();
+		wp_enqueue_style(
+			'wla-inmo-property-media',
+			WLA_INMO_URL . 'assets/admin/property-media.css',
+			array('wla-inmo-admin'),
+			WLA_INMO_VERSION
+		);
+		wp_enqueue_script(
+			'wla-inmo-property-media',
+			WLA_INMO_URL . 'assets/admin/property-media.js',
+			array('media-editor'),
+			WLA_INMO_VERSION,
+			true
 		);
 	}
 
