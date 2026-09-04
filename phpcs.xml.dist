@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="WLA Inmo Phase 1">
+    <description>Initial WPCS security gate. Formatting/naming remain governed by the documented PSR-4 project style.</description>
+
+    <file>plugin/wla-inmo/wla-inmo.php</file>
+    <file>plugin/wla-inmo/src</file>
+
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+
+    <rule ref="WordPress.Security.EscapeOutput"/>
+    <rule ref="WordPress.Security.NonceVerification"/>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput"/>
+</ruleset>

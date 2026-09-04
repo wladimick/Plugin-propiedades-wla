@@ -1,0 +1,176 @@
+name: Phase 1 CI
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/**'
+      - 'bin/**'
+      - 'tests/**'
+      - 'phpcs.xml.dist'
+      - 'phpstan.neon.dist'
+      - 'phpunit.xml.dist'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality Gate / PHP 8.1
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install development tools
+        run: composer install --working-dir=plugin/wla-inmo --no-interaction --no-progress --prefer-dist
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-lock --working-dir=plugin/wla-inmo
+
+      - name: PHP syntax
+        run: |
+          {
+            find plugin/wla-inmo -path 'plugin/wla-inmo/vendor' -prune -o -type f -name '*.php' -print0
+            find tests -type f -name '*.php' -print0
+          } | xargs -0 -n1 php -l
+
+      - name: WordPress Coding Standards security profile
+        run: plugin/wla-inmo/vendor/bin/phpcs --standard=phpcs.xml.dist
+
+      - name: PHPStan initial domain gate
+        run: plugin/wla-inmo/vendor/bin/phpstan analyse -c phpstan.neon.dist --no-progress
+
+      - name: PHPUnit
+        run: plugin/wla-inmo/vendor/bin/phpunit -c phpunit.xml.dist
+
+      - name: Source smoke tests
+        run: |
+          for test_file in tests/smoke/*.php; do
+            php "$test_file"
+          done
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Release ZIP smoke tests
+        run: bash bin/smoke-plugin.sh "${{ steps.build.outputs.zip_path }}"
+
+      - name: Generate SHA-256
+        run: sha256sum "${{ steps.build.outputs.zip_path }}" | tee dist/wla-inmo-0.1.0-alpha.zip.sha256
+
+      - name: Upload Phase 1 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wla-inmo-0.1.0-alpha-quality
+          path: |
+            dist/wla-inmo-0.1.0-alpha.zip
+            dist/wla-inmo-0.1.0-alpha.zip.sha256
+            plugin/wla-inmo/composer.lock
+          if-no-files-found: error
+
+  wordpress-integration:
+    name: WP ${{ matrix.wordpress }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.6.2'
+            php: '8.1'
+          - wordpress: 'latest'
+            php: '8.3'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: mysqli
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Install WordPress
+        run: |
+          mkdir -p /tmp/wla-wordpress
+          cd /tmp/wla-wordpress
+          wp core download --version="${{ matrix.wordpress }}" --force --quiet --allow-root
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --allow-root
+          ADMIN_PASS="$(openssl rand -hex 16)"
+          wp core install \
+            --url=http://wla.test \
+            --title='WLA Inmo CI' \
+            --admin_user=admin \
+            --admin_password="$ADMIN_PASS" \
+            --admin_email=ci@example.test \
+            --skip-email \
+            --allow-root
+
+      - name: Install and activate release ZIP
+        run: |
+          cd /tmp/wla-wordpress
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
+          wp plugin status wla-inmo --allow-root
+
+      - name: Validate active plugin contracts
+        run: |
+          cd /tmp/wla-wordpress
+          PROPERTY_ID="$(wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-active.php" --allow-root | tail -n 1)"
+          test "$PROPERTY_ID" -gt 0
+          echo "WLA_TEST_PROPERTY_ID=$PROPERTY_ID" >> "$GITHUB_ENV"
+
+      - name: Deactivate and verify preservation
+        run: |
+          cd /tmp/wla-wordpress
+          wp plugin deactivate wla-inmo --allow-root
+          WLA_TEST_PROPERTY_ID="$WLA_TEST_PROPERTY_ID" wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-preserved.php" --allow-root
+
+      - name: Uninstall plugin files and verify preservation
+        run: |
+          cd /tmp/wla-wordpress
+          wp plugin delete wla-inmo --allow-root
+          WLA_TEST_PROPERTY_ID="$WLA_TEST_PROPERTY_ID" wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-preserved.php" --allow-root
