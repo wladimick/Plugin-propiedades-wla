@@ -67,6 +67,18 @@
 	margin-bottom: 10px;
 }
 
+.wla-inmo-admin .table-responsive {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.wla-inmo-admin .table-responsive > table {
+	min-width: 640px;
+}
+
 .post-type-wla_property .wp-list-table .column-wla_thumbnail {
 	width: 74px;
 }
