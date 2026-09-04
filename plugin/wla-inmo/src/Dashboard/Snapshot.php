@@ -110,9 +110,9 @@ final class Snapshot
 		foreach ($rows as $row) {
 			$status = isset($row['post_status']) ? sanitize_key((string) $row['post_status']) : '';
 			$total = (int) ($row['total'] ?? 0);
-			$target = $status === 'publish' ? 'published' : $status;
-			if (array_key_exists($target, $counts)) {
-				$counts[$target] = $total;
+			$key = $status === 'publish' ? 'published' : $status;
+			if (array_key_exists($key, $counts)) {
+				$counts[$key] = $total;
 			}
 			$counts['total'] += $total;
 			$counts['recently_updated'] += (int) ($row['recent'] ?? 0);
