@@ -13,8 +13,10 @@ final class ScreenRegistry
 	/**
 	 * Declarative administration contract.
 	 *
-	 * `page` entries are rendered by WLA Inmo. `link` entries point to native
-	 * WordPress screens that are already protected by their own capabilities.
+	 * `page` entries are rendered by WLA Inmo. `native` entries document
+	 * WordPress-owned screens. Because wla_property uses this menu as its
+	 * `show_in_menu` parent, WordPress adds those native submenus itself; WLA
+	 * Inmo must not register duplicates.
 	 *
 	 * @return array<string, array<string, string>>
 	 */
@@ -28,12 +30,12 @@ final class ScreenRegistry
 				AccessCapabilities::VIEW_DASHBOARD,
 				__('Accesos rápidos y estado operativo de la gestión inmobiliaria.', 'wla-inmo')
 			),
-			'properties' => self::link(
+			'properties' => self::native(
 				'edit.php?post_type=wla_property',
 				__('Propiedades', 'wla-inmo'),
 				PropertyCapabilities::EDIT_POSTS
 			),
-			'new_property' => self::link(
+			'new_property' => self::native(
 				'post-new.php?post_type=wla_property',
 				__('Nueva propiedad', 'wla-inmo'),
 				PropertyCapabilities::EDIT_POSTS
@@ -171,10 +173,10 @@ final class ScreenRegistry
 	/**
 	 * @return array<string, string>
 	 */
-	private static function link(string $slug, string $menuTitle, string $capability): array
+	private static function native(string $slug, string $menuTitle, string $capability): array
 	{
 		return array(
-			'kind'        => 'link',
+			'kind'        => 'native',
 			'slug'        => $slug,
 			'menu_title'  => $menuTitle,
 			'page_title'  => $menuTitle,
