@@ -97,6 +97,18 @@ final class IndexRepository
 		return $result !== false;
 	}
 
+	public function clear(): bool
+	{
+		if ($this->wpdb === null || !method_exists($this->wpdb, 'query')) {
+			return false;
+		}
+
+		$table = IndexSchema::tableName($this->wpdb);
+		$result = $this->wpdb->query("DELETE FROM {$table}");
+
+		return $result !== false;
+	}
+
 	public function exists(int $propertyId): bool
 	{
 		if ($this->wpdb === null || $propertyId < 1 || !method_exists($this->wpdb, 'prepare')) {
@@ -166,13 +178,23 @@ final class IndexRepository
 	{
 		$known = self::formats();
 
+		if (count($row) !== count($known)) {
+			return false;
+		}
+
+		foreach (array_keys($known) as $column) {
+			if (!array_key_exists($column, $row)) {
+				return false;
+			}
+		}
+
 		foreach (array_keys($row) as $column) {
 			if (!isset($known[$column])) {
 				return false;
 			}
 		}
 
-		return array_keys($known) === array_keys($row);
+		return true;
 	}
 
 	/**
