@@ -20,6 +20,22 @@ final class Assets
 			WLA_INMO_VERSION
 		);
 
+		if (self::isHelpContext($hookSuffix)) {
+			wp_enqueue_style(
+				'wla-inmo-help-center',
+				WLA_INMO_URL . 'assets/admin/help-center.css',
+				array('wla-inmo-admin'),
+				WLA_INMO_VERSION
+			);
+			wp_enqueue_script(
+				'wla-inmo-help-center',
+				WLA_INMO_URL . 'assets/admin/help-center.js',
+				array(),
+				WLA_INMO_VERSION,
+				true
+			);
+		}
+
 		if (!PropertyMedia::isPropertyEditorContext($hookSuffix, $screen)) {
 			return;
 		}
@@ -57,5 +73,10 @@ final class Assets
 		return is_object($screen)
 			&& isset($screen->post_type)
 			&& $screen->post_type === PostType::POST_TYPE;
+	}
+
+	public static function isHelpContext(string $hookSuffix): bool
+	{
+		return strpos($hookSuffix, 'wla-inmo-help') !== false;
 	}
 }
