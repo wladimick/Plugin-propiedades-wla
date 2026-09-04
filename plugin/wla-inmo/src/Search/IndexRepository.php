@@ -6,44 +6,80 @@ final class IndexRepository
 {
 	private $wpdb;
 
-	public function __construct($wpdb = null)
+	public function __construct($database = null)
 	{
-		if ($wpdb === null) {
-			global $wpdb as $globalWpdb;
+		if ($database === null) {
+			global $wpdb;
+			$database = $wpdb ?? null;
 		}
 
-		$this->wpdb = $wpdb;
+		$this->wpdb = $database;
 	}
 
 	/**
-	 * Insert or replace one complete projection row.
+	 * Persist one complete projection row without destructive REPLACE semantics.
+	 *
+	 * A duplicate property_code belonging to another property is rejected so a
+	 * malformed import/save can never evict the existing indexed property.
+	 *
+	 * @param array<string, mixed> $row Projection row.
+	 */
+	public function upsert(array $row): bool
+	{
+		if ($this->wpdb === null || !isset($row['property_id'])) {
+			return false;
+		}
+
+		$propertyId = (int) $row['property_id'];
+		if ($propertyId < 1 || !$this->isValidRow($row)) {
+			return false;
+		}
+
+		$propertyCode = $row['property_code'] ?? null;
+		if (is_string($propertyCode) && $propertyCode !== '') {
+			$conflictId = $this->findPropertyIdByCode($propertyCode);
+
+			if ($conflictId !== null && $conflictId !== $propertyId) {
+				if (function_exists('do_action')) {
+					do_action('wla_inmo_index_property_code_conflict', $propertyId, $propertyCode, $conflictId);
+				}
+
+				return false;
+			}
+		}
+
+		$formats = $this->formatsForRow($row);
+		$table = IndexSchema::tableName($this->wpdb);
+
+		$updated = $this->wpdb->update(
+			$table,
+			$row,
+			array('property_id' => $propertyId),
+			$formats,
+			array('%d')
+		);
+
+		if ($updated === false) {
+			return false;
+		}
+
+		if ($updated > 0 || $this->exists($propertyId)) {
+			return true;
+		}
+
+		$inserted = $this->wpdb->insert($table, $row, $formats);
+
+		return $inserted !== false;
+	}
+
+	/**
+	 * Backwards-friendly alias for early internal callers.
 	 *
 	 * @param array<string, mixed> $row Projection row.
 	 */
 	public function replace(array $row): bool
 	{
-		if ($this->wpdb === null) {
-			return false;
-		}
-
-		$formats = self::formats();
-		$rowFormats = array();
-
-		foreach (array_keys($row) as $column) {
-			if (!isset($formats[$column])) {
-				return false;
-			}
-
-			$rowFormats[] = $formats[$column];
-		}
-
-		$result = $this->wpdb->replace(
-			IndexSchema::tableName($this->wpdb),
-			$row,
-			$rowFormats
-		);
-
-		return $result !== false;
+		return $this->upsert($row);
 	}
 
 	public function delete(int $propertyId): bool
@@ -59,6 +95,38 @@ final class IndexRepository
 		);
 
 		return $result !== false;
+	}
+
+	public function exists(int $propertyId): bool
+	{
+		if ($this->wpdb === null || $propertyId < 1 || !method_exists($this->wpdb, 'prepare')) {
+			return false;
+		}
+
+		$table = IndexSchema::tableName($this->wpdb);
+		$sql = $this->wpdb->prepare(
+			"SELECT property_id FROM {$table} WHERE property_id = %d LIMIT 1",
+			$propertyId
+		);
+
+		return (int) $this->wpdb->get_var($sql) === $propertyId;
+	}
+
+	public function findPropertyIdByCode(string $propertyCode): ?int
+	{
+		$propertyCode = trim($propertyCode);
+		if ($this->wpdb === null || $propertyCode === '' || !method_exists($this->wpdb, 'prepare')) {
+			return null;
+		}
+
+		$table = IndexSchema::tableName($this->wpdb);
+		$sql = $this->wpdb->prepare(
+			"SELECT property_id FROM {$table} WHERE property_code = %s LIMIT 1",
+			$propertyCode
+		);
+		$value = $this->wpdb->get_var($sql);
+
+		return $value === null ? null : (int) $value;
 	}
 
 	/**
@@ -89,5 +157,37 @@ final class IndexRepository
 			'featured'       => '%d',
 			'updated_at'     => '%s',
 		);
+	}
+
+	/**
+	 * @param array<string, mixed> $row Projection row.
+	 */
+	private function isValidRow(array $row): bool
+	{
+		$known = self::formats();
+
+		foreach (array_keys($row) as $column) {
+			if (!isset($known[$column])) {
+				return false;
+			}
+		}
+
+		return array_keys($known) === array_keys($row);
+	}
+
+	/**
+	 * @param array<string, mixed> $row Projection row.
+	 * @return array<int, string>
+	 */
+	private function formatsForRow(array $row): array
+	{
+		$known = self::formats();
+		$formats = array();
+
+		foreach (array_keys($row) as $column) {
+			$formats[] = $known[$column];
+		}
+
+		return $formats;
 	}
 }
