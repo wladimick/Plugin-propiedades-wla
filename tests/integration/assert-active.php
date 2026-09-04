@@ -28,6 +28,10 @@ if (!class_exists(WLA\Inmo\Admin\PropertyList::class)) {
 	$fail('Professional property list module is unavailable.');
 }
 
+if (!class_exists(WLA\Inmo\Admin\PropertyEditor::class)) {
+	$fail('Guided property editor module is unavailable.');
+}
+
 foreach (array('wla_operation', 'wla_property_type', 'wla_region', 'wla_commune', 'wla_sector') as $taxonomy) {
 	if (!taxonomy_exists($taxonomy)) {
 		$fail("Missing taxonomy {$taxonomy}.");
@@ -117,6 +121,130 @@ $indexedId = (int) $wpdb->get_var(
 if ($indexedId !== $propertyId) {
 	$fail('Synthetic property was not indexed.');
 }
+
+$adminUser = get_user_by('login', 'admin');
+if (!$adminUser instanceof WP_User) {
+	$fail('Unable to resolve CI administrator for guided editor tests.');
+}
+wp_set_current_user($adminUser->ID);
+
+$guidedId = wp_insert_post(
+	array(
+		'post_type'   => 'wla_property',
+		'post_status' => 'draft',
+		'post_title'  => 'CI Guided Property',
+	),
+	true
+);
+if (is_wp_error($guidedId) || (int) $guidedId < 1) {
+	$fail('Unable to create guided-editor synthetic property.');
+}
+$guidedId = (int) $guidedId;
+
+$operation = term_exists('CI Venta', 'wla_operation');
+if ($operation === null) {
+	$operation = wp_insert_term('CI Venta', 'wla_operation');
+}
+if (is_wp_error($operation)) {
+	$fail('Unable to create synthetic operation term.');
+}
+$operationId = is_array($operation) ? (int) $operation['term_id'] : (int) $operation;
+
+$_POST = array(
+	'wla_inmo_property_editor_nonce' => wp_create_nonce('wla_inmo_save_property_editor'),
+	'wla_inmo_fields' => array(
+		'property_code' => 'GUIDED-' . $guidedId,
+		'status' => 'available',
+		'currency_primary' => 'CLP',
+		'price_clp' => '222000000',
+		'private_address' => 'Dirección privada CI 123',
+		'featured' => '1',
+		'indexable' => '1',
+	),
+	'wla_inmo_taxonomies' => array(
+		'wla_operation' => (string) $operationId,
+	),
+);
+WLA\Inmo\Admin\PropertyEditor::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+
+if (get_post_meta($guidedId, '_wla_inmo_property_code', true) !== 'GUIDED-' . $guidedId) {
+	$fail('Guided editor did not persist canonical property code.');
+}
+if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
+	$fail('Guided editor did not persist canonical CLP price.');
+}
+if (get_post_meta($guidedId, '_wla_inmo_private_address', true) !== 'Dirección privada CI 123') {
+	$fail('Guided editor did not persist private address internally.');
+}
+$operationTerms = wp_get_object_terms($guidedId, 'wla_operation', array('fields' => 'ids'));
+if (!is_array($operationTerms) || !in_array($operationId, array_map('intval', $operationTerms), true)) {
+	$fail('Guided editor did not assign canonical operation taxonomy.');
+}
+
+$duplicateId = wp_insert_post(
+	array(
+		'post_type' => 'wla_property',
+		'post_status' => 'draft',
+		'post_title' => 'CI Duplicate Code Owner',
+	),
+	true
+);
+if (is_wp_error($duplicateId) || (int) $duplicateId < 1) {
+	$fail('Unable to create duplicate-code fixture.');
+}
+$duplicateId = (int) $duplicateId;
+update_post_meta($duplicateId, '_wla_inmo_property_code', 'DUPLICATE-CI');
+
+$_POST = array(
+	'wla_inmo_property_editor_nonce' => wp_create_nonce('wla_inmo_save_property_editor'),
+	'wla_inmo_fields' => array(
+		'property_code' => 'DUPLICATE-CI',
+		'currency_primary' => 'CLP',
+		'price_clp' => '999000000',
+	),
+);
+WLA\Inmo\Admin\PropertyEditor::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+
+if (get_post_meta($guidedId, '_wla_inmo_property_code', true) !== 'GUIDED-' . $guidedId) {
+	$fail('Duplicate code validation allowed a partial property-code write.');
+}
+if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
+	$fail('Duplicate code validation allowed a partial price write.');
+}
+
+$_POST = array(
+	'wla_inmo_property_editor_nonce' => 'invalid-nonce',
+	'wla_inmo_fields' => array('price_clp' => '777000000'),
+);
+WLA\Inmo\Admin\PropertyEditor::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
+	$fail('Invalid nonce was able to mutate guided property fields.');
+}
+
+$subscriberId = wp_create_user('wla-ci-subscriber-' . $guidedId, wp_generate_password(24, true), 'wla-ci-' . $guidedId . '@example.test');
+if (is_wp_error($subscriberId)) {
+	$fail('Unable to create least-privilege CI user.');
+}
+$subscriber = get_user_by('id', (int) $subscriberId);
+if (!$subscriber instanceof WP_User) {
+	$fail('Unable to load least-privilege CI user.');
+}
+$subscriber->set_role('subscriber');
+wp_set_current_user($subscriber->ID);
+
+$_POST = array(
+	'wla_inmo_property_editor_nonce' => wp_create_nonce('wla_inmo_save_property_editor'),
+	'wla_inmo_fields' => array('price_clp' => '888000000'),
+);
+WLA\Inmo\Admin\PropertyEditor::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
+	$fail('User without edit_post capability mutated guided property fields.');
+}
+wp_set_current_user($adminUser->ID);
 
 update_option('wla_inmo_ci_preservation_marker', 'keep-me', false);
 
