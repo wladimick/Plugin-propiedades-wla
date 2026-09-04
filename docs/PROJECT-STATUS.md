@@ -6,10 +6,10 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 
 - Proyecto: WLA Inmo
 - Tema de referencia: WLA Inmo Light
-- Etapa actual: `PHASE-1 / CORE`
+- Etapa actual: `PHASE-1 / CORE — QA_PASSED / MERGE_PENDING`
 - Fase 0: `DONE`
-- Fase 1: `IN_PROGRESS`
-- Código de producto: `0.1.0-alpha.1`
+- Fase 1: `IN_PROGRESS — PR 1.8 MERGE_PENDING`
+- Código de producto: `0.1.0-alpha`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
@@ -19,14 +19,16 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.4: #12 `DONE`
 - PR 1.5: #14 `DONE`
 - PR 1.6: #16 `DONE`
-- Issue activo Fase 1.7: #17
+- PR 1.7: #18 `DONE`
+- Issue activo Fase 1.8: #19
+- PR activa Fase 1.8: #20 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5–#16, Issue #17, `docs/evidence/phase-1/` |
+| 1 | Core del plugin | IN_PROGRESS / MERGE_PENDING | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -59,35 +61,58 @@ Fase 0 se encuentra `DONE`. Arquitectura, requisitos, modelo, stack, metodologí
 `DONE` — PR #14, squash `01560207b4872aa73d58e23f5ee2a58adfa6d0be`, CI SUCCESS.
 
 ### PR 1.6 — Roles y capabilities
-`DONE`
-
-- PR #16 — squash `b09292c3d30972e2a1c097306312c989b84e3f11`.
-- CI run `33824793619`: SUCCESS.
-- Roles/capabilities de mínimo privilegio incorporados.
-- Evidencia: `docs/evidence/phase-1/PR-1.6-ROLES-CAPABILITIES.md`.
+`DONE` — PR #16, squash `b09292c3d30972e2a1c097306312c989b84e3f11`, CI SUCCESS.
 
 ### PR 1.7 — Settings y contratos públicos mínimos
-`IN_PROGRESS / QA PENDING`
+`DONE`
 
-Issue: #17  
-Rama: `feat/phase1-settings-contracts`
+- PR #18 — squash `2f0f215ee4d68501af11a0168b8be31c9a9144be`.
+- CI final `33825238074`: SUCCESS.
+- Settings namespaced, preset Chile desacoplado y contrato de templates para cualquier tema incorporados.
+- Evidencia: `docs/evidence/phase-1/PR-1.7-SETTINGS-CONTRACTS.md`.
 
-Alcance en implementación:
+### PR 1.8 — Quality Gate y release `0.1.0-alpha`
 
-- opción namespaced `wla_inmo_settings`;
-- `Settings\\Schema`, `Repository` y `Registry`;
-- preset Chile encapsulado en `Localization\\ChilePreset`;
-- country/currency/unit/map provider/base de propiedades/branding opcional;
-- autorización con `manage_wla_inmo_settings`;
-- `property_base` configurable sin flush por request;
-- `Frontend\\TemplateResolver` independiente del tema;
-- overrides bajo `wla-inmo/` y fallback de plugin cuando exista;
-- protección contra path traversal;
-- hooks públicos mínimos para defaults/templates;
-- `SETTINGS-CONTRACT.md` y `TEMPLATE-CONTRACT.md`;
-- smoke tests del contrato.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
-No marcar PR 1.7 `DONE` hasta merge + CI verde.
+Issue: #19  
+PR: #20  
+Rama: `ci/phase1-quality-gate`
+
+Quality Gate final:
+
+- Phase 1 CI run `33826185833`: SUCCESS;
+- Quality Gate PHP 8.1: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan 2.2: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- smoke tests: SUCCESS;
+- WordPress 6.6.2 + PHP 8.1: SUCCESS;
+- WordPress latest + PHP 8.3: SUCCESS;
+- desactivación conserva datos: SUCCESS;
+- uninstall conserva datos: SUCCESS;
+- Bootstrap Smoke run `33826185820`: SUCCESS.
+
+Artefacto final QA:
+
+- ID `9920034253`;
+- `wla-inmo-0.1.0-alpha-quality`;
+- artifact digest `sha256:fd4cc13c55f9dec8d8355b1836b429f76345d9f64c62777d3a5c60547e4ccd45`;
+- ZIP instalable SHA-256 `c6189cd0a295fbec807c412e93ffe1c545df1b594e9219a8d18465db02767dde`.
+
+Evidencia: `docs/evidence/phase-1/PR-1.8-QUALITY-GATE.md`.
+
+**No marcar Fase 1 como DONE hasta que PR #20 esté efectivamente mergeada.**
+
+## Findings / deuda no bloqueante conocida
+
+No existen findings críticos/altos abiertos conocidos dentro del alcance de Fase 1.
+
+Deuda de prioridad baja registrada:
+
+- el `composer.lock` exacto de tooling del quality gate queda preservado dentro del artifact final, pero todavía no está versionado en el repositorio; debe evaluarse su incorporación antes de Beta para reforzar reproducibilidad del entorno de desarrollo;
+- PHPStan parte en nivel 6 sobre contratos puros seleccionados y debe ampliar cobertura progresivamente;
+- las advertencias deprecatorias de Node provienen de actions de terceros/GitHub y no del runtime del plugin.
 
 ## Decisiones aceptadas
 
@@ -103,6 +128,7 @@ ADR-001 a ADR-013; detalle D01–D75 en `docs/decisions/DECISION-REGISTER.md`.
 6. Lighthouse ≥95 es budget de referencia; CWV reales requieren datos productivos.
 7. UX preventiva de códigos duplicados se reforzará en Admin/Import.
 8. Cambiar `property_base` requerirá una operación controlada de rewrite en la futura UI.
+9. El lock de tooling debe decidirse/versionarse antes de Beta.
 
 ## Regla de actualización
 
