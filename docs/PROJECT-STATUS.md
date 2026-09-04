@@ -15,8 +15,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
-- PR 2.1–2.7: `DONE`
-- Próximo hito: `PR 2.8 — Actividad / historial administrativo base`
+- PR 2.1–2.8: `DONE`
+- Próximo hito: `PR 2.9 — Dashboard / Resumen operativo`
 
 ## Fases
 
@@ -24,7 +24,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34/#36, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34/#36/#38, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -71,8 +71,8 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 | 2.5 | Calidad del catálogo | #32 | DONE | `PR-2.5-CATALOGUE-QUALITY.md` |
 | 2.6 | Centro de Ayuda y onboarding | #34 | DONE | `PR-2.6-HELP-CENTER.md` |
 | 2.7 | Ajustes UI | #36 | DONE | `PR-2.7-SETTINGS-UI.md` |
-| 2.8 | Actividad / historial base | pendiente | NEXT | pendiente |
-| 2.9 | Dashboard / Resumen operativo | pendiente | PLANNED | pendiente |
+| 2.8 | Actividad / historial base | #38 | DONE | `PR-2.8-ACTIVITY-HISTORY.md` |
+| 2.9 | Dashboard / Resumen operativo | pendiente | NEXT | pendiente |
 | 2.10 | Quality Gate de Administración | pendiente | PLANNED | pendiente |
 
 ### PR 2.1 — Admin shell
@@ -163,14 +163,36 @@ La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevenci�
 - Artifact `9932423348`;
 - ZIP SHA-256 `a04e74b6c19a1a296f9960e5237785be6c3352b042a4b91cb01317137b18e6a9`.
 
+### PR 2.8 — Actividad e historial administrativo
+
+- Issue #37: CLOSED;
+- PR #38: MERGED;
+- squash `6f8de10db3ef03256d8f1bf73c894370fb5ac4b8`;
+- tabla versionada `wla_inmo_activity` con contexto allowlisted;
+- bitácora para creación de propiedad, publicación, precio, estado comercial, destacadas, ajustes y rewrites;
+- pantalla Actividad paginada y filtrable;
+- historial operativo dentro de cada ficha de propiedad;
+- retención configurable de 12 meses por defecto, cron diario y limpieza por lotes de 500;
+- sin payloads completos, IP/user-agent, dirección privada, notas internas ni valores de contacto;
+- Phase 1 CI `33863103340`: SUCCESS;
+- Activity Integration `33863103343`: SUCCESS en WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3;
+- Settings UI Integration `33863103400`: SUCCESS;
+- Catalogue Quality Integration `33863103383`: SUCCESS;
+- Help Center Integration `33863103337`: SUCCESS;
+- Bootstrap Smoke `33863103346`: SUCCESS;
+- Artifact `9932885215`;
+- Artifact digest `sha256:8f0a0e0f8c339ec85ce033904c7c73317b5da32dc9b8c5b767f88688d2a645af`;
+- ZIP SHA-256 `9251c7ae23ed4342a151f2d2ee7ef99697b0e8b6022c6c40389ba6e7838543e8`.
+
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.7.
+No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.8.
 
 Deuda de prioridad baja heredada:
 
 - `composer.lock` de tooling aún no está versionado; resolver antes de Beta;
 - PHPStan debe expandir cobertura progresivamente;
+- la descripción estática de la sección Historial del editor guiado conserva una referencia antigua a que la bitácora llegaría en PR 2.8; la funcionalidad real ya existe mediante `Historial operativo`, por lo que esa copia debe limpiarse en una futura edición segura del editor;
 - warnings Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
 
 ## Riesgos trasladados
