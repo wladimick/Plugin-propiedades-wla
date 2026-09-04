@@ -93,7 +93,6 @@ final class Snapshot
 		$cutoff = gmdate('Y-m-d H:i:s', strtotime('-7 days'));
 		$statuses = self::ACTIVE_STATUSES;
 		$placeholders = implode(',', array_fill(0, count($statuses), '%s'));
-		$args = array_merge(array(PostType::POST_TYPE, $cutoff), $statuses);
 		$sql = $this->wpdb->prepare(
 			"SELECT post_status, COUNT(*) AS total,
 			SUM(CASE WHEN post_modified_gmt >= %s THEN 1 ELSE 0 END) AS recent
@@ -111,15 +110,13 @@ final class Snapshot
 		foreach ($rows as $row) {
 			$status = isset($row['post_status']) ? sanitize_key((string) $row['post_status']) : '';
 			$total = (int) ($row['total'] ?? 0);
-			if (array_key_exists($status, $counts)) {
-				$counts[$status] = $total;
+			$target = $status === 'publish' ? 'published' : $status;
+			if (array_key_exists($target, $counts)) {
+				$counts[$target] = $total;
 			}
 			$counts['total'] += $total;
 			$counts['recently_updated'] += (int) ($row['recent'] ?? 0);
 		}
-
-		$counts['published'] = (int) ($counts['publish'] ?? $counts['published']);
-		unset($counts['publish']);
 
 		return $counts;
 	}
