@@ -51,13 +51,14 @@ final class TargetRegistry
 
 			$validator = self::metaValidator((string) $field, (string) $definition['type']);
 			$definitions['meta.' . $field] = array(
-				'kind'      => 'meta',
-				'field'     => (string) $field,
-				'meta_key'  => (string) $definition['meta_key'],
-				'type'      => (string) $definition['type'],
-				'private'   => empty($definition['public']),
-				'multiple'  => in_array($field, array('video_urls'), true),
-				'validator' => $validator,
+				'kind'              => 'meta',
+				'field'             => (string) $field,
+				'meta_key'          => (string) $definition['meta_key'],
+				'type'              => (string) $definition['type'],
+				'private'           => empty($definition['public']),
+				'multiple'          => in_array($field, array('video_urls'), true),
+				'validator'         => $validator,
+				'sanitize_callback' => $definition['sanitize_callback'],
 			);
 		}
 
