@@ -99,6 +99,50 @@ final class Repository
 		return is_array($row) ? $row : null;
 	}
 
+	/**
+	 * Load one page of quality rows in a single query for the native list table.
+	 *
+	 * @param array<int,int> $propertyIds Property IDs.
+	 * @return array<int,array<string,mixed>> Rows keyed by property ID.
+	 */
+	public function findMany(array $propertyIds): array
+	{
+		if ($this->wpdb === null || !method_exists($this->wpdb, 'prepare')) {
+			return array();
+		}
+
+		$propertyIds = array_values(array_unique(array_filter(array_map('intval', $propertyIds))));
+		if ($propertyIds === array()) {
+			return array();
+		}
+
+		$placeholders = implode(',', array_fill(0, count($propertyIds), '%d'));
+		$table = Schema::tableName($this->wpdb);
+		$sql = $this->wpdb->prepare(
+			"SELECT property_id, score, passed_checks, total_checks, is_complete, has_price, has_image, missing_codes, updated_at FROM {$table} WHERE property_id IN ({$placeholders})",
+			...$propertyIds
+		);
+		$rows = $this->wpdb->get_results($sql, ARRAY_A);
+		$result = array();
+
+		if (!is_array($rows)) {
+			return $result;
+		}
+
+		foreach ($rows as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+
+			$propertyId = (int) ($row['property_id'] ?? 0);
+			if ($propertyId > 0) {
+				$result[$propertyId] = $row;
+			}
+		}
+
+		return $result;
+	}
+
 	/** @return array<string,int> */
 	public function summary(): array
 	{
@@ -186,7 +230,8 @@ LIMIT %d",
 		return count(array_diff(array_keys($row), array_keys($known))) === 0;
 	}
 
-	/** @param array<string,mixed> $row
+	/**
+	 * @param array<string,mixed> $row Row.
 	 * @return array<int,string>
 	 */
 	private function formatsForRow(array $row): array
