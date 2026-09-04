@@ -1,8 +1,9 @@
 # Evidencia — Fase 1 / PR 1.6 Roles y capabilities
 
-Estado documental: `IN_PROGRESS`.
+Estado documental: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #15  
+PR: #16  
 Rama: `feat/phase1-roles-capabilities`
 
 ## Objetivo
@@ -36,21 +37,23 @@ Aplicar mínimo privilegio a WLA Inmo con roles y capabilities específicas, evi
 
 La matriz se instala en activación. En `admin_init` solo se compara `wla_inmo_roles_version`; la reconciliación completa ocurre únicamente si cambia la versión.
 
-## Tests definidos
+## QA automático
 
-`tests/smoke/access-roles.php` verifica:
+Workflow run: `33824793619`  
+Job: `PHP 8.1 / Build Smoke`  
+Resultado: `SUCCESS`
 
-- meta vs primitive capabilities;
-- ausencia de `manage_options` y `edit_posts` genéricos en el contrato WLA;
-- creación de tres roles;
-- capabilities del Administrator;
-- matriz del Administrador inmobiliario;
-- límites del Editor de propiedades;
-- aislamiento del Gestor de leads;
-- upgrade/reconciliación de capabilities obsoletas;
-- idempotencia de instalación.
+Pasaron Composer validation, PHP syntax, todos los source smoke tests, build del ZIP, release smoke, autoload y publicación de artifact.
 
-El smoke de release exige/autoloadea las tres clases de `Access` y rechaza otorgamiento directo de `manage_options` desde ese módulo.
+`tests/smoke/access-roles.php` verifica meta vs primitive capabilities, creación de roles, Administrator, matrices positiva/negativa, ausencia de `manage_options`, reconciliación de permisos WLA obsoletos e idempotencia.
+
+## Artefacto
+
+- Artifact ID: `9919538308`
+- Nombre: `wla-inmo-0.1.0-alpha.1`
+- Tamaño: `32723` bytes
+- Digest: `sha256:0c8f93479af7a5108ad089af51f921298aa0b4bc0f7ecde1ea410ebddb19c572`
+- Expira: 2026-12-03
 
 ## Documentación
 
@@ -62,4 +65,4 @@ No afectada. Los roles existen únicamente en el código de desarrollo hasta que
 
 ## Cierre
 
-Completar con PR, workflow, artifact, digest y squash merge después del QA.
+QA requerido para merge aprobado. Después del squash merge, PR #16 será la evidencia canónica y el siguiente alcance será PR 1.7 — settings y contratos públicos mínimos.
