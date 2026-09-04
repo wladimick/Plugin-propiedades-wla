@@ -53,8 +53,8 @@ final class MappingProfileCodec
 			throw new MappingException('invalid_profile_snapshot', 'Mapping profile snapshot has invalid field types.');
 		}
 
-		$normalizedMapping = self::stringMap($mapping, 'mapping');
-		$normalizedSeparators = self::stringMap($separators, 'separators');
+		$normalizedMapping = self::stringMap($mapping);
+		$normalizedSeparators = self::stringMap($separators);
 
 		return new MappingProfile(
 			$sourceKey,
@@ -70,12 +70,12 @@ final class MappingProfileCodec
 	 * @param array<mixed> $values Raw decoded object.
 	 * @return array<string,string>
 	 */
-	private static function stringMap(array $values, string $field): array
+	private static function stringMap(array $values): array
 	{
 		$normalized = array();
 		foreach ($values as $key => $value) {
 			if (!is_string($key) || !is_string($value)) {
-				throw new MappingException('invalid_profile_snapshot', 'Mapping profile ' . $field . ' must contain string pairs.');
+				throw new MappingException('invalid_profile_snapshot', 'Mapping profile maps must contain string pairs.');
 			}
 
 			$normalized[$key] = $value;
