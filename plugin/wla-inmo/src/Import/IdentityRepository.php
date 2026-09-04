@@ -4,9 +4,9 @@ namespace WLA\Inmo\Import;
 
 final class IdentityRepository
 {
-	private $wpdb;
+	private mixed $wpdb;
 
-	public function __construct($database = null)
+	public function __construct(mixed $database = null)
 	{
 		if ($database === null) {
 			global $wpdb;
@@ -86,7 +86,7 @@ final class IdentityRepository
 
 	public function exists(int $propertyId): bool
 	{
-		if ($this->wpdb === null || $propertyId < 1 || !method_exists($this->wpdb, 'prepare')) {
+		if ($this->wpdb === null || $propertyId < 1) {
 			return false;
 		}
 
@@ -99,7 +99,7 @@ final class IdentityRepository
 	public function findPropertyIdByCode(string $propertyCode): ?int
 	{
 		$propertyCode = trim($propertyCode);
-		if ($this->wpdb === null || $propertyCode === '' || !method_exists($this->wpdb, 'prepare')) {
+		if ($this->wpdb === null || $propertyCode === '') {
 			return null;
 		}
 
@@ -114,12 +114,7 @@ final class IdentityRepository
 	{
 		$sourceKey = SourceKey::normalize($sourceKey);
 		$externalId = trim($externalId);
-		if (
-			$this->wpdb === null
-			|| !SourceKey::isValid($sourceKey)
-			|| $externalId === ''
-			|| !method_exists($this->wpdb, 'prepare')
-		) {
+		if ($this->wpdb === null || !SourceKey::isValid($sourceKey) || $externalId === '') {
 			return null;
 		}
 
