@@ -5,6 +5,7 @@ on:
     paths:
       - 'plugin/wla-inmo/**'
       - 'tests/e2e/**'
+      - 'tests/integration/assert-admin-security.php'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.mjs'
@@ -105,6 +106,11 @@ jobs:
             --role=wla_property_editor \
             --user_pass="$EDITOR_PASS" \
             --allow-root
+
+      - name: Validate roles, nonce and object authorization
+        run: |
+          cd /tmp/wla-admin-e2e
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-admin-security.php" --allow-root
 
       - name: Start WordPress server
         run: |
