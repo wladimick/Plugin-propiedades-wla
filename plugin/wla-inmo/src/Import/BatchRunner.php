@@ -73,19 +73,24 @@ final class BatchRunner
 		$status = (string) $batch['status'];
 		$revision = (int) $batch['revision'];
 		$cursor = (int) $batch['cursor_row'];
+		$cursorOffset = (int) ($batch['cursor_offset'] ?? 0);
+		$processedTotal = (int) $batch['processed_rows'];
 		$totalRows = (int) $batch['total_rows'];
 
 		if ($status !== BatchStatus::PROCESSING) {
 			return new BatchRunResult($batchUuid, BatchRunResult::STATUS_FAILED, 0, $cursor, $revision, 'invalid_batch_status');
 		}
 
-		if ($cursor < 0 || $totalRows < 0 || $cursor > $totalRows) {
+		if (
+			$cursor < 0
+			|| $cursorOffset < 0
+			|| $processedTotal !== $cursor
+			|| $totalRows < 0
+			|| $cursor > $totalRows
+			|| ($cursor === 0 && $cursorOffset !== 0)
+			|| ($cursor > 0 && $cursorOffset === 0)
+		) {
 			return $this->failProcessing($batchUuid, $revision, 0, $cursor, 'invalid_batch_progress');
-		}
-
-		$sourceCheck = $this->validateSource($sourcePath, (string) $batch['source_hash']);
-		if ($sourceCheck !== null) {
-			return $this->failProcessing($batchUuid, $revision, 0, $cursor, $sourceCheck);
 		}
 
 		try {
@@ -101,19 +106,19 @@ final class BatchRunner
 		$this->emit('wla_inmo_import_batch_run_started', $batchUuid, $cursor, $revision);
 
 		$processedThisRun = 0;
-		$position = 0;
 		$startedAt = ($this->clock)();
 		$reader = $this->reader ?? new CsvReader(max(10000, $totalRows + 1));
 
 		try {
-			foreach ($reader->rows($sourcePath) as $row) {
-				++$position;
+			$rows = $reader->verifiedRows(
+				$sourcePath,
+				(string) $batch['source_hash'],
+				$cursorOffset,
+				$cursor
+			);
 
-				if ($position <= $cursor) {
-					continue;
-				}
-
-				if ($position > $totalRows) {
+			foreach ($rows as $row) {
+				if ($cursor >= $totalRows) {
 					return $this->failProcessing(
 						$batchUuid,
 						$revision,
@@ -165,7 +170,19 @@ final class BatchRunner
 					);
 				}
 
-				if (!$this->checkpoint->confirm($batchUuid, $revision, $execution)) {
+				$nextOffset = (int) ($row['next_offset'] ?? -1);
+				if ($nextOffset <= $cursorOffset) {
+					return $this->failProcessing(
+						$batchUuid,
+						$revision,
+						$processedThisRun,
+						$cursor,
+						'invalid_source_offset',
+						$execution->rowNumber()
+					);
+				}
+
+				if (!$this->checkpoint->confirm($batchUuid, $revision, $execution, $nextOffset)) {
 					return new BatchRunResult(
 						$batchUuid,
 						BatchRunResult::STATUS_CONFLICT,
@@ -179,23 +196,27 @@ final class BatchRunner
 
 				++$revision;
 				++$cursor;
+				$cursorOffset = $nextOffset;
 				++$processedThisRun;
 			}
 		} catch (CsvException $exception) {
+			$reason = self::sourceFailureReason($exception->reason());
+			$rowCodes = $reason === 'source_parse_failed' ? array($exception->reason()) : array();
+
 			return $this->failProcessing(
 				$batchUuid,
 				$revision,
 				$processedThisRun,
 				$cursor,
-				'source_parse_failed',
+				$reason,
 				$exception->rowNumber(),
-				array($exception->reason())
+				$rowCodes
 			);
 		} catch (Throwable) {
 			return $this->failProcessing($batchUuid, $revision, $processedThisRun, $cursor, 'unexpected_runner_failure');
 		}
 
-		if ($position !== $totalRows || $cursor !== $totalRows) {
+		if ($cursor !== $totalRows) {
 			return $this->failProcessing($batchUuid, $revision, $processedThisRun, $cursor, 'source_row_count_mismatch');
 		}
 
@@ -246,11 +267,16 @@ final class BatchRunner
 	}
 
 	/**
-	 * @param array{row_number:int,data:array<string,mixed>} $row Source row.
+	 * @param array{row_number:int,data:array<string,mixed>,next_offset?:int} $row Source row.
 	 */
 	private function prepareRow(MappingProfile $profile, array $row): ?DryRunResult
 	{
-		$single = array(1 => $row);
+		$single = array(
+			1 => array(
+				'row_number' => (int) $row['row_number'],
+				'data' => $row['data'],
+			),
+		);
 		$factory = static fn (): iterable => $single;
 		$engine = new DryRunEngine($profile, $this->identityResolver, $this->taxonomyLookup);
 		$results = iterator_to_array($engine->results($factory), false);
@@ -258,23 +284,21 @@ final class BatchRunner
 		return count($results) === 1 ? $results[0] : null;
 	}
 
-	private function validateSource(string $path, string $expectedHash): ?string
+	private static function sourceFailureReason(string $csvReason): string
 	{
-		if ($path === '' || !is_file($path) || !is_readable($path)) {
-			return 'source_unreadable';
-		}
+		$direct = array(
+			'source_unreadable',
+			'source_lock_failed',
+			'source_hash_failed',
+			'source_hash_mismatch',
+			'source_changed_during_validation',
+			'invalid_resume_cursor',
+			'resume_offset_missing',
+			'invalid_resume_offset',
+			'source_offset_failed',
+		);
 
-		$actualHash = hash_file('sha256', $path);
-		if (!is_string($actualHash) || preg_match('/^[a-f0-9]{64}$/', $actualHash) !== 1) {
-			return 'source_hash_failed';
-		}
-
-		$expectedHash = strtolower(trim($expectedHash));
-		if (preg_match('/^[a-f0-9]{64}$/', $expectedHash) !== 1 || !hash_equals($expectedHash, $actualHash)) {
-			return 'source_hash_mismatch';
-		}
-
-		return null;
+		return in_array($csvReason, $direct, true) ? $csvReason : 'source_parse_failed';
 	}
 
 	/**
