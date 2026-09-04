@@ -87,6 +87,20 @@ function taxonomy_exists(string $taxonomy): bool
 	return true;
 }
 
+function sanitize_title(string $title): string
+{
+	return strtolower(trim($title));
+}
+
+/**
+ * @param array<string,mixed> $args
+ * @return mixed
+ */
+function get_terms(array $args = array())
+{
+	return array();
+}
+
 /** @return mixed */
 function term_exists(int|string $term, string $taxonomy = '', ?int $parent_term = null)
 {
