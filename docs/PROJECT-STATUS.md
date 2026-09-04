@@ -24,7 +24,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.8: #20 `DONE`
 - PR 2.1: #24 `DONE`
 - Issue activo Fase 2.2: #25
-- Rama activa Fase 2.2: `feat/phase2-property-list`
+- PR activa Fase 2.2: #26 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
@@ -32,7 +32,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24, Issue #25, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -92,34 +92,52 @@ Estado: `DONE`.
 
 ### PR 2.2 — Listado profesional de Propiedades
 
-Estado: `IN_PROGRESS / QA PENDING`.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #25  
+PR: #26  
 Rama: `feat/phase2-property-list`
 
-Alcance implementado en la rama:
+Implementado:
 
 - columnas profesionales: foto, título, código, operación, tipo, ubicación, precio, estado, destacada y actualización;
-- precio administrativo basado en campos canónicos, respetando `hide_price`, `price_on_request` y `currency_primary`;
+- precio administrativo basado únicamente en campos canónicos, respetando `hide_price`, `price_on_request` y `currency_primary`;
 - filtros por operación, tipo, región, comuna, sector, estado y destacada;
 - búsqueda ampliada por código y `external_id`, sin renderizar `external_id` en la tabla;
 - filtros y orden por código apoyados en `wp_wla_property_index`;
-- `LEFT JOIN` limitado al listado administrativo de `wla_property` y solo cuando hace falta;
+- `LEFT JOIN` limitado al main query administrativo de `wla_property` y solo cuando hace falta;
 - paginación nativa de WordPress preservada;
-- índice SQL actualizado a versión 2 con claves específicas para región, sector y estado/destacada;
+- DB schema version 2 con índices específicos para región, sector y estado/destacada;
 - estilos responsivos y miniaturas sin cargar galerías completas;
 - smoke test `tests/smoke/property-list.php`;
-- integración WordPress extendida para validar upgrade del índice y presentación canónica;
+- integración WordPress real del upgrade de índice y presentación canónica;
 - release smoke actualizado para exigir `Admin\\PropertyList` dentro del ZIP.
 
-Pendiente para cerrar PR 2.2:
+QA final sobre head `9baffcbcb54af6ac32a50fe037b042a73a9bab2f`:
 
-- abrir PR;
-- ejecutar CI completo;
-- corregir cualquier finding;
-- registrar artifact/digest final;
-- squash merge;
-- actualizar evidencia a `DONE`.
+- CI run `33829256386`: SUCCESS;
+- Quality Gate PHP 8.1: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan 2.2: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- smoke tests: SUCCESS;
+- WordPress 6.6.2 + PHP 8.1: SUCCESS;
+- WordPress latest + PHP 8.3: SUCCESS;
+- Bootstrap Smoke `33829256549`: SUCCESS;
+- Artifact `9921060323`;
+- Artifact digest `sha256:37bf4b613fd59c221126307f0147cc2241f476d3dfa4fe76301abc9d2f54dcae`;
+- ZIP SHA-256 `660253f9ddb801ca64471066234f7db05fdbec2c6fd6674a9f34edfd4af611bb`.
+
+Findings corregidos:
+
+- WPCS no seguía la sanitización/whitelist de dos filtros GET a través de variables intermedias; se conservaron los controles reales y se documentaron únicamente esas dos lecturas mediante excepciones lineales;
+- la aserción de precio CLP de integración se hizo independiente del locale del WordPress de CI sin cambiar el render productivo.
+
+El índice derivado mantiene la regla de Fase 1 y contiene solo propiedades publicadas. No se debilita ese contrato para permitir búsqueda de borradores.
+
+Evidencia: `docs/evidence/phase-2/PR-2.2-PROPERTY-LIST.md`.
+
+**No marcar PR 2.2 como DONE hasta que PR #26 esté efectivamente squash-mergeada.**
 
 ### Orden restante previsto
 
@@ -136,11 +154,11 @@ La implementación debe reutilizar capabilities, validators, settings e índice 
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1, PR 2.1 ni PR 2.2 en estado QA.
 
 Deuda de prioridad baja heredada:
 
-- el `composer.lock` exacto del quality gate quedó archivado dentro del artifact, pero no está versionado en el repositorio; decidir/incorporar antes de Beta;
+- el `composer.lock` exacto del quality gate queda archivado dentro de cada artifact, pero aún no está versionado en el repositorio; decidir/incorporar antes de Beta;
 - PHPStan nivel 6 cubre inicialmente contratos puros seleccionados y debe expandirse progresivamente;
 - warnings deprecatorios Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
 
@@ -155,6 +173,7 @@ Deuda de prioridad baja heredada:
 7. UX preventiva de códigos duplicados se refuerza desde Fase 2 y Fase 3.
 8. Cambiar `property_base` requerirá una operación controlada de rewrite en la UI.
 9. Lock de tooling debe resolverse antes de Beta.
+10. Si el administrador necesita búsqueda indexada de borradores, debe diseñarse un índice administrativo separado; no reutilizar el índice público.
 
 ## Producción
 
