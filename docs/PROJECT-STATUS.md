@@ -18,14 +18,15 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.2: #8 `DONE`
 - PR 1.3: #10 `DONE`
 - PR 1.4: #12 `DONE`
-- Issue activo Fase 1.5: #13
+- PR 1.5: #14 `DONE`
+- Issue activo Fase 1.6: #15
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, #8, #10, #12, Issue #13, `docs/evidence/phase-1/` |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5/#8/#10/#12/#14, Issue #15, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -76,86 +77,54 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 ## Progreso de Fase 1
 
 ### PR 1.1 — Bootstrap y build
-
-Estado: `DONE`
-
-- PR #5 — squash merge `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`.
-- CI: SUCCESS.
-- Evidencia: `docs/evidence/phase-1/PR-1.1-BOOTSTRAP.md`.
+Estado: `DONE` — PR #5, squash `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`, CI SUCCESS.
 
 ### PR 1.2 — Entidad Property
-
-Estado: `DONE`
-
-- PR #8 — squash merge `da989ef50a9d066023ae2c00d776d05af3d3499c`.
-- CI run `33818077411`: SUCCESS.
-- Evidencia: `docs/evidence/phase-1/PR-1.2-PROPERTY-ENTITY.md`.
+Estado: `DONE` — PR #8, squash `da989ef50a9d066023ae2c00d776d05af3d3499c`, CI SUCCESS.
 
 ### PR 1.3 — Taxonomías base
-
-Estado: `DONE`
-
-- PR #10 — squash merge `61954bfbab9827b6d07d6b6151b9095677951dee`.
-- CI run `33818338049`: SUCCESS.
-- Evidencia: `docs/evidence/phase-1/PR-1.3-TAXONOMIES.md`.
+Estado: `DONE` — PR #10, squash `61954bfbab9827b6d07d6b6151b9095677951dee`, CI SUCCESS.
 
 ### PR 1.4 — Meta schema canónico y validación
-
-Estado: `DONE`
-
-- PR #12 — squash merge `344a681653970c3c9a3237c15aef99fbb281bb4b`.
-- CI run `33818911232`: SUCCESS.
-- 37 campos canónicos, sanitización, validación y separación public/private.
-- Evidencia: `docs/evidence/phase-1/PR-1.4-META-SCHEMA.md`.
+Estado: `DONE` — PR #12, squash `344a681653970c3c9a3237c15aef99fbb281bb4b`, CI SUCCESS.
 
 ### PR 1.5 — Índice de búsqueda y sincronización
+Estado: `DONE`
 
+- PR #14 — squash `01560207b4872aa73d58e23f5ee2a58adfa6d0be`.
+- CI final run `33824375224`: SUCCESS.
+- Índice reconstruible, sincronización incremental y rebuild por lotes incorporados.
+- Evidencia: `docs/evidence/phase-1/PR-1.5-PROPERTY-INDEX.md`.
+
+### PR 1.6 — Roles y capabilities
 Estado: `IN_PROGRESS / QA PENDING`
 
-Issue: #13  
-Rama: `feat/phase1-property-index`
+Issue: #15  
+Rama: `feat/phase1-roles-capabilities`
 
 Alcance en implementación:
 
-- tabla versionada `wp_wla_property_index`;
-- `Core\\Installer` con `dbDelta` solo en activación/upgrade de esquema;
-- `Search\\IndexSchema`;
-- `Search\\Projection` desde post + meta canónico + taxonomías;
-- `Search\\IndexRepository` con upsert no destructivo;
-- rechazo de conflictos de `property_code` sin expulsar la fila existente;
-- `Search\\Indexer` incremental con consolidación de cambios al final del request;
-- eliminación del índice al despublicar/borrar;
-- `Search\\Rebuilder` por lotes reanudables;
-- smoke tests de schema, proyección, repository, hooks y rebuild;
-- ninguna edición directa de la tabla desde UI/API.
+- capabilities de módulos sin `manage_options` genérico;
+- separación de meta capabilities y primitivas del CPT;
+- roles `wla_inmo_manager`, `wla_property_editor`, `wla_lead_manager`;
+- matriz de mínimo privilegio;
+- Administrator recibe todas las capabilities WLA de forma aditiva;
+- reconciliación versionada/idempotente;
+- Editor puede administrar sus propiedades y multimedia, pero no imports/leads/SEO/settings/tools;
+- Gestor de leads no recibe edición de propiedades;
+- Administrador inmobiliario no recibe herramientas técnicas reservadas por defecto;
+- smoke tests de permisos y reconciliación;
+- documentación `ACCESS-CONTROL.md`.
 
-No marcar PR 1.5 como `DONE` hasta que su PR esté mergeada y CI esté verde.
+No marcar PR 1.6 como `DONE` hasta que su PR esté mergeada y CI esté verde.
 
 ## Decisiones aceptadas
 
-Los ADR aceptados son:
-
-- ADR-001 Plataforma, compatibilidad y dependencias.
-- ADR-002 Property, fuente de verdad, índice, taxonomías y precios.
-- ADR-003 Ubicación, mapas y multimedia.
-- ADR-004 Contrato plugin/tema y frontend.
-- ADR-005 Administración, revisiones e historial.
-- ADR-006 Importación, XLSX, jobs y rollback.
-- ADR-007 REST API, hooks y extensibilidad.
-- ADR-008 Leads, email e indicadores.
-- ADR-009 SEO, GEO, AEO y Schema.
-- ADR-010 Roles, seguridad operativa, datos, telemetría e internacionalización.
-- ADR-011 Accesibilidad, performance, testing, PR y releases.
-- ADR-012 Secrets, ayuda y diagnóstico.
-- ADR-013 WLA Inmo Light y compatibilidad con temas.
-
-El detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
+Los ADR aceptados son ADR-001 a ADR-013; el detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
 
 ## Entrada a Fase 1
 
-**Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`.
-
-La implementación continúa sobre un core nativo y no está migrando el sitio productivo.
+**Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`. La implementación continúa sobre un core nativo y no está migrando el sitio productivo.
 
 ## Riesgos trasladados a implementación
 
@@ -165,13 +134,11 @@ La implementación continúa sobre un core nativo y no está migrando el sitio p
 4. Adaptadores concretos para plugins SEO se implementarán y probarán en Fase 6.
 5. Compatibilidad Multisite se valida progresivamente y no bloquea v0.1.
 6. Lighthouse ≥95 es budget de referencia; CWV reales requerirán RUM/datos productivos.
-7. La unicidad de `property_code` en el índice protege la proyección; la UX preventiva de duplicados se reforzará en Administración/Importador.
+7. La UX preventiva de códigos duplicados se reforzará en Administración/Importador.
 
 ## Regla de actualización
 
-Cuando un ítem pase a `DONE` debe existir una PR, test, evidencia o documento que lo sustente. No marcar tareas como completas solo porque fueron conversadas.
-
-Una decisión `accepted` no se modifica silenciosamente: requiere nuevo ADR/PR con impacto y motivo.
+Cuando un ítem pase a `DONE` debe existir una PR, test, evidencia o documento que lo sustente. Una decisión `accepted` no se modifica silenciosamente: requiere nuevo ADR/PR con impacto y motivo.
 
 ## Auditoría
 

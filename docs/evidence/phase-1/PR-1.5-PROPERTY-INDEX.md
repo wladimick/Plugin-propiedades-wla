@@ -1,10 +1,11 @@
 # Evidencia — Fase 1 / PR 1.5 Índice de búsqueda
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
 Issue: #13  
 PR: #14  
-Rama: `feat/phase1-property-index`
+Rama: `feat/phase1-property-index`  
+Squash merge: `01560207b4872aa73d58e23f5ee2a58adfa6d0be`
 
 ## Objetivo
 
@@ -43,9 +44,7 @@ Resultado: `SUCCESS`
 
 Pasaron Composer validation, PHP syntax, todos los smoke tests, build ZIP, release smoke, Composer autoload y publicación del artifact.
 
-`tests/smoke/search-index.php` cubre schema, proyección, drafts, normalización, upsert, conflictos de código, delete/reset, hooks, `deleted_post_meta`, despublicación y rebuild reanudable.
-
-## Artefacto final de la PR
+## Artefacto final
 
 - Artifact ID: `9919396460`
 - Nombre: `wla-inmo-0.1.0-alpha.1`
@@ -59,4 +58,4 @@ No afectada. No se ejecutó instalación ni migración sobre Propiedades Martín
 
 ## Cierre
 
-QA requerido para merge aprobado. Después del squash merge, PR #14 será la evidencia canónica y el siguiente alcance será PR 1.6 — roles y capabilities.
+PR #14 fue integrada mediante squash merge con CI verde. La tabla continúa siendo una proyección reconstruible y no una fuente de verdad.
