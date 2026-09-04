@@ -17,14 +17,15 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.1: #5 `DONE`
 - PR 1.2: #8 `DONE`
 - PR 1.3: #10 `DONE`
-- Issue activo Fase 1.4: #11
+- PR 1.4: #12 `DONE`
+- Issue activo Fase 1.5: #13
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, PR #8, PR #10, Issue #11, `docs/evidence/phase-1/` |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5, #8, #10, #12, Issue #13, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -88,7 +89,6 @@ Estado: `DONE`
 
 - PR #8 — squash merge `da989ef50a9d066023ae2c00d776d05af3d3499c`.
 - CI run `33818077411`: SUCCESS.
-- CPT `wla_property` y capabilities base incorporadas.
 - Evidencia: `docs/evidence/phase-1/PR-1.2-PROPERTY-ENTITY.md`.
 
 ### PR 1.3 — Taxonomías base
@@ -97,30 +97,39 @@ Estado: `DONE`
 
 - PR #10 — squash merge `61954bfbab9827b6d07d6b6151b9095677951dee`.
 - CI run `33818338049`: SUCCESS.
-- Cinco taxonomías inmobiliarias base y capabilities de términos incorporadas.
 - Evidencia: `docs/evidence/phase-1/PR-1.3-TAXONOMIES.md`.
 
 ### PR 1.4 — Meta schema canónico y validación
 
+Estado: `DONE`
+
+- PR #12 — squash merge `344a681653970c3c9a3237c15aef99fbb281bb4b`.
+- CI run `33818911232`: SUCCESS.
+- 37 campos canónicos, sanitización, validación y separación public/private.
+- Evidencia: `docs/evidence/phase-1/PR-1.4-META-SCHEMA.md`.
+
+### PR 1.5 — Índice de búsqueda y sincronización
+
 Estado: `IN_PROGRESS / QA PENDING`
 
-Issue: #11  
-Rama: `feat/phase1-meta-schema`
+Issue: #13  
+Rama: `feat/phase1-property-index`
 
-Alcance:
+Alcance en implementación:
 
-- `Properties\\MetaSchema`;
-- meta keys protegidos `_wla_inmo_*`;
-- `Properties\\Sanitizer`;
-- `Properties\\Validator`;
-- separación de campos públicos/internos;
-- datos geográficos/monetarios/multimedia normalizados;
-- raw postmeta no expuesto por REST;
-- smoke tests del contrato.
+- tabla versionada `wp_wla_property_index`;
+- `Core\\Installer` con `dbDelta` solo en activación/upgrade de esquema;
+- `Search\\IndexSchema`;
+- `Search\\Projection` desde post + meta canónico + taxonomías;
+- `Search\\IndexRepository` con upsert no destructivo;
+- rechazo de conflictos de `property_code` sin expulsar la fila existente;
+- `Search\\Indexer` incremental con consolidación de cambios al final del request;
+- eliminación del índice al despublicar/borrar;
+- `Search\\Rebuilder` por lotes reanudables;
+- smoke tests de schema, proyección, repository, hooks y rebuild;
+- ninguna edición directa de la tabla desde UI/API.
 
-Regla de diseño: operación, tipo, región, comuna y sector continúan exclusivamente como taxonomías y no se duplican en postmeta.
-
-No marcar PR 1.4 como `DONE` hasta que su PR esté mergeada y CI esté verde.
+No marcar PR 1.5 como `DONE` hasta que su PR esté mergeada y CI esté verde.
 
 ## Decisiones aceptadas
 
@@ -150,14 +159,13 @@ La implementación continúa sobre un core nativo y no está migrando el sitio p
 
 ## Riesgos trasladados a implementación
 
-No bloquean el cierre de Fase 0, pero deben validarse con evidencia en sus fases correspondientes:
-
 1. Índices SQL exactos se ajustarán con benchmarks reales; no sobreindexar anticipadamente.
 2. PhpSpreadsheet debe medirse en tamaño/memoria antes de 1.0.
 3. Proveedor de tiles/geocoding de OpenStreetMap debe definirse para instalaciones de tráfico relevante.
 4. Adaptadores concretos para plugins SEO se implementarán y probarán en Fase 6.
 5. Compatibilidad Multisite se valida progresivamente y no bloquea v0.1.
 6. Lighthouse ≥95 es budget de referencia; CWV reales requerirán RUM/datos productivos.
+7. La unicidad de `property_code` en el índice protege la proyección; la UX preventiva de duplicados se reforzará en Administración/Importador.
 
 ## Regla de actualización
 
