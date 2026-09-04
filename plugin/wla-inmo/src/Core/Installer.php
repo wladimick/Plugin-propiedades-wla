@@ -19,7 +19,7 @@ final class Installer
 		}
 
 		dbDelta(IndexSchema::sql($wpdb));
-		update_option(IndexSchema::DB_VERSION_OPTION, IndexSchema::DB_VERSION, true);
+		update_option(IndexSchema::DB_VERSION_OPTION, IndexSchema::DB_VERSION, false);
 	}
 
 	/**
