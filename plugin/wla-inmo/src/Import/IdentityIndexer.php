@@ -7,6 +7,9 @@ use WLA\Inmo\Properties\PostType;
 
 final class IdentityIndexer
 {
+	/** @var array<int,bool> */
+	private static array $dirtyPostIds = array();
+
 	public static function register(): void
 	{
 		add_action('save_post_' . PostType::POST_TYPE, array(self::class, 'sync'), 40, 3);
@@ -17,6 +20,7 @@ final class IdentityIndexer
 		add_action('deleted_post', array(self::class, 'delete'), 10, 2);
 		add_action('wp_trash_post', array(self::class, 'trash'), 10, 1);
 		add_action('untrash_post', array(self::class, 'untrash'), 10, 1);
+		add_action('shutdown', array(self::class, 'flushDirty'), 20);
 	}
 
 	public static function sync(int $postId, mixed $post = null, bool $update = false): void
@@ -26,6 +30,8 @@ final class IdentityIndexer
 		if ($postId < 1 || wp_is_post_revision($postId)) {
 			return;
 		}
+
+		unset(self::$dirtyPostIds[$postId]);
 
 		$repository = new IdentityRepository();
 		$projection = IdentityProjection::fromProperty($postId);
@@ -41,8 +47,9 @@ final class IdentityIndexer
 	}
 
 	/**
-	 * Keep the identity projection correct when integrations write metadata
-	 * directly without invoking a post save lifecycle.
+	 * Direct meta integrations may update source key, external ID and code in
+	 * several consecutive calls. Mark the property dirty and rebuild once after
+	 * the write sequence so no transient identity pair becomes queryable.
 	 */
 	public static function metaChanged(mixed $metaId, int $postId, string $metaKey, mixed $metaValue): void
 	{
@@ -56,7 +63,17 @@ final class IdentityIndexer
 			return;
 		}
 
-		self::sync($postId);
+		self::$dirtyPostIds[$postId] = true;
+	}
+
+	public static function flushDirty(): void
+	{
+		$postIds = array_keys(self::$dirtyPostIds);
+		self::$dirtyPostIds = array();
+
+		foreach ($postIds as $postId) {
+			self::sync((int) $postId);
+		}
 	}
 
 	public static function delete(int $postId, mixed $post = null): void
@@ -65,6 +82,7 @@ final class IdentityIndexer
 			return;
 		}
 
+		unset(self::$dirtyPostIds[$postId]);
 		(new IdentityRepository())->delete($postId);
 	}
 
@@ -74,6 +92,7 @@ final class IdentityIndexer
 			return;
 		}
 
+		unset(self::$dirtyPostIds[$postId]);
 		(new IdentityRepository())->delete($postId);
 	}
 
