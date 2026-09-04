@@ -113,6 +113,18 @@ final class ImportFoundationTest extends TestCase
 		self::assertSame('Casa en Curicó', $rows[1]['data']['nota']);
 	}
 
+	public function testCsvReaderSkipsLeadingBlankLinesAndNormalizesUppercaseSpanishHeaders(): void
+	{
+		$path = $this->temporaryFile("\n\nCÓDIGO;Ñandú;Precio\nCOD-1;Sí;100\n");
+		$rows = iterator_to_array((new CsvReader())->rows($path), false);
+
+		self::assertCount(1, $rows);
+		self::assertSame(4, $rows[0]['row_number']);
+		self::assertSame('COD-1', $rows[0]['data']['codigo']);
+		self::assertSame('Sí', $rows[0]['data']['nandu']);
+		self::assertSame('100', $rows[0]['data']['precio']);
+	}
+
 	public function testCsvReaderSupportsTabAndPadsMissingTrailingCells(): void
 	{
 		$path = $this->temporaryFile("codigo\tprecio\tcomuna\nA-1\t100\tCuricó\nA-2\t200\n");
