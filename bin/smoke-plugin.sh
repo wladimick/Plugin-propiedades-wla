@@ -43,10 +43,12 @@ required_files=(
 	"src/Activity/Recorder.php"
 	"src/Activity/Observer.php"
 	"src/Activity/Retention.php"
+	"src/Dashboard/Snapshot.php"
 	"src/Admin/Bootstrap.php"
 	"src/Admin/ScreenRegistry.php"
 	"src/Admin/Menu.php"
 	"src/Admin/PageRenderer.php"
+	"src/Admin/DashboardPage.php"
 	"src/Admin/Assets.php"
 	"src/Admin/ContextHelp.php"
 	"src/Admin/HelpCenter.php"
@@ -60,6 +62,7 @@ required_files=(
 	"src/Admin/PropertyMedia.php"
 	"src/Admin/QualityPage.php"
 	"assets/admin/admin.css"
+	"assets/admin/dashboard.css"
 	"assets/admin/help-center.css"
 	"assets/admin/help-center.js"
 	"assets/admin/settings.css"
@@ -102,7 +105,7 @@ while IFS= read -r -d '' php_file; do
 	php -l "$php_file" >/dev/null
 done < <(find "$PLUGIN_DIR" -type f -name '*.php' -print0)
 
-php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Activity\\Schema','WLA\\Inmo\\Activity\\EventTypes','WLA\\Inmo\\Activity\\Repository','WLA\\Inmo\\Activity\\Recorder','WLA\\Inmo\\Activity\\Observer','WLA\\Inmo\\Activity\\Retention','WLA\\Inmo\\Admin\\Bootstrap','WLA\\Inmo\\Admin\\ScreenRegistry','WLA\\Inmo\\Admin\\Menu','WLA\\Inmo\\Admin\\PageRenderer','WLA\\Inmo\\Admin\\Assets','WLA\\Inmo\\Admin\\ContextHelp','WLA\\Inmo\\Admin\\HelpCenter','WLA\\Inmo\\Admin\\Onboarding','WLA\\Inmo\\Admin\\SettingsPage','WLA\\Inmo\\Admin\\ActivityPage','WLA\\Inmo\\Admin\\PropertyActivity','WLA\\Inmo\\Admin\\PropertyList','WLA\\Inmo\\Admin\\PropertyQualityList','WLA\\Inmo\\Admin\\PropertyEditor','WLA\\Inmo\\Admin\\PropertyMedia','WLA\\Inmo\\Admin\\QualityPage','WLA\\Inmo\\Localization\\ChilePreset','WLA\\Inmo\\Settings\\Schema','WLA\\Inmo\\Settings\\Repository','WLA\\Inmo\\Settings\\Registry','WLA\\Inmo\\Settings\\RewriteManager','WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder','WLA\\Inmo\\Quality\\Schema','WLA\\Inmo\\Quality\\Evaluator','WLA\\Inmo\\Quality\\Repository','WLA\\Inmo\\Quality\\Indexer','WLA\\Inmo\\Quality\\Rebuilder'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
+php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Activity\\Schema','WLA\\Inmo\\Activity\\EventTypes','WLA\\Inmo\\Activity\\Repository','WLA\\Inmo\\Activity\\Recorder','WLA\\Inmo\\Activity\\Observer','WLA\\Inmo\\Activity\\Retention','WLA\\Inmo\\Dashboard\\Snapshot','WLA\\Inmo\\Admin\\Bootstrap','WLA\\Inmo\\Admin\\ScreenRegistry','WLA\\Inmo\\Admin\\Menu','WLA\\Inmo\\Admin\\PageRenderer','WLA\\Inmo\\Admin\\DashboardPage','WLA\\Inmo\\Admin\\Assets','WLA\\Inmo\\Admin\\ContextHelp','WLA\\Inmo\\Admin\\HelpCenter','WLA\\Inmo\\Admin\\Onboarding','WLA\\Inmo\\Admin\\SettingsPage','WLA\\Inmo\\Admin\\ActivityPage','WLA\\Inmo\\Admin\\PropertyActivity','WLA\\Inmo\\Admin\\PropertyList','WLA\\Inmo\\Admin\\PropertyQualityList','WLA\\Inmo\\Admin\\PropertyEditor','WLA\\Inmo\\Admin\\PropertyMedia','WLA\\Inmo\\Admin\\QualityPage','WLA\\Inmo\\Localization\\ChilePreset','WLA\\Inmo\\Settings\\Schema','WLA\\Inmo\\Settings\\Repository','WLA\\Inmo\\Settings\\Registry','WLA\\Inmo\\Settings\\RewriteManager','WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder','WLA\\Inmo\\Quality\\Schema','WLA\\Inmo\\Quality\\Evaluator','WLA\\Inmo\\Quality\\Repository','WLA\\Inmo\\Quality\\Indexer','WLA\\Inmo\\Quality\\Rebuilder'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
 if grep -RIEq 'wc_get_|WooCommerce|Elementor|WPCode|get_field[[:space:]]*\(|product_cat' "$PLUGIN_DIR/src" "$PLUGIN_DIR/wla-inmo.php"; then
 	echo "Forbidden legacy runtime dependency reference found in WLA Inmo core." >&2
@@ -166,6 +169,21 @@ fi
 
 if grep -RIEq 'business_email[[:space:]]*=>|business_phone[[:space:]]*=>|whatsapp_number[[:space:]]*=>' "$PLUGIN_DIR/src/Activity"; then
 	echo "Activity context must not persist contact setting values." >&2
+	exit 1
+fi
+
+if grep -RIEq 'private_address|internal_notes|external_id|business_email|business_phone|whatsapp_number' "$PLUGIN_DIR/src/Dashboard"; then
+	echo "Dashboard snapshot must not read private property or contact fields." >&2
+	exit 1
+fi
+
+if grep -RIEq 'Search\\Index|wp_remote_|curl_|XMLHttpRequest|axios|\.ajax[[:space:]]*\(' "$PLUGIN_DIR/src/Dashboard" "$PLUGIN_DIR/src/Admin/DashboardPage.php"; then
+	echo "Dashboard must remain administrative, local and independent from the published-only search index." >&2
+	exit 1
+fi
+
+if grep -RIEq 'Chart\.js|chartjs|<script' "$PLUGIN_DIR/src/Admin/DashboardPage.php"; then
+	echo "Operational dashboard must not add a charting runtime or inline scripts." >&2
 	exit 1
 fi
 
