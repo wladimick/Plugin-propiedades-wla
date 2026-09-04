@@ -9,6 +9,7 @@ final class PostType
 	public const POST_TYPE = 'wla_property';
 	public const ARCHIVE_SLUG = 'propiedades';
 	public const REST_BASE = 'wla-properties';
+	public const ADMIN_MENU_PARENT = 'wla-inmo';
 
 	public static function register(): void
 	{
@@ -73,7 +74,7 @@ final class PostType
 			'public'              => true,
 			'publicly_queryable'  => true,
 			'show_ui'             => true,
-			'show_in_menu'        => true,
+			'show_in_menu'        => self::ADMIN_MENU_PARENT,
 			'show_in_nav_menus'   => true,
 			'show_in_admin_bar'   => true,
 			'show_in_rest'        => true,
