@@ -19,6 +19,7 @@ final class Bootstrap
 		add_action('current_screen', array(ContextHelp::class, 'add'));
 
 		Onboarding::register();
+		SettingsPage::register();
 		PropertyList::register();
 		PropertyQualityList::register();
 		PropertyEditor::register();

@@ -1,0 +1,109 @@
+name: Settings UI Integration
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/**'
+      - 'bin/**'
+      - 'tests/integration/assert-settings.php'
+      - 'tests/integration/apply-settings-rewrite.php'
+      - 'tests/integration/assert-settings-rewrite-applied.php'
+      - '.github/workflows/settings-ui-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wordpress-settings:
+    name: WP ${{ matrix.wordpress }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.6.2'
+            php: '8.1'
+          - wordpress: 'latest'
+            php: '8.3'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: mysqli
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Install WordPress
+        run: |
+          mkdir -p /tmp/wla-settings-wordpress
+          cd /tmp/wla-settings-wordpress
+          wp core download --version="${{ matrix.wordpress }}" --force --quiet --allow-root
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --allow-root
+          ADMIN_PASS="$(openssl rand -hex 16)"
+          wp core install \
+            --url=http://settings.wla.test \
+            --title='WLA Inmo Settings CI' \
+            --admin_user=admin \
+            --admin_password="$ADMIN_PASS" \
+            --admin_email=settings-ci@example.test \
+            --skip-email \
+            --allow-root
+          # Fresh WordPress uses plain permalinks, where rewrite_rules is intentionally empty.
+          # Use a real pretty-permalink configuration so this integration can verify that
+          # WLA Inmo's controlled flush persists the changed property base.
+          wp rewrite structure '/%postname%/' --allow-root
+
+      - name: Install and activate release ZIP
+        run: |
+          cd /tmp/wla-settings-wordpress
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
+          wp plugin status wla-inmo --allow-root
+
+      - name: Validate settings save and pending rewrite
+        run: |
+          cd /tmp/wla-settings-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-settings.php" --allow-root
+
+      - name: Apply controlled rewrite rules
+        run: |
+          cd /tmp/wla-settings-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/apply-settings-rewrite.php" --allow-root
+
+      - name: Validate applied rewrite rules
+        run: |
+          cd /tmp/wla-settings-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-settings-rewrite-applied.php" --allow-root

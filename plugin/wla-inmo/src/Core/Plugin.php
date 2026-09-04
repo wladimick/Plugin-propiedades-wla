@@ -9,6 +9,7 @@ use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Quality\Indexer as QualityIndexer;
 use WLA\Inmo\Search\Indexer;
 use WLA\Inmo\Settings\Registry as SettingsRegistry;
+use WLA\Inmo\Settings\RewriteManager;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
 final class Plugin
@@ -46,6 +47,7 @@ final class Plugin
 		add_action('admin_init', array(RoleManager::class, 'maybeUpgrade'), 2);
 		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
 
+		RewriteManager::register();
 		Indexer::register();
 		QualityIndexer::register();
 
