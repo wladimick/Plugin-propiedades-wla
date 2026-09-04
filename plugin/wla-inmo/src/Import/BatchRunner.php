@@ -255,7 +255,7 @@ final class BatchRunner
 		$engine = new DryRunEngine($profile, $this->identityResolver, $this->taxonomyLookup);
 		$results = iterator_to_array($engine->results($factory), false);
 
-		return count($results) === 1 && $results[0] instanceof DryRunResult ? $results[0] : null;
+		return count($results) === 1 ? $results[0] : null;
 	}
 
 	private function validateSource(string $path, string $expectedHash): ?string
@@ -356,7 +356,7 @@ final class BatchRunner
 	{
 		$codes = array();
 		foreach ($messages as $message) {
-			$code = trim((string) ($message['code'] ?? ''));
+			$code = trim((string) $message['code']);
 			if ($code !== '') {
 				$codes[] = $code;
 			}
