@@ -59,6 +59,13 @@ final class RowMapper
 			}
 		}
 
+		// A multi-source target is preserved only when every mapped source was empty.
+		// If at least one source produced a canonical value/clear intent, that intent wins.
+		$preserved = array_values(array_unique(array_filter(
+			$preserved,
+			static fn (string $target): bool => !array_key_exists($target, $values)
+		)));
+
 		return new MappedRow($rowNumber, $values, $preserved, $errors);
 	}
 
