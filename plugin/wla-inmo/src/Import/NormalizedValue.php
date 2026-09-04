@@ -5,17 +5,17 @@ namespace WLA\Inmo\Import;
 final class NormalizedValue
 {
 	private bool $valid;
-	private $value;
+	private mixed $value;
 	private ?string $errorCode;
 
-	private function __construct(bool $valid, $value, ?string $errorCode)
+	private function __construct(bool $valid, mixed $value, ?string $errorCode)
 	{
 		$this->valid = $valid;
 		$this->value = $value;
 		$this->errorCode = $errorCode;
 	}
 
-	public static function valid($value): self
+	public static function valid(mixed $value): self
 	{
 		return new self(true, $value, null);
 	}
@@ -30,7 +30,7 @@ final class NormalizedValue
 		return $this->valid;
 	}
 
-	public function value()
+	public function value(): mixed
 	{
 		return $this->value;
 	}
