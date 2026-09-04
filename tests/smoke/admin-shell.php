@@ -145,11 +145,15 @@ function wlaAdminExpect(bool $condition, string $message): void
 $definitions = ScreenRegistry::definitions();
 $slugs = array_column($definitions, 'slug');
 
-wlaAdminExpect(count($definitions) === 16, 'The documented Phase 2 admin shell must expose 16 registered sections/links.');
+wlaAdminExpect(count($definitions) === 16, 'The documented Phase 2 admin shell must expose 16 registered sections/native links.');
 wlaAdminExpect(count($slugs) === count(array_unique($slugs)), 'Admin screen slugs must be unique.');
 wlaAdminExpect($definitions['dashboard']['capability'] === AccessCapabilities::VIEW_DASHBOARD, 'Dashboard capability changed unexpectedly.');
 wlaAdminExpect($definitions['settings']['capability'] === AccessCapabilities::MANAGE_SETTINGS, 'Settings must use WLA settings capability.');
 wlaAdminExpect($definitions['tools']['capability'] === AccessCapabilities::MANAGE_TOOLS, 'Tools must remain separately restricted.');
+wlaAdminExpect($definitions['properties']['kind'] === 'native', 'Property list must remain a WordPress-owned native screen.');
+wlaAdminExpect($definitions['new_property']['kind'] === 'native', 'New property must remain a WordPress-owned native screen.');
+wlaAdminExpect($definitions['properties']['slug'] === 'edit.php?post_type=wla_property', 'Property native URL contract changed unexpectedly.');
+wlaAdminExpect($definitions['new_property']['slug'] === 'post-new.php?post_type=wla_property', 'New property native URL contract changed unexpectedly.');
 wlaAdminExpect($definitions['properties']['capability'] === PropertyCapabilities::EDIT_POSTS, 'Property link must use WLA property capability.');
 wlaAdminExpect(PostType::arguments()['show_in_menu'] === ScreenRegistry::ROOT_SLUG, 'wla_property must be nested under WLA Inmo instead of creating a second top-level menu.');
 
@@ -165,8 +169,8 @@ Menu::register();
 
 wlaAdminExpect(count($GLOBALS['wla_admin_menu']) === 1, 'Editor-capable user should receive one WLA Inmo root menu.');
 $visibleSlugs = array_column($GLOBALS['wla_admin_submenu'], 'menuSlug');
-wlaAdminExpect(in_array('edit.php?post_type=wla_property', $visibleSlugs, true), 'Editor must see Properties.');
-wlaAdminExpect(in_array('post-new.php?post_type=wla_property', $visibleSlugs, true), 'Editor must see New property.');
+wlaAdminExpect(!in_array('edit.php?post_type=wla_property', $visibleSlugs, true), 'WLA Menu must not duplicate the native property list submenu registered by WordPress.');
+wlaAdminExpect(!in_array('post-new.php?post_type=wla_property', $visibleSlugs, true), 'WLA Menu must not duplicate the native new-property submenu registered by WordPress.');
 wlaAdminExpect(in_array('wla-inmo-help', $visibleSlugs, true), 'Editor must see Help.');
 wlaAdminExpect(in_array('wla-inmo-media', $visibleSlugs, true), 'Editor with upload_files must see Multimedia.');
 wlaAdminExpect(!in_array('wla-inmo-settings', $visibleSlugs, true), 'Editor must not see Settings.');
