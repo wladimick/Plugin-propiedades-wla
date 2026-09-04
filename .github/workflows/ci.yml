@@ -79,6 +79,7 @@ jobs:
           path: |
             dist/wla-inmo-0.1.0-alpha.zip
             dist/wla-inmo-0.1.0-alpha.zip.sha256
+            plugin/wla-inmo/composer.lock
           if-no-files-found: error
 
   wordpress-integration:
@@ -139,11 +140,12 @@ jobs:
             --dbhost=127.0.0.1:3306 \
             --skip-check \
             --allow-root
+          ADMIN_PASS="$(openssl rand -hex 16)"
           wp core install \
             --url=http://wla.test \
             --title='WLA Inmo CI' \
             --admin_user=admin \
-            --admin_password='ci-password-123' \
+            --admin_password="$ADMIN_PASS" \
             --admin_email=ci@example.test \
             --skip-email \
             --allow-root
