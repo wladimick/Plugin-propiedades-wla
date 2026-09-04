@@ -82,6 +82,10 @@ jobs:
             --admin_email=settings-ci@example.test \
             --skip-email \
             --allow-root
+          # Fresh WordPress uses plain permalinks, where rewrite_rules is intentionally empty.
+          # Use a real pretty-permalink configuration so this integration can verify that
+          # WLA Inmo's controlled flush persists the changed property base.
+          wp rewrite structure '/%postname%/' --allow-root
 
       - name: Install and activate release ZIP
         run: |
