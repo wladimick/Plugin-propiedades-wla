@@ -26,6 +26,8 @@ final class PageRenderer
 			self::renderDashboard();
 		} elseif ($definition['slug'] === 'wla-inmo-help') {
 			self::renderHelpLanding();
+		} elseif ($definition['slug'] === 'wla-inmo-quality') {
+			QualityPage::render();
 		} else {
 			self::renderPlaceholder($definition);
 		}
@@ -50,6 +52,12 @@ final class PageRenderer
 				admin_url('post-new.php?post_type=wla_property'),
 				__('Crear propiedad', 'wla-inmo')
 			);
+			self::renderActionCard(
+				__('Calidad del catálogo', 'wla-inmo'),
+				__('Detecta fichas incompletas, sin precio o sin imagen principal.', 'wla-inmo'),
+				admin_url('admin.php?page=wla-inmo-quality'),
+				__('Revisar calidad', 'wla-inmo')
+			);
 		}
 
 		self::renderActionCard(
@@ -70,7 +78,7 @@ final class PageRenderer
 
 		echo '</section>';
 		echo '<div class="notice notice-info inline wla-inmo-admin__notice"><p>';
-		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta primera versión prioriza navegación, permisos y una base accesible.', 'wla-inmo');
+		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza la Calidad del catálogo para priorizar correcciones.', 'wla-inmo');
 		echo '</p></div>';
 	}
 
