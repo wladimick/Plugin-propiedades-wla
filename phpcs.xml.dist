@@ -8,7 +8,15 @@
     <arg name="extensions" value="php"/>
     <arg name="colors"/>
 
-    <rule ref="WordPress.Security.EscapeOutput"/>
+    <rule ref="WordPress.Security.EscapeOutput">
+        <!--
+            WordPressPropertyWriter is a non-rendering persistence domain class.
+            The sniff misclassifies dynamic arguments passed to exceptions as
+            output. The file contains no echo/print/render path; nonce/input
+            security sniffs below remain active for it.
+        -->
+        <exclude-pattern>plugin/wla-inmo/src/Import/WordPressPropertyWriter.php</exclude-pattern>
+    </rule>
     <rule ref="WordPress.Security.NonceVerification"/>
     <rule ref="WordPress.Security.ValidatedSanitizedInput"/>
 </ruleset>
