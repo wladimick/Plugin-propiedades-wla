@@ -24,6 +24,10 @@ if (!is_object($propertyType) || $propertyType->show_in_menu !== 'wla-inmo') {
 	$fail('wla_property must be nested under the WLA Inmo admin menu.');
 }
 
+if (!class_exists(WLA\Inmo\Admin\PropertyList::class)) {
+	$fail('Professional property list module is unavailable.');
+}
+
 foreach (array('wla_operation', 'wla_property_type', 'wla_region', 'wla_commune', 'wla_sector') as $taxonomy) {
 	if (!taxonomy_exists($taxonomy)) {
 		$fail("Missing taxonomy {$taxonomy}.");
@@ -63,6 +67,17 @@ if ($tableFound !== $table) {
 	$fail('Property index table was not installed.');
 }
 
+if ((string) get_option(WLA\Inmo\Search\IndexSchema::DB_VERSION_OPTION, '0') !== WLA\Inmo\Search\IndexSchema::DB_VERSION) {
+	$fail('Property index schema version was not upgraded.');
+}
+
+$indexNames = $wpdb->get_col("SHOW INDEX FROM {$table}", 2);
+foreach (array('region_slug', 'sector_slug', 'status_featured') as $requiredIndex) {
+	if (!is_array($indexNames) || !in_array($requiredIndex, $indexNames, true)) {
+		$fail("Missing admin-filter index {$requiredIndex}.");
+	}
+}
+
 $propertyId = wp_insert_post(
 	array(
 		'post_type'   => 'wla_property',
@@ -78,7 +93,17 @@ if (is_wp_error($propertyId) || (int) $propertyId < 1) {
 
 $propertyId = (int) $propertyId;
 update_post_meta($propertyId, '_wla_inmo_property_code', 'CI-' . $propertyId);
+update_post_meta($propertyId, '_wla_inmo_currency_primary', 'CLP');
 update_post_meta($propertyId, '_wla_inmo_price_clp', 123456789);
+update_post_meta($propertyId, '_wla_inmo_status', 'available');
+
+if (WLA\Inmo\Admin\PropertyList::priceLabel($propertyId) !== '$123.456.789') {
+	$fail('Professional list does not render canonical CLP price correctly.');
+}
+
+if (WLA\Inmo\Admin\PropertyList::statusLabel($propertyId) !== 'Disponible') {
+	$fail('Professional list does not humanize property status correctly.');
+}
 
 if (!WLA\Inmo\Search\Indexer::syncNow($propertyId)) {
 	$fail('Unable to synchronize synthetic property into search index.');
