@@ -5,4 +5,5 @@ parameters:
         - plugin/wla-inmo/src/Access/Capabilities.php
         - plugin/wla-inmo/src/Properties/Capabilities.php
         - plugin/wla-inmo/src/Taxonomies/Capabilities.php
+        - plugin/wla-inmo/src/Import
     reportUnmatchedIgnoredErrors: true
