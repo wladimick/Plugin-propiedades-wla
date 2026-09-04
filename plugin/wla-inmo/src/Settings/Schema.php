@@ -17,13 +17,7 @@ final class Schema
 	 */
 	public static function defaults(): array
 	{
-		$defaults = array_merge(
-			ChilePreset::settings(),
-			array(
-				'property_base' => 'propiedades',
-				'business_name' => '',
-			)
-		);
+		$defaults = self::baseDefaults();
 
 		if (function_exists('apply_filters')) {
 			$filtered = apply_filters('wla_inmo_settings_defaults', $defaults);
@@ -32,7 +26,7 @@ final class Schema
 			}
 		}
 
-		return self::sanitize($defaults, false);
+		return self::sanitize($defaults);
 	}
 
 	/**
@@ -43,19 +37,24 @@ final class Schema
 	 */
 	public static function sanitize($value, bool $mergeDefaults = true): array
 	{
+		unset($mergeDefaults);
 		$value = is_array($value) ? $value : array();
-		$base = $mergeDefaults ? self::baseDefaults() : self::baseDefaults();
+		$base = self::baseDefaults();
 
-		$result = array(
-			'country_code'     => self::countryCode($value['country_code'] ?? $base['country_code']),
-			'currency_primary' => self::currency($value['currency_primary'] ?? $base['currency_primary']),
-			'area_unit'        => self::areaUnit($value['area_unit'] ?? $base['area_unit']),
-			'map_provider'     => self::mapProvider($value['map_provider'] ?? $base['map_provider']),
-			'property_base'    => self::propertyBase($value['property_base'] ?? $base['property_base']),
-			'business_name'    => self::text($value['business_name'] ?? ''),
+		return array(
+			'country_code'              => self::countryCode($value['country_code'] ?? $base['country_code']),
+			'currency_primary'          => self::currency($value['currency_primary'] ?? $base['currency_primary']),
+			'area_unit'                 => self::areaUnit($value['area_unit'] ?? $base['area_unit']),
+			'map_provider'              => self::mapProvider($value['map_provider'] ?? $base['map_provider']),
+			'property_base'             => self::propertyBase($value['property_base'] ?? $base['property_base']),
+			'business_name'             => self::text($value['business_name'] ?? $base['business_name']),
+			'business_email'            => self::email($value['business_email'] ?? $base['business_email']),
+			'business_phone'            => self::phone($value['business_phone'] ?? $base['business_phone']),
+			'whatsapp_number'           => self::whatsapp($value['whatsapp_number'] ?? $base['whatsapp_number']),
+			'business_address'          => self::text($value['business_address'] ?? $base['business_address']),
+			'lead_retention_months'     => self::months($value['lead_retention_months'] ?? $base['lead_retention_months'], 24),
+			'activity_retention_months' => self::months($value['activity_retention_months'] ?? $base['activity_retention_months'], 12),
 		);
-
-		return $result;
 	}
 
 	/** @return array<string,string> */
@@ -64,8 +63,14 @@ final class Schema
 		return array_merge(
 			ChilePreset::settings(),
 			array(
-				'property_base' => 'propiedades',
-				'business_name' => '',
+				'property_base'             => 'propiedades',
+				'business_name'             => '',
+				'business_email'            => '',
+				'business_phone'            => '',
+				'whatsapp_number'           => '',
+				'business_address'          => '',
+				'lead_retention_months'     => '24',
+				'activity_retention_months' => '12',
 			)
 		);
 	}
@@ -113,6 +118,50 @@ final class Schema
 		}
 
 		return $value !== '' ? $value : 'propiedades';
+	}
+
+	private static function email($value): string
+	{
+		$value = self::text($value);
+		if ($value === '') {
+			return '';
+		}
+
+		if (function_exists('sanitize_email')) {
+			return sanitize_email($value);
+		}
+
+		return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : '';
+	}
+
+	private static function phone($value): string
+	{
+		$value = self::text($value);
+		$value = preg_replace('/[^0-9+()\- .]/', '', $value) ?? '';
+
+		return substr(trim($value), 0, 40);
+	}
+
+	private static function whatsapp($value): string
+	{
+		$value = self::text($value);
+		$hasPlus = strpos($value, '+') === 0;
+		$digits = preg_replace('/\D+/', '', $value) ?? '';
+		$digits = substr($digits, 0, 15);
+
+		if ($digits === '') {
+			return '';
+		}
+
+		return ($hasPlus ? '+' : '') . $digits;
+	}
+
+	private static function months($value, int $fallback): string
+	{
+		$value = is_scalar($value) ? (int) $value : $fallback;
+		$value = max(1, min(120, $value));
+
+		return (string) $value;
 	}
 
 	private static function text($value): string
