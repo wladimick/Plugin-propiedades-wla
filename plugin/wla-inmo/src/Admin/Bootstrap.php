@@ -17,6 +17,8 @@ final class Bootstrap
 		add_action('admin_menu', array(Menu::class, 'register'), 20);
 		add_action('admin_enqueue_scripts', array(Assets::class, 'enqueue'));
 		add_action('current_screen', array(ContextHelp::class, 'add'));
+
+		PropertyList::register();
 	}
 
 	public static function resetForTests(): void
