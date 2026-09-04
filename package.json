@@ -1,0 +1,16 @@
+{
+  "name": "wla-inmo-quality-gate",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.1"
+  }
+}

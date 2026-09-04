@@ -292,7 +292,7 @@ final class PropertyEditor
 			),
 			'multimedia' => array(
 				'title' => __('8. Multimedia', 'wla-inmo'),
-				'description' => __('La imagen principal continúa en Imagen destacada. La galería ordenable y los videos se completarán en PR 2.4 sin aceptar HTML o iframes arbitrarios.', 'wla-inmo'),
+				'description' => __('La imagen principal se administra en Imagen destacada. La galería ordenable y los videos se gestionan en el panel Multimedia sin aceptar HTML o iframes arbitrarios.', 'wla-inmo'),
 				'fields' => array(),
 			),
 			'contact' => array(
@@ -307,12 +307,12 @@ final class PropertyEditor
 			),
 			'quality' => array(
 				'title' => __('11. Calidad', 'wla-inmo'),
-				'description' => __('Los borradores pueden quedar incompletos. PR 2.5 agregará checks explicables y enlaces directos para corregir lo que falte.', 'wla-inmo'),
+				'description' => __('Los borradores pueden quedar incompletos. WLA Inmo calcula checks explicables y muestra en Calidad del catálogo qué falta corregir.', 'wla-inmo'),
 				'fields' => array(),
 			),
 			'history' => array(
 				'title' => __('12. Historial', 'wla-inmo'),
-				'description' => __('WordPress conserva revisiones del contenido. La bitácora inmobiliaria de cambios críticos llegará en PR 2.8.', 'wla-inmo'),
+				'description' => __('WordPress conserva revisiones del contenido y WLA Inmo muestra el Historial operativo de los cambios inmobiliarios críticos ya registrados.', 'wla-inmo'),
 				'fields' => array(),
 			),
 		);

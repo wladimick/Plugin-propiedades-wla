@@ -1,0 +1,151 @@
+name: Administration Quality Gate
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/**'
+      - 'tests/e2e/**'
+      - 'tests/integration/assert-admin-security.php'
+      - 'tests/integration/assert-admin-performance.php'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.mjs'
+      - 'bin/**'
+      - '.github/workflows/admin-quality-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-admin:
+    name: E2E admin / WP 6.6.2 / PHP 8.1 / Node 22
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mysqli
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install pinned browser test tooling
+        run: npm ci --ignore-scripts
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build installable plugin
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Install WordPress and WLA Inmo
+        run: |
+          ADMIN_PASS="$(openssl rand -hex 20)"
+          EDITOR_PASS="$(openssl rand -hex 20)"
+          echo "::add-mask::$ADMIN_PASS"
+          echo "::add-mask::$EDITOR_PASS"
+          echo "WLA_E2E_ADMIN_USER=admin" >> "$GITHUB_ENV"
+          echo "WLA_E2E_ADMIN_PASS=$ADMIN_PASS" >> "$GITHUB_ENV"
+          echo "WLA_E2E_EDITOR_USER=editorqa" >> "$GITHUB_ENV"
+          echo "WLA_E2E_EDITOR_PASS=$EDITOR_PASS" >> "$GITHUB_ENV"
+          echo "WLA_E2E_BASE_URL=http://127.0.0.1:8080" >> "$GITHUB_ENV"
+
+          mkdir -p /tmp/wla-admin-e2e
+          cd /tmp/wla-admin-e2e
+          wp core download --version=6.6.2 --force --quiet --allow-root
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --allow-root
+          wp core install \
+            --url=http://127.0.0.1:8080 \
+            --title='WLA Inmo Admin E2E' \
+            --admin_user=admin \
+            --admin_password="$ADMIN_PASS" \
+            --admin_email=admin-e2e@example.test \
+            --skip-email \
+            --allow-root
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
+
+          wp term create wla_operation Venta --slug=venta --allow-root
+          wp term create wla_operation Arriendo --slug=arriendo --allow-root
+          wp term create wla_property_type Casa --slug=casa --allow-root
+          wp term create wla_commune Curicó --slug=curico --allow-root
+
+          wp user create editorqa editor-e2e@example.test \
+            --role=wla_property_editor \
+            --user_pass="$EDITOR_PASS" \
+            --allow-root
+
+      - name: Validate roles, nonce and object authorization
+        run: |
+          cd /tmp/wla-admin-e2e
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-admin-security.php" --allow-root
+
+      - name: Benchmark 100 / 1k / 5k administration catalogue
+        run: |
+          cd /tmp/wla-admin-e2e
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-admin-performance.php" --allow-root | tee /tmp/wla-inmo-admin-performance.log
+
+      - name: Start WordPress server
+        run: |
+          cd /tmp/wla-admin-e2e
+          wp server --host=127.0.0.1 --port=8080 --allow-root > /tmp/wla-inmo-wp-server.log 2>&1 &
+          echo $! > /tmp/wla-inmo-wp-server.pid
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/wp-login.php >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/wla-inmo-wp-server.log
+          exit 1
+
+      - name: Run Playwright administration quality gate
+        run: npm run test:e2e
+
+      - name: Upload Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wla-inmo-admin-e2e-evidence
+          path: |
+            playwright-report/
+            test-results/
+            package-lock.json
+            /tmp/wla-inmo-admin-performance.log
+            /tmp/wla-inmo-wp-server.log
+          if-no-files-found: warn
+          retention-days: 30
