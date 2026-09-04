@@ -53,6 +53,7 @@ final class DryRunEngine
 			$values = $mapped->values();
 			$errors = $mapped->errors();
 			$warnings = array();
+			$preservedTargets = $mapped->preservedTargets();
 
 			if (isset($duplicates['external'][$rowNumber])) {
 				$errors[] = array('code' => 'duplicate_external_identity_in_file', 'target' => 'meta.external_id');
@@ -61,7 +62,7 @@ final class DryRunEngine
 				$errors[] = array('code' => 'duplicate_property_code_in_file', 'target' => 'meta.property_code');
 			}
 
-			$this->resolveTaxonomies($values, $warnings, $errors);
+			$this->resolveTaxonomies($values, $warnings, $errors, $preservedTargets);
 
 			$propertyId = null;
 			$status = DryRunResult::STATUS_ERROR;
@@ -85,7 +86,7 @@ final class DryRunEngine
 					$status = DryRunResult::STATUS_UPDATE;
 					$propertyId = $resolution->propertyId();
 					if ($propertyId !== null) {
-						$changedTargets = $this->changedTargets($propertyId, $values, $mapped->preservedTargets());
+						$changedTargets = $this->changedTargets($propertyId, $values, $preservedTargets);
 					}
 				} else {
 					$status = DryRunResult::STATUS_NEW;
@@ -106,7 +107,7 @@ final class DryRunEngine
 				$status,
 				$propertyId,
 				$values,
-				$mapped->preservedTargets(),
+				$preservedTargets,
 				$changedTargets,
 				$warnings,
 				$errors
@@ -173,8 +174,9 @@ final class DryRunEngine
 	 * @param array<string,mixed>                         $values Normalized values, mutated to resolved term references.
 	 * @param array<int,array{code:string,target:string}> $warnings Warnings.
 	 * @param array<int,array{code:string,target:string}> $errors Errors.
+	 * @param array<int,string>                           $preservedTargets Targets intentionally preserved.
 	 */
-	private function resolveTaxonomies(array &$values, array &$warnings, array &$errors): void
+	private function resolveTaxonomies(array &$values, array &$warnings, array &$errors, array &$preservedTargets): void
 	{
 		foreach ($values as $target => $value) {
 			$definition = TargetRegistry::definition($target);
@@ -185,15 +187,16 @@ final class DryRunEngine
 			$taxonomy = (string) $definition['taxonomy'];
 			$items = is_array($value) ? $value : array($value);
 			$resolved = array();
+			$preserveWholeTarget = false;
 
 			foreach ($items as $item) {
 				$matches = ($this->taxonomyLookup)($taxonomy, (string) $item);
 				if (count($matches) === 0) {
-					$issue = array('code' => 'unknown_taxonomy_term', 'target' => $target);
 					if ($target === 'taxonomy.feature') {
 						$warnings[] = array('code' => 'unknown_feature_term', 'target' => $target);
+						$preserveWholeTarget = true;
 					} else {
-						$errors[] = $issue;
+						$errors[] = array('code' => 'unknown_taxonomy_term', 'target' => $target);
 					}
 					continue;
 				}
@@ -214,8 +217,16 @@ final class DryRunEngine
 				$resolved[] = array('id' => $id, 'slug' => $slug);
 			}
 
+			if ($preserveWholeTarget) {
+				unset($values[$target]);
+				$preservedTargets[] = $target;
+				continue;
+			}
+
 			$values[$target] = !empty($definition['multiple']) ? $resolved : ($resolved[0] ?? null);
 		}
+
+		$preservedTargets = array_values(array_unique($preservedTargets));
 	}
 
 	/**
