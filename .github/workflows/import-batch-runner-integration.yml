@@ -9,6 +9,7 @@ on:
       - 'plugin/wla-inmo/src/Quality/**'
       - 'bin/**'
       - 'tests/integration/assert-import-batch-runner.php'
+      - 'tests/integration/assert-import-csv-resume.php'
       - 'tests/smoke/import-batch-runner.php'
       - '.github/workflows/import-batch-runner-integration.yml'
   workflow_dispatch:
@@ -95,3 +96,8 @@ jobs:
         run: |
           cd /tmp/wla-import-batch-runner-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-batch-runner.php" --allow-root
+
+      - name: Validate locked verified CSV resume
+        run: |
+          cd /tmp/wla-import-batch-runner-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-csv-resume.php" --allow-root
