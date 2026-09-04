@@ -100,7 +100,7 @@ final class ScreenRegistry
 				'wla-inmo-quality',
 				__('Calidad del catálogo', 'wla-inmo'),
 				__('Calidad del catálogo', 'wla-inmo'),
-				AccessCapabilities::VIEW_DASHBOARD,
+				PropertyCapabilities::EDIT_POSTS,
 				__('Hallazgos accionables para completar y mantener las fichas de propiedades.', 'wla-inmo')
 			),
 			'activity' => self::page(
