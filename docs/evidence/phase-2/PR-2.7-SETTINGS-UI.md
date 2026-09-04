@@ -1,10 +1,11 @@
 # Evidencia — Fase 2 / PR 2.7 Ajustes UI
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
 Issue: #35  
 PR: #36  
-Rama: `feat/phase2-settings-ui`
+Squash merge: `5c99ed02f4a71cf57716cc8d9a46cb4094856464`  
+Rama histórica: `feat/phase2-settings-ui`
 
 ## Objetivo
 
@@ -138,7 +139,7 @@ Workflow dedicado: `Settings UI Integration` en WordPress 6.6.2/PHP 8.1 y WordPr
 
 ## QA final
 
-Head validado: `f6cef07f0f165ea5ac7cd3ea46ef82ae68f5e4ac`.
+Head de código validado: `f6cef07f0f165ea5ac7cd3ea46ef82ae68f5e4ac`.
 
 - Phase 1 CI `33861845409`: `SUCCESS`;
 - Quality Gate / PHP 8.1: `SUCCESS`;
@@ -157,7 +158,8 @@ Head validado: `f6cef07f0f165ea5ac7cd3ea46ef82ae68f5e4ac`.
 - Bootstrap Smoke `33861845445`: `SUCCESS`;
 - Artifact `9932423348`;
 - Artifact digest: `sha256:a626ed57d9a2c36aeb2bd6413f73024669b2c04614c6c2347bb656814f1906a3`;
-- ZIP SHA-256: `a04e74b6c19a1a296f9960e5237785be6c3352b042a4b91cb01317137b18e6a9`.
+- ZIP SHA-256: `a04e74b6c19a1a296f9960e5237785be6c3352b042a4b91cb01317137b18e6a9`;
+- squash merge final en `main`: `5c99ed02f4a71cf57716cc8d9a46cb4094856464`.
 
 ## Findings corregidos
 
@@ -170,6 +172,6 @@ No quedan findings críticos ni altos abiertos dentro del alcance de PR 2.7. Los
 
 `propiedadesmartinez.cl` no ha sido modificado.
 
-## Cierre pendiente
+## Cierre
 
-PR 2.7 queda `QA_PASSED / MERGE_PENDING`. Solo debe pasar a `DONE` después del squash merge efectivo de PR #36 y del registro del SHA final en `main`.
+PR 2.7 está `DONE`. PR #36 fue integrada mediante squash merge y el SHA final quedó registrado en este documento.
