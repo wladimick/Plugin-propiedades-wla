@@ -20,6 +20,7 @@ final class Bootstrap
 
 		PropertyList::register();
 		PropertyEditor::register();
+		PropertyMedia::register();
 	}
 
 	public static function resetForTests(): void
