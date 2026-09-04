@@ -16,7 +16,7 @@ final class ImportPersistenceTest extends TestCase
 	public function testSourceKeyMetadataUsesCanonicalNormalizer(): void
 	{
 		self::assertSame('portal_a', IdentityMeta::sanitize(' Portal Á '));
-		self::assertSame('proveedor-sur_2026', IdentityMeta::sanitize('Proveedor Sur_2026'));
+		self::assertSame('proveedor_sur_2026', IdentityMeta::sanitize('Proveedor Sur_2026'));
 		self::assertSame('', IdentityMeta::sanitize('x'));
 		self::assertSame('', IdentityMeta::sanitize(array('invalid')));
 	}
