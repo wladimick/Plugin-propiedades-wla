@@ -1,0 +1,78 @@
+.wla-inmo-admin {
+	--wla-inmo-admin-gap: 20px;
+	--wla-inmo-admin-radius: 10px;
+	max-width: 1180px;
+}
+
+.wla-inmo-admin__header {
+	margin: 28px 0 24px;
+}
+
+.wla-inmo-admin__eyebrow {
+	margin: 0 0 4px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+}
+
+.wla-inmo-admin__header h1 {
+	margin-bottom: 8px;
+}
+
+.wla-inmo-admin__lead {
+	max-width: 760px;
+	margin: 0;
+	font-size: 15px;
+	line-height: 1.6;
+}
+
+.wla-inmo-admin__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	gap: var(--wla-inmo-admin-gap);
+	margin: 0 0 24px;
+}
+
+.wla-inmo-admin__card,
+.wla-inmo-admin__panel {
+	box-sizing: border-box;
+	padding: 22px;
+	border: 1px solid #dcdcde;
+	border-radius: var(--wla-inmo-admin-radius);
+	background: #fff;
+}
+
+.wla-inmo-admin__card h2,
+.wla-inmo-admin__panel h2 {
+	margin-top: 0;
+}
+
+.wla-inmo-admin__card p:last-child,
+.wla-inmo-admin__panel p:last-child {
+	margin-bottom: 0;
+}
+
+.wla-inmo-admin__notice {
+	margin: 24px 0 0;
+}
+
+.wla-inmo-admin__topic-list {
+	columns: 2;
+	column-gap: 32px;
+}
+
+.wla-inmo-admin__topic-list li {
+	break-inside: avoid;
+	margin-bottom: 10px;
+}
+
+@media (max-width: 782px) {
+	.wla-inmo-admin__grid {
+		grid-template-columns: 1fr;
+	}
+
+	.wla-inmo-admin__topic-list {
+		columns: 1;
+	}
+}
