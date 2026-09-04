@@ -24,6 +24,7 @@ final class Bootstrap
 		PropertyQualityList::register();
 		PropertyEditor::register();
 		PropertyMedia::register();
+		PropertyActivity::register();
 		QualityPage::register();
 	}
 
