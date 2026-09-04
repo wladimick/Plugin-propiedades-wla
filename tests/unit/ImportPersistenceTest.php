@@ -280,6 +280,7 @@ final class PersistenceFakeDatabase
 			if ((string) $row['batch_uuid'] === $uuid) {
 				return $row;
 			}
+		}
 
 		return null;
 	}
