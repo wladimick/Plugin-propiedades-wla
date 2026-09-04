@@ -122,6 +122,7 @@ require_once $root . 'Taxonomies/Capabilities.php';
 require_once $root . 'Admin/ScreenRegistry.php';
 require_once $root . 'Admin/PageRenderer.php';
 require_once $root . 'Admin/Menu.php';
+require_once $root . 'Admin/PropertyMedia.php';
 require_once $root . 'Admin/Assets.php';
 require_once $root . 'Admin/ContextHelp.php';
 
