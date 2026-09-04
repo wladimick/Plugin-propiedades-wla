@@ -20,6 +20,15 @@ final class Assets
 			WLA_INMO_VERSION
 		);
 
+		if (self::isDashboardContext($hookSuffix)) {
+			wp_enqueue_style(
+				'wla-inmo-dashboard',
+				WLA_INMO_URL . 'assets/admin/dashboard.css',
+				array('wla-inmo-admin'),
+				WLA_INMO_VERSION
+			);
+		}
+
 		if (self::isHelpContext($hookSuffix)) {
 			wp_enqueue_style(
 				'wla-inmo-help-center',
@@ -91,6 +100,11 @@ final class Assets
 		return is_object($screen)
 			&& isset($screen->post_type)
 			&& $screen->post_type === PostType::POST_TYPE;
+	}
+
+	public static function isDashboardContext(string $hookSuffix): bool
+	{
+		return strpos($hookSuffix, 'toplevel_page_' . ScreenRegistry::ROOT_SLUG) !== false;
 	}
 
 	public static function isHelpContext(string $hookSuffix): bool

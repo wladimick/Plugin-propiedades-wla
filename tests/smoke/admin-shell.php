@@ -192,9 +192,11 @@ $nativeScreen = (object) array('post_type' => 'post');
 $propertyScreen = (object) array('post_type' => PostType::POST_TYPE);
 wlaAdminExpect(Assets::isWlaContext('edit.php', $nativeScreen) === false, 'WLA admin assets must not load on unrelated WordPress screens.');
 wlaAdminExpect(Assets::isWlaContext('edit.php', $propertyScreen) === true, 'Property screens must load WLA admin assets.');
+wlaAdminExpect(Assets::isDashboardContext('toplevel_page_wla-inmo') === true, 'Dashboard context detection must match only the WLA root page.');
 Assets::enqueue('toplevel_page_wla-inmo');
-wlaAdminExpect(count($GLOBALS['wla_admin_styles']) === 1, 'WLA admin stylesheet should enqueue once on a registered WLA screen.');
+wlaAdminExpect(count($GLOBALS['wla_admin_styles']) === 2, 'WLA dashboard should enqueue base admin and dashboard styles.');
 wlaAdminExpect($GLOBALS['wla_admin_styles'][0]['handle'] === 'wla-inmo-admin', 'Admin stylesheet handle must remain namespaced.');
+wlaAdminExpect($GLOBALS['wla_admin_styles'][1]['handle'] === 'wla-inmo-dashboard', 'Dashboard stylesheet handle must remain namespaced.');
 
 $helpScreen = new class {
 	public string $post_type = 'wla_property';

@@ -94,6 +94,29 @@ final class Repository
 		);
 	}
 
+	/**
+	 * Load only the latest events without the COUNT query required by pagination.
+	 * Intended for compact dashboard widgets.
+	 *
+	 * @return array<int,object>
+	 */
+	public static function recent(int $limit = 6): array
+	{
+		global $wpdb;
+		if (!isset($wpdb)) {
+			return array();
+		}
+
+		$limit = max(1, min(20, $limit));
+		$sql = $wpdb->prepare(
+			'SELECT id,event_type,object_type,object_id,actor_user_id,summary,context,created_at FROM ' . Schema::tableName($wpdb) . ' ORDER BY created_at DESC,id DESC LIMIT %d',
+			$limit
+		);
+		$items = $wpdb->get_results($sql);
+
+		return is_array($items) ? array_map(array(self::class, 'hydrate'), $items) : array();
+	}
+
 	/** @return array<int,object> */
 	public static function forObject(string $objectType, int $objectId, int $limit = 10): array
 	{
