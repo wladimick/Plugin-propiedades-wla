@@ -257,10 +257,6 @@ final class CsvReader
 		while (!$file->eof()) {
 			$candidate = $file->fgets();
 			++$sampleRow;
-			if (!is_string($candidate)) {
-				break;
-			}
-
 			$candidate = substr($candidate, 0, self::DETECTION_BYTES);
 			$candidate = self::stripBom($candidate);
 			$this->assertUtf8($candidate, $sampleRow);
