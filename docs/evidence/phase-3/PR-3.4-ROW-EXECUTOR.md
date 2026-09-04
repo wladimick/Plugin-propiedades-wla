@@ -1,6 +1,6 @@
 # Evidencia — PR 3.4 Executor idempotente de filas
 
-Estado: `IN_PROGRESS / QA_PENDING`.
+Estado: `QA_PASSED / READY_TO_MERGE`.
 
 Issue: #52  
 Rama: `feat/phase3-row-executor`
@@ -50,7 +50,7 @@ El writer real:
 
 ### Rollback local
 
-Para una creación que falla después de `wp_insert_post`, el writer elimina la propiedad recién creada y limpia la proyección de identidad. Si esa limpieza no puede completarse, devuelve `rollback_failed`.
+Para una creación que falla después de `wp_insert_post`, el writer elimina la propiedad recién creada y exige que la limpieza de la proyección de identidad también tenga éxito. Si cualquiera de esas operaciones falla, devuelve `rollback_failed`.
 
 Para un update, se toma snapshot de:
 
@@ -59,7 +59,7 @@ Para un update, se toma snapshot de:
 - `external_source_key` cuando corresponde;
 - términos de cada taxonomía que será tocada.
 
-Ante una falla parcial se restaura ese snapshot y se vuelven a sincronizar las proyecciones. Una restauración incompleta se eleva como `rollback_failed` y nunca se presenta como fila procesada.
+Ante una falla parcial se restaura ese snapshot y se vuelven a sincronizar las proyecciones. Cada restauración de metadata se lee de vuelta y se valida contra su estado anterior; una restauración incompleta se eleva como `rollback_failed` y nunca se presenta como fila procesada.
 
 ## Idempotencia
 
@@ -107,7 +107,7 @@ Fase 3.4 endurece también `DryRunEngine`: una fila sin `external_id` ni `proper
 
 ### Unit
 
-`tests/unit/ImportRowExecutorTest.php` cubre inicialmente:
+`tests/unit/ImportRowExecutorTest.php` cubre:
 
 - create de NEW;
 - update de MATCH;
@@ -136,7 +136,8 @@ Fase 3.4 endurece también `DryRunEngine`: una fila sin `external_id` ni `proper
 - retry de la misma fila sin duplicado;
 - actualización posterior;
 - identity projection;
-- search projection;
+- ausencia del draft en el índice público hasta `publish`;
+- quality projection del draft;
 - rechazo de stale identity;
 - checkpoint created/updated;
 - error sin avance de checkpoint;
@@ -147,6 +148,33 @@ Workflow dedicado:
 - `Import Row Executor Integration`;
 - WordPress 6.6.2 / PHP 8.1;
 - WordPress latest / PHP 8.3.
+
+## Review y correcciones
+
+Findings atendidos durante QA:
+
+- P1: la integración esperaba erróneamente un `draft` dentro del índice público; se corrigió para exigir ausencia mientras no esté publicado;
+- P2: rollback de metadata ahora verifica lectura/existencia después de cada restauración;
+- P2: rollback de creación valida también la eliminación de la proyección de identidad.
+
+Todos los threads quedaron resueltos.
+
+## QA final
+
+Ejecución sobre head `7970958a6da361c8212f259aca66beb12e7af385`:
+
+- Phase 1 CI: `success`;
+- Import Row Executor Integration: `success`;
+- Import Persistence Integration: `success`;
+- Administration Quality Gate: `success`;
+- Bootstrap Smoke: `success`;
+- Catalogue Quality Integration: `success`;
+- Activity Integration: `success`;
+- Dashboard Integration: `success`;
+- Settings UI Integration: `success`;
+- Help Center Integration: `success`;
+- review threads pendientes: `0`;
+- P0/P1 pendientes: `0`.
 
 ## Fuera de alcance
 
@@ -159,22 +187,9 @@ Workflow dedicado:
 - migración WooCommerce/ACF;
 - cambios en `propiedadesmartinez.cl`.
 
-## QA pendiente
+## Siguiente paso
 
-Antes del merge:
-
-- PHP syntax;
-- WPCS;
-- PHPStan;
-- PHPUnit;
-- source smoke;
-- build/ZIP smoke;
-- Phase 1 CI completo;
-- Import Persistence Integration;
-- Import Row Executor Integration en ambas matrices;
-- regresiones admin existentes;
-- review sin P0/P1 abiertos;
-- evidencia actualizada a `QA_PASSED / READY_TO_MERGE`.
+Issue #54 — **Fase 3 / PR 3.5 — Runner reanudable de batches de importación**.
 
 ## Producción
 
