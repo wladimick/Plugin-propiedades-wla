@@ -435,11 +435,17 @@ final class PropertyEditor
 		if ($type === 'checkbox') {
 			echo '<input type="hidden" name="' . esc_attr($name) . '" value="0">';
 			echo '<label class="wla-inmo-property-editor__checkbox" for="' . esc_attr($id) . '">';
-			echo '<input type="checkbox" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" value="1"' . checked(self::isTruthy($value), true, false) . '> ';
+			echo '<input type="checkbox" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" value="1"';
+			checked(self::isTruthy($value), true);
+			echo '> ';
 			echo esc_html__('Sí', 'wla-inmo');
 			echo '</label>';
 		} elseif ($type === 'select') {
-			echo '<select id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"' . self::ariaInvalid($error) . '>';
+			echo '<select id="' . esc_attr($id) . '" name="' . esc_attr($name) . '"';
+			if ($error !== '') {
+				echo ' aria-invalid="true"';
+			}
+			echo '>';
 			$options = is_array($control['options'] ?? null) ? $control['options'] : array();
 			$current = is_scalar($value) ? (string) $value : '';
 			if ($current !== '' && !array_key_exists($current, $options)) {
@@ -450,17 +456,24 @@ final class PropertyEditor
 			}
 			echo '</select>';
 		} elseif ($type === 'textarea') {
-			echo '<textarea id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" rows="4"' . self::ariaInvalid($error) . '>' . esc_textarea(is_scalar($value) ? (string) $value : '') . '</textarea>';
+			echo '<textarea id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" rows="4"';
+			if ($error !== '') {
+				echo ' aria-invalid="true"';
+			}
+			echo '>' . esc_textarea(is_scalar($value) ? (string) $value : '') . '</textarea>';
 		} else {
 			$step = (string) ($control['step'] ?? '');
 			echo '<input class="regular-text" type="' . esc_attr($type) . '" id="' . esc_attr($id) . '" name="' . esc_attr($name) . '" value="' . esc_attr(is_scalar($value) ? (string) $value : '') . '"';
 			if ($step !== '') {
 				echo ' step="' . esc_attr($step) . '"';
 			}
-			if ($type === 'number') {
+			if ($type === 'number' && !in_array($field, array('latitude', 'longitude'), true)) {
 				echo ' min="0"';
 			}
-			echo self::ariaInvalid($error) . '>';
+			if ($error !== '') {
+				echo ' aria-invalid="true"';
+			}
+			echo '>';
 		}
 
 		if ((string) $control['help'] !== '') {
@@ -585,9 +598,9 @@ final class PropertyEditor
 
 	private static function verifyNonce(): bool
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- The nonce is verified immediately after extraction.
-		$nonce = isset($_POST[self::NONCE_NAME]) ? wp_unslash($_POST[self::NONCE_NAME]) : '';
-		$nonce = is_scalar($nonce) ? sanitize_text_field((string) $nonce) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce is sanitized and verified immediately below.
+		$rawNonce = isset($_POST[self::NONCE_NAME]) ? wp_unslash($_POST[self::NONCE_NAME]) : '';
+		$nonce = is_scalar($rawNonce) ? sanitize_text_field((string) $rawNonce) : '';
 
 		return $nonce !== '' && wp_verify_nonce($nonce, self::NONCE_ACTION) !== false;
 	}
@@ -865,10 +878,5 @@ final class PropertyEditor
 	private static function isTruthy($value): bool
 	{
 		return Sanitizer::boolean($value);
-	}
-
-	private static function ariaInvalid(string $error): string
-	{
-		return $error === '' ? '' : ' aria-invalid="true"';
 	}
 }
