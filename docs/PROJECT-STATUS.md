@@ -22,8 +22,9 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.6: #16 `DONE`
 - PR 1.7: #18 `DONE`
 - PR 1.8: #20 `DONE`
-- Issue activo Fase 2.1: #23
-- PR activa Fase 2.1: #24 `QA_PASSED / MERGE_PENDING`
+- PR 2.1: #24 `DONE`
+- Issue activo Fase 2.2: #25
+- Rama activa Fase 2.2: `feat/phase2-property-list`
 
 ## Fases
 
@@ -31,7 +32,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24, Issue #25, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -75,52 +76,53 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 
 ### PR 2.1 — Admin shell, navegación y screen registry
 
-Estado: `QA_PASSED / MERGE_PENDING`.
+Estado: `DONE`.
 
-Issue: #23  
-PR: #24  
-Rama: `feat/phase2-admin-shell`
-
-Implementado:
-
-- `Admin\\ScreenRegistry` con las 16 secciones/enlaces documentados;
-- menú raíz `WLA Inmo` protegido por `view_wla_inmo_dashboard`;
-- CPT `wla_property` anidado mediante `show_in_menu = wla-inmo`;
-- pantallas Propiedades/Nueva propiedad delegadas al mecanismo nativo de WordPress, sin registro duplicado;
-- placeholders de módulos futuros solo con capability correspondiente;
-- segundo control de capability para acceso directo por URL;
-- Resumen inicial sin queries de métricas;
-- patrón de ayuda contextual;
-- CSS admin namespaced/condicional, sin JS ni React;
-- smoke test `admin-shell.php`;
-- integración WordPress real del parent del CPT;
-- release ZIP actualizado con clases/assets Admin.
-
-QA final:
-
-- Phase 1 CI run `33827079706`: SUCCESS;
-- WPCS security profile: SUCCESS;
-- PHPStan 2.2: SUCCESS;
-- PHPUnit: `3 tests / 40 assertions`;
-- smoke tests: SUCCESS;
-- WordPress 6.6.2 + PHP 8.1: SUCCESS;
-- WordPress latest + PHP 8.3: SUCCESS;
-- Bootstrap Smoke run `33827079713`: SUCCESS;
-- Artifact `9920346563`;
+- Issue #23: CLOSED.
+- PR #24: MERGED.
+- Squash merge: `50d3800477006af51cd4604009178105ed8002c0`.
+- CI final `33827079706`: SUCCESS.
+- Bootstrap Smoke `33827079713`: SUCCESS.
+- WPCS, PHPStan, PHPUnit y smoke tests: SUCCESS.
+- WordPress 6.6.2 + PHP 8.1: SUCCESS.
+- WordPress latest + PHP 8.3: SUCCESS.
+- Artifact `9920346563`.
 - ZIP SHA-256 `f78779284caae48896a1c7f74de5f3d416fcac8eac2540a052ea0938fddfba6f`.
+- Evidencia: `docs/evidence/phase-2/PR-2.1-ADMIN-SHELL.md`.
 
-Evidencia: `docs/evidence/phase-2/PR-2.1-ADMIN-SHELL.md`.
+### PR 2.2 — Listado profesional de Propiedades
 
-Findings documentados y corregidos:
+Estado: `IN_PROGRESS / QA PENDING`.
 
-- WPCS solicitó nonce sobre GET de routing exclusivamente de lectura; se documentaron excepciones lineales después de confirmar que no existe mutación y se mantuvo sanitización;
-- se evitó duplicación potencial de submenús al dejar Propiedades/Nueva propiedad bajo responsabilidad nativa de WordPress.
+Issue: #25  
+Rama: `feat/phase2-property-list`
 
-**No marcar PR 2.1 como DONE hasta que PR #24 esté efectivamente mergeada.**
+Alcance implementado en la rama:
+
+- columnas profesionales: foto, título, código, operación, tipo, ubicación, precio, estado, destacada y actualización;
+- precio administrativo basado en campos canónicos, respetando `hide_price`, `price_on_request` y `currency_primary`;
+- filtros por operación, tipo, región, comuna, sector, estado y destacada;
+- búsqueda ampliada por código y `external_id`, sin renderizar `external_id` en la tabla;
+- filtros y orden por código apoyados en `wp_wla_property_index`;
+- `LEFT JOIN` limitado al listado administrativo de `wla_property` y solo cuando hace falta;
+- paginación nativa de WordPress preservada;
+- índice SQL actualizado a versión 2 con claves específicas para región, sector y estado/destacada;
+- estilos responsivos y miniaturas sin cargar galerías completas;
+- smoke test `tests/smoke/property-list.php`;
+- integración WordPress extendida para validar upgrade del índice y presentación canónica;
+- release smoke actualizado para exigir `Admin\\PropertyList` dentro del ZIP.
+
+Pendiente para cerrar PR 2.2:
+
+- abrir PR;
+- ejecutar CI completo;
+- corregir cualquier finding;
+- registrar artifact/digest final;
+- squash merge;
+- actualizar evidencia a `DONE`.
 
 ### Orden restante previsto
 
-- PR 2.2 listado profesional de Propiedades;
 - PR 2.3 editor guiado de Propiedad;
 - PR 2.4 multimedia/galería;
 - PR 2.5 Calidad del catálogo;
@@ -130,11 +132,11 @@ Findings documentados y corregidos:
 - PR 2.9 Dashboard/Resumen operativo;
 - PR 2.10 Quality Gate de Administración.
 
-La implementación debe reutilizar capabilities, validators, settings e índice de Fase 1; no crear lógica de dominio paralela en el admin.
+La implementación debe reutilizar capabilities, validators, settings e índice del Core; no crear lógica de dominio paralela en el admin.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 ni de PR 2.1 en estado QA.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1.
 
 Deuda de prioridad baja heredada:
 
