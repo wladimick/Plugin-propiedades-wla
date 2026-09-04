@@ -170,7 +170,7 @@ final class BatchRunner
 					);
 				}
 
-				$nextOffset = (int) ($row['next_offset'] ?? -1);
+				$nextOffset = (int) $row['next_offset'];
 				if ($nextOffset <= $cursorOffset) {
 					return $this->failProcessing(
 						$batchUuid,
