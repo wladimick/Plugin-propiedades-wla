@@ -127,15 +127,31 @@ final class CsvReader
 			throw new CsvException('unreadable_file', 'CSV file is not readable.');
 		}
 
-		$sample = fgets($handle, self::DETECTION_BYTES);
-		fclose($handle);
+		$sample = null;
+		$sampleRow = 0;
 
-		if (!is_string($sample) || $sample === '') {
-			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+		while (!feof($handle)) {
+			$candidate = fgets($handle, self::DETECTION_BYTES);
+			++$sampleRow;
+			if (!is_string($candidate)) {
+				break;
+			}
+
+			$candidate = self::stripBom($candidate);
+			$this->assertUtf8($candidate, $sampleRow);
+			if (trim($candidate) === '') {
+				continue;
+			}
+
+			$sample = $candidate;
+			break;
 		}
 
-		$sample = self::stripBom($sample);
-		$this->assertUtf8($sample, 1);
+		fclose($handle);
+
+		if ($sample === null) {
+			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+		}
 
 		$bestDelimiter = ',';
 		$bestCount = 1;
@@ -220,7 +236,7 @@ final class CsvReader
 
 	private static function normalizeHeader(string $value): string
 	{
-		$value = trim(strtolower($value));
+		$value = trim($value);
 		$value = strtr(
 			$value,
 			array(
@@ -231,8 +247,16 @@ final class CsvReader
 				'ú' => 'u',
 				'ü' => 'u',
 				'ñ' => 'n',
+				'Á' => 'a',
+				'É' => 'e',
+				'Í' => 'i',
+				'Ó' => 'o',
+				'Ú' => 'u',
+				'Ü' => 'u',
+				'Ñ' => 'n',
 			)
 		);
+		$value = strtolower($value);
 		$value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? '';
 		$value = preg_replace('/_+/', '_', $value) ?? '';
 
