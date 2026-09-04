@@ -44,6 +44,11 @@ final class TargetRegistry
 		);
 
 		foreach (MetaSchema::definitions() as $field => $definition) {
+			// Gallery attachment IDs are internal WordPress references, not portable import data.
+			if ($field === 'gallery_ids') {
+				continue;
+			}
+
 			$validator = self::metaValidator((string) $field, (string) $definition['type']);
 			$definitions['meta.' . $field] = array(
 				'kind'      => 'meta',
