@@ -6,6 +6,7 @@ use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
+use WLA\Inmo\Quality\Indexer as QualityIndexer;
 use WLA\Inmo\Search\Indexer;
 use WLA\Inmo\Settings\Registry as SettingsRegistry;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
@@ -46,6 +47,7 @@ final class Plugin
 		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
 
 		Indexer::register();
+		QualityIndexer::register();
 
 		if (is_admin()) {
 			AdminBootstrap::register();
