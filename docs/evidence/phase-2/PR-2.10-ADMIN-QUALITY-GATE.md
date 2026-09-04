@@ -1,11 +1,12 @@
 # Evidencia — Fase 2 / PR 2.10 Quality Gate de Administración
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
-Issue: #41  
-PR: #42  
+Issue: #41 — CLOSED  
+PR: #42 — MERGED  
 Rama: `test/phase2-admin-quality-gate`  
-Head funcional validado: `190cdf8787e92c17c715ce195e7620cd55cf704d`
+Head funcional validado: `190cdf8787e92c17c715ce195e7620cd55cf704d`  
+Squash final en `main`: `5f8d314fe0cad79ba0d29c3feed7577ca5ec642b`
 
 ## Objetivo
 
@@ -27,7 +28,7 @@ PR 2.1–2.9 están mergeadas. El baseline comprende:
 
 ## Resultado ejecutivo
 
-El Quality Gate final quedó verde para el head validado.
+El Quality Gate final quedó verde para el head validado y PR #42 fue mergeada mediante squash.
 
 - Administration Quality Gate `33874413262`: `SUCCESS`;
 - Phase 1 CI `33874412820`: `SUCCESS`;
@@ -267,9 +268,12 @@ Composer todavía informa que el `composer.lock` de tooling PHP no está version
 
 ## Criterio de salida
 
-PR 2.10 queda `QA_PASSED / MERGE_PENDING`.
+PR 2.10: `DONE`.  
+Fase 2 — Administración: `DONE`.
 
-Fase 2 puede declararse `DONE` una vez realizado el squash merge efectivo de PR #42 y registrado su SHA final en `main`. No corresponde reabrir funcionalidades de Administración dentro de este cierre salvo que aparezca un finding crítico/alto nuevo.
+Squash merge final: `5f8d314fe0cad79ba0d29c3feed7577ca5ec642b`.
+
+El siguiente hito autorizado por el roadmap es **Fase 3 — Import/Export**.
 
 ## Producción
 
