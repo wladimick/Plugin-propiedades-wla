@@ -498,7 +498,7 @@ final class PropertyList
 
 	private static function requestKey(string $key): string
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list-table filter state.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only filter; sanitize_key is applied immediately below.
 		$value = isset($_GET[$key]) ? wp_unslash($_GET[$key]) : '';
 
 		return sanitize_key(is_scalar($value) ? (string) $value : '');
@@ -506,7 +506,7 @@ final class PropertyList
 
 	private static function requestFeatured(): ?int
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only list-table filter state.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only filter; value is strictly whitelisted to 0/1 below.
 		$value = isset($_GET[self::FILTER_FEATURED]) ? wp_unslash($_GET[self::FILTER_FEATURED]) : '';
 		$value = is_scalar($value) ? (string) $value : '';
 
