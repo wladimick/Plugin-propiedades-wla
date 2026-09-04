@@ -1,8 +1,9 @@
 # Evidencia — Fase 1 / PR 1.7 Settings y contratos públicos mínimos
 
-Estado documental: `IN_PROGRESS`.
+Estado documental: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #17  
+PR: #18  
 Rama: `feat/phase1-settings-contracts`
 
 ## Objetivo
@@ -18,44 +19,51 @@ Definir configuración base reutilizable y el contrato inicial plugin↔tema sin
 - `Frontend\\TemplateResolver` — theme override → plugin fallback.
 - `Properties\\PostType` — consume `property_base` configurado.
 
-## Configuración inicial
+## Seguridad y extensibilidad
 
-- `country_code`;
-- `currency_primary`;
-- `area_unit`;
-- `map_provider`;
-- `property_base`;
-- `business_name` opcional/vacío por defecto.
+- settings con `manage_wla_inmo_settings`, no `manage_options`;
+- raw settings fuera de REST;
+- property slug sanitizado;
+- resolver rechaza traversal/null bytes/no-PHP;
+- no hay flush de rewrites por request;
+- hooks mínimos: `wla_inmo_settings_defaults`, `wla_inmo_template_candidates`, `wla_inmo_template_path`.
 
-Claves desconocidas se descartan. Raw settings no se exponen por REST.
+## Historial de QA
 
-## Seguridad
+### Run `33825179697` — FAILURE
 
-- settings autorizados mediante `manage_wla_inmo_settings`, no `manage_options`;
-- slug de propiedades sanitizado;
-- resolver rechaza `..`, null bytes, segmentos inválidos y archivos no PHP;
-- paths no provienen directamente de una entrada de usuario;
-- no se ejecuta `flush_rewrite_rules()` por request.
+El nuevo smoke falló en la expectativa de slug `Región`. El código productivo utiliza `sanitize_title()` de WordPress; el stub del test no simulaba la normalización de caracteres acentuados y producía un resultado diferente.
 
-## Extensibilidad pública mínima
+Acción: se corrigió **el fixture/stub del test**, no se relajó el contrato productivo. El stub ahora emula la transliteración relevante antes de validar el slug esperado.
 
-- `wla_inmo_settings_defaults`;
-- `wla_inmo_template_candidates`;
-- `wla_inmo_template_path`.
+### Run final `33825238074` — SUCCESS
 
-No se congela una API mayor antes de existir casos de uso reales.
+Job: `PHP 8.1 / Build Smoke`.
 
-## Tests definidos
+Pasaron:
 
-`tests/smoke/settings-contracts.php` valida preset sin branding, sanitización, discard de claves desconocidas, repository, Settings API/capability, base configurable del CPT, overrides de tema y protección de paths.
+1. Composer validation.
+2. PHP syntax.
+3. Todos los source smoke tests.
+4. `settings-contracts.php` con sanitización y theme resolver.
+5. Build ZIP.
+6. Release ZIP smoke.
+7. Composer autoload de Preset/Settings/TemplateResolver.
+8. Upload de artifact.
 
-El release smoke exige/autoloadea Preset, Settings y TemplateResolver.
+## Artefacto final
+
+- Artifact ID: `9919688589`
+- Nombre: `wla-inmo-0.1.0-alpha.1`
+- Tamaño: `36301` bytes
+- Digest: `sha256:24d3319a48f27633df06baded63a959912722fb5afb22287323a5cc7b239224d`
+- Expira: 2026-12-03
 
 ## Documentación
 
 - `docs/SETTINGS-CONTRACT.md`;
 - `docs/TEMPLATE-CONTRACT.md`;
-- `docs/THEME-INTEGRATION.md` conserva el diseño global; las plantillas visuales completas permanecen en Fase 4.
+- `docs/THEME-INTEGRATION.md` mantiene el diseño global; plantillas visuales completas quedan en Fase 4.
 
 ## Producción
 
@@ -63,4 +71,4 @@ No afectada.
 
 ## Cierre
 
-Completar con PR, workflow, artifact, digest y squash merge después de QA.
+QA requerido para merge aprobado. Después del squash merge, PR #18 será la evidencia canónica y el siguiente alcance será PR 1.8 — CI de Fase 1 y release alpha.
