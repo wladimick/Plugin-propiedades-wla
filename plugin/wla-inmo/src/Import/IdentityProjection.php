@@ -9,8 +9,8 @@ use WLA\Inmo\Properties\Sanitizer;
 final class IdentityProjection
 {
 	/**
-	 * Build an identity projection for every real WLA property, including drafts.
-	 * Trash and auto-drafts are intentionally excluded.
+	 * Build an identity projection for every WLA property that has at least one
+	 * stable identity. Drafts are included; trash and auto-drafts are excluded.
 	 *
 	 * @return array<string,mixed>|null
 	 */
@@ -30,6 +30,10 @@ final class IdentityProjection
 		$propertyCode = self::textMeta($postId, 'property_code');
 
 		if (($sourceKey === '') !== ($externalId === '')) {
+			return null;
+		}
+
+		if ($sourceKey === '' && $externalId === '' && $propertyCode === '') {
 			return null;
 		}
 
