@@ -151,8 +151,8 @@ test.describe.serial('WLA Inmo administration quality gate', () => {
 
     await page.goto('/wp-admin/edit.php?post_type=wla_property');
     await expect(page.locator('#posts-filter .wp-list-table')).toBeVisible();
-    await expect(page.locator('th.column-wla_code')).toContainText(/Código/i);
-    await expect(page.locator('th.column-wla_price')).toContainText(/Precio/i);
+    await expect(page.locator('#wla_code')).toContainText(/Código/i);
+    await expect(page.locator('#wla_price')).toContainText(/Precio/i);
 
     await page.goto('/wp-admin/admin.php?page=wla-inmo');
     await expect(page.getByRole('heading', { name: 'Necesita atención' })).toBeVisible();
