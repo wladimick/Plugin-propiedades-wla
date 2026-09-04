@@ -35,6 +35,21 @@ async function assertNoSeriousOwnUiViolations(page, include) {
   ).toEqual([]);
 }
 
+async function assertNoOwnHorizontalOverflow(page, selector, context) {
+  const element = page.locator(selector).first();
+  await expect(element, `${context} should remain visible`).toBeVisible();
+
+  const overflow = await element.evaluate((node) => ({
+    clientWidth: node.clientWidth,
+    scrollWidth: node.scrollWidth,
+  }));
+
+  expect(
+    overflow.scrollWidth,
+    `${context} own UI should not overflow horizontally: ${JSON.stringify(overflow)}`,
+  ).toBeLessThanOrEqual(overflow.clientWidth + 2);
+}
+
 async function saveClassicPost(page, buttonId) {
   await Promise.all([
     page.waitForURL(/\/wp-admin\/post\.php\?post=\d+&action=edit/),
@@ -116,16 +131,30 @@ test.describe.serial('WLA Inmo administration quality gate', () => {
     await expect(page.locator('body')).toContainText(/not allowed|no tienes permisos|no tienes autorización|sorry/i);
   });
 
-  test('@responsive dashboard remains usable without own-UI horizontal overflow', async ({ page }) => {
+  test('@responsive administration remains usable across priority screens', async ({ page }) => {
+    const ownScreens = [
+      ['/wp-admin/admin.php?page=wla-inmo', '.wla-inmo-admin', 'Resumen'],
+      ['/wp-admin/admin.php?page=wla-inmo-quality', '.wla-inmo-admin', 'Calidad'],
+      ['/wp-admin/admin.php?page=wla-inmo-activity', '.wla-inmo-admin', 'Actividad'],
+      ['/wp-admin/admin.php?page=wla-inmo-help', '.wla-inmo-admin', 'Ayuda'],
+      ['/wp-admin/admin.php?page=wla-inmo-settings', '.wla-inmo-admin', 'Ajustes'],
+    ];
+
+    for (const [url, selector, label] of ownScreens) {
+      await page.goto(url);
+      await assertNoOwnHorizontalOverflow(page, selector, label);
+    }
+
+    await page.goto('/wp-admin/post-new.php?post_type=wla_property');
+    await assertNoOwnHorizontalOverflow(page, '#wla-inmo-property-editor', 'Editor de propiedad');
+    await assertNoOwnHorizontalOverflow(page, '.wla-inmo-property-media', 'Multimedia');
+
+    await page.goto('/wp-admin/edit.php?post_type=wla_property');
+    await expect(page.locator('#posts-filter .wp-list-table')).toBeVisible();
+    await expect(page.locator('th.column-wla_code')).toContainText(/Código/i);
+    await expect(page.locator('th.column-wla_price')).toContainText(/Precio/i);
+
     await page.goto('/wp-admin/admin.php?page=wla-inmo');
-    await expect(page.locator('.wla-inmo-admin')).toBeVisible();
-
-    const overflow = await page.locator('.wla-inmo-admin').evaluate((element) => ({
-      clientWidth: element.clientWidth,
-      scrollWidth: element.scrollWidth,
-    }));
-
-    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 2);
     await expect(page.getByRole('heading', { name: 'Necesita atención' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Accesos rápidos' })).toBeVisible();
   });
