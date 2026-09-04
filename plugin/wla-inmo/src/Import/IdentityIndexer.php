@@ -87,14 +87,10 @@ final class IdentityIndexer
 	 */
 	public static function identityMetaKeys(): array
 	{
-		$keys = array(IdentityMeta::SOURCE_KEY_META);
-		foreach (array('external_id', 'property_code') as $field) {
-			$key = MetaSchema::metaKey($field);
-			if ($key !== null) {
-				$keys[] = $key;
-			}
-		}
-
-		return array_values(array_unique($keys));
+		return array(
+			IdentityMeta::SOURCE_KEY_META,
+			MetaSchema::META_PREFIX . 'external_id',
+			MetaSchema::META_PREFIX . 'property_code',
+		);
 	}
 }
