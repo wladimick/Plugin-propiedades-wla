@@ -4,6 +4,7 @@ namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
+use WLA\Inmo\Search\Indexer;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
 final class Plugin
@@ -37,6 +38,9 @@ final class Plugin
 		add_action('init', array(PostType::class, 'register'), 5);
 		add_action('init', array(TaxonomyRegistry::class, 'register'), 6);
 		add_action('init', array(MetaSchema::class, 'register'), 7);
+		add_action('admin_init', array(Installer::class, 'maybeUpgrade'), 1);
+
+		Indexer::register();
 
 		/**
 		 * Fires after WLA Inmo Core has completed its bootstrap.
