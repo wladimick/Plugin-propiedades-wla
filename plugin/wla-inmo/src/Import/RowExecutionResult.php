@@ -40,16 +40,19 @@ final class RowExecutionResult
 		$this->errors = array_values($errors);
 	}
 
+	/** @param array<int,array{code:string,target:string}> $warnings */
 	public static function created(int $rowNumber, int $propertyId, ?string $identityReason, array $warnings = array()): self
 	{
 		return new self($rowNumber, self::STATUS_CREATED, $propertyId, $identityReason, $warnings);
 	}
 
+	/** @param array<int,array{code:string,target:string}> $warnings */
 	public static function updated(int $rowNumber, int $propertyId, ?string $identityReason, array $warnings = array()): self
 	{
 		return new self($rowNumber, self::STATUS_UPDATED, $propertyId, $identityReason, $warnings);
 	}
 
+	/** @param array<int,array{code:string,target:string}> $warnings */
 	public static function skipped(int $rowNumber, ?int $propertyId, string $reason, array $warnings = array()): self
 	{
 		return new self(
@@ -61,6 +64,7 @@ final class RowExecutionResult
 		);
 	}
 
+	/** @param array<int,array{code:string,target:string}> $warnings */
 	public static function error(int $rowNumber, string $code, string $target = 'execution', ?int $propertyId = null, array $warnings = array()): self
 	{
 		return new self(
