@@ -3,6 +3,7 @@
 Estado documental: `IN_PROGRESS / QA_RUNNING`.
 
 Issue: #41  
+PR: #42  
 Rama: `test/phase2-admin-quality-gate`
 
 ## Objetivo
@@ -27,8 +28,8 @@ PR 2.1–2.9 están mergeadas. El baseline incluye:
 
 Se incorpora una suite Playwright propia con tooling versionado explícitamente:
 
-- `@playwright/test` `1.55.0`;
-- `@axe-core/playwright` `4.10.2`;
+- `@playwright/test` `1.62.1`;
+- `@axe-core/playwright` `4.13.0`;
 - Node 22 en CI;
 - Chromium instalado por Playwright.
 
@@ -40,6 +41,8 @@ Configuración:
 - un worker en CI para mantener estado administrativo determinista;
 - timeouts acotados;
 - report HTML como evidencia.
+
+Las versiones iniciales propuestas durante el scaffolding fueron reemplazadas antes del cierre de QA por versiones estables publicadas y fijadas de forma exacta.
 
 ### Flujos cubiertos inicialmente
 
@@ -55,6 +58,39 @@ Configuración:
 - abrir Centro de Ayuda;
 - usuario Editor intentando entrar a Ajustes por URL directa;
 - responsive del Resumen.
+
+## Seguridad / autorización negativa
+
+`tests/integration/assert-admin-security.php` ejecuta sobre un WordPress real instalado desde el ZIP del plugin y verifica:
+
+- Administrator conserva todas las capabilities gestionadas por WLA;
+- Administrador inmobiliario puede operar propiedades/settings/actividad pero no recibe Herramientas técnicas;
+- Editor de propiedades puede editar/publicar sus propiedades pero no editar propiedades de otros autores ni acceder a Settings/Actividad por conveniencia;
+- Gestor de leads no recibe permisos de propiedades o Settings;
+- una escritura de la ficha sin nonce no modifica meta;
+- un nonce inválido no modifica meta;
+- un nonce válido + usuario autorizado sí persiste;
+- un Editor con nonce válido no puede modificar la propiedad de otro autor;
+- código duplicado se rechaza;
+- moneda fuera del contrato se rechaza.
+
+Esto complementa el E2E de acceso directo por URL; ocultar el menú nunca se considera suficiente control de acceso.
+
+## Performance administrativo
+
+`tests/integration/assert-admin-performance.php` crea un catálogo sintético incremental hasta 5.000 propiedades y registra benchmarks para:
+
+- Dashboard con 100, 1.000 y 5.000 propiedades;
+- listado administrativo paginado a 20 elementos;
+- paginación de Actividad.
+
+Budgets iniciales de regresión CI:
+
+- Dashboard sin Actividad: `<= 5` queries y `< 5 s` por milestone;
+- primera página de listado: `<= 4` queries y `< 5 s`;
+- Actividad: `<= 2` queries, máximo 30 filas y `< 5 s`.
+
+Estos límites son guards conservadores de CI para detectar regresiones; no son promesas de rendimiento de un hosting productivo.
 
 ## Accesibilidad automática
 
@@ -87,7 +123,7 @@ Los usuarios y contraseñas de CI son efímeros:
 
 ## Reproducibilidad de dependencias Node
 
-`package.json` usa versiones exactas. El primer workflow genera además `package-lock.json` y lo incluye en el artifact de evidencia; antes de cerrar PR 2.10 ese lock debe quedar versionado y el workflow migrará a `npm ci`.
+`package.json` usa versiones exactas. El workflow genera además `package-lock.json` y lo incluye en el artifact de evidencia; antes de cerrar PR 2.10 ese lock debe quedar versionado y el workflow migrará a `npm ci`.
 
 ## CI agregado
 
@@ -103,29 +139,28 @@ Baseline inicial:
 
 El workflow:
 
-1. construye el ZIP instalable real;
-2. instala WordPress limpio;
-3. activa WLA Inmo desde el ZIP;
-4. crea taxonomías fixture;
-5. crea un Editor de propiedades temporal;
-6. levanta WordPress local en el runner;
-7. ejecuta Playwright;
-8. conserva report, screenshots/videos/traces, lockfile generado y log del servidor cuando corresponda.
+1. instala tooling Node fijado;
+2. instala Chromium;
+3. construye el ZIP instalable real;
+4. instala WordPress limpio;
+5. activa WLA Inmo desde el ZIP;
+6. crea taxonomías fixture y un Editor temporal;
+7. ejecuta integración negativa de seguridad/autorización;
+8. ejecuta benchmark sintético 100/1.000/5.000;
+9. levanta WordPress local en el runner;
+10. ejecuta Playwright/axe/responsive;
+11. conserva report, screenshots/videos/traces, lockfile generado, benchmark y log del servidor.
 
 ## Quality Gate pendiente
 
 Todavía deben completarse y registrarse antes de `DONE`:
 
-- resultado real del nuevo workflow;
+- resultado final del nuevo workflow y corrección de findings;
 - package-lock versionado + `npm ci`;
-- matriz de permisos positiva/negativa ampliada;
-- pruebas negativas de nonce/capability/IDOR;
 - revisión manual de accesibilidad/teclado;
-- revisión responsive de las pantallas administrativas prioritarias;
-- benchmark sintético 100/1.000/5.000 según viabilidad CI;
+- revisión responsive ampliada de pantallas administrativas prioritarias;
 - auditoría final de assets condicionales;
 - limpieza de copias obsoletas del editor;
-- findings y correcciones;
 - integraciones heredadas completas;
 - artifact final y SHA-256;
 - squash merge.
