@@ -30,7 +30,7 @@ wlaHelpExpect(str_contains((string) $onboarding, 'wp_verify_nonce'), 'Onboarding
 wlaHelpExpect(str_contains((string) $onboarding, 'current_user_can'), 'Onboarding writes must enforce capabilities.');
 wlaHelpExpect(!str_contains((string) $onboarding, 'update_option('), 'Onboarding progress must not be global option state.');
 
-wlaHelpExpect(is_string($context) && substr_count($context, 'add_help_tab') >= 4, 'Property context help should expose general, data, media and quality guidance.');
+wlaHelpExpect(is_string($context) && str_contains($context, 'Datos de la propiedad') && str_contains($context, 'Multimedia') && str_contains($context, 'Calidad'), 'Property context help should explain data, media and quality in one focused tab.');
 wlaHelpExpect(is_string($assets) && str_contains($assets, 'help-center.css') && str_contains($assets, 'help-center.js'), 'Help assets must be packaged and scoped.');
 wlaHelpExpect(is_string($script) && str_contains($script, 'data-wla-help-topic'), 'Help search must operate on local packaged topics.');
 wlaHelpExpect(!preg_match('/fetch\s*\(|XMLHttpRequest|axios|\.ajax\s*\(/i', (string) $script), 'Help search must not make network requests.');
