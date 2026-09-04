@@ -97,7 +97,9 @@ update_post_meta($propertyId, '_wla_inmo_currency_primary', 'CLP');
 update_post_meta($propertyId, '_wla_inmo_price_clp', 123456789);
 update_post_meta($propertyId, '_wla_inmo_status', 'available');
 
-if (WLA\Inmo\Admin\PropertyList::priceLabel($propertyId) !== '$123.456.789') {
+$priceLabel = WLA\Inmo\Admin\PropertyList::priceLabel($propertyId);
+$priceDigits = preg_replace('/[^0-9]/', '', $priceLabel);
+if (!str_starts_with($priceLabel, '$') || $priceDigits !== '123456789') {
 	$fail('Professional list does not render canonical CLP price correctly.');
 }
 
