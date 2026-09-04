@@ -1,0 +1,8 @@
+parameters:
+    level: 6
+    paths:
+        - plugin/wla-inmo/src/Core/Requirements.php
+        - plugin/wla-inmo/src/Access/Capabilities.php
+        - plugin/wla-inmo/src/Properties/Capabilities.php
+        - plugin/wla-inmo/src/Taxonomies/Capabilities.php
+    reportUnmatchedIgnoredErrors: true
