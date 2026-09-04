@@ -2,6 +2,7 @@
 
 namespace WLA\Inmo\Core;
 
+use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Search\Indexer;
@@ -39,6 +40,7 @@ final class Plugin
 		add_action('init', array(TaxonomyRegistry::class, 'register'), 6);
 		add_action('init', array(MetaSchema::class, 'register'), 7);
 		add_action('admin_init', array(Installer::class, 'maybeUpgrade'), 1);
+		add_action('admin_init', array(RoleManager::class, 'maybeUpgrade'), 2);
 
 		Indexer::register();
 
