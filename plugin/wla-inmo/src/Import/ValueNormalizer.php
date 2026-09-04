@@ -11,7 +11,7 @@ final class ValueNormalizer
 	/**
 	 * @param array<string,mixed> $definition Canonical target definition.
 	 */
-	public static function normalize($rawValue, array $definition, ?string $separator = null): NormalizedValue
+	public static function normalize(mixed $rawValue, array $definition, ?string $separator = null): NormalizedValue
 	{
 		$validator = (string) ($definition['validator'] ?? 'text');
 
@@ -34,7 +34,7 @@ final class ValueNormalizer
 		};
 	}
 
-	private static function boolean($value): NormalizedValue
+	private static function boolean(mixed $value): NormalizedValue
 	{
 		if (is_bool($value)) {
 			return NormalizedValue::valid($value);
@@ -68,7 +68,7 @@ final class ValueNormalizer
 		return NormalizedValue::invalid('invalid_boolean');
 	}
 
-	private static function integer($value): NormalizedValue
+	private static function integer(mixed $value): NormalizedValue
 	{
 		if ($value === '' || $value === null || is_bool($value) || filter_var($value, FILTER_VALIDATE_INT) === false) {
 			return NormalizedValue::invalid('invalid_integer');
@@ -77,42 +77,42 @@ final class ValueNormalizer
 		return NormalizedValue::valid((int) $value);
 	}
 
-	private static function number($value): NormalizedValue
+	private static function number(mixed $value): NormalizedValue
 	{
 		$number = Sanitizer::number($value);
 
 		return $number === null ? NormalizedValue::invalid('invalid_number') : NormalizedValue::valid($number);
 	}
 
-	private static function nonNegativeInteger($value): NormalizedValue
+	private static function nonNegativeInteger(mixed $value): NormalizedValue
 	{
 		$integer = Sanitizer::nonNegativeInteger($value);
 
 		return $integer === null ? NormalizedValue::invalid('invalid_non_negative_integer') : NormalizedValue::valid($integer);
 	}
 
-	private static function nonNegativeNumber($value): NormalizedValue
+	private static function nonNegativeNumber(mixed $value): NormalizedValue
 	{
 		$number = Sanitizer::nonNegativeNumber($value);
 
 		return $number === null ? NormalizedValue::invalid('invalid_non_negative_number') : NormalizedValue::valid($number);
 	}
 
-	private static function date($value): NormalizedValue
+	private static function date(mixed $value): NormalizedValue
 	{
 		$date = Sanitizer::date($value);
 
 		return $date === '' ? NormalizedValue::invalid('invalid_date') : NormalizedValue::valid($date);
 	}
 
-	private static function currency($value): NormalizedValue
+	private static function currency(mixed $value): NormalizedValue
 	{
 		$currency = Sanitizer::currency($value);
 
 		return $currency === '' ? NormalizedValue::invalid('invalid_currency') : NormalizedValue::valid($currency);
 	}
 
-	private static function status($value): NormalizedValue
+	private static function status(mixed $value): NormalizedValue
 	{
 		$status = Sanitizer::key($value);
 
@@ -121,21 +121,21 @@ final class ValueNormalizer
 			: NormalizedValue::invalid('invalid_status');
 	}
 
-	private static function latitude($value): NormalizedValue
+	private static function latitude(mixed $value): NormalizedValue
 	{
 		$latitude = Sanitizer::latitude($value);
 
 		return $latitude === null ? NormalizedValue::invalid('invalid_latitude') : NormalizedValue::valid($latitude);
 	}
 
-	private static function longitude($value): NormalizedValue
+	private static function longitude(mixed $value): NormalizedValue
 	{
 		$longitude = Sanitizer::longitude($value);
 
 		return $longitude === null ? NormalizedValue::invalid('invalid_longitude') : NormalizedValue::valid($longitude);
 	}
 
-	private static function urlList($value, ?string $separator): NormalizedValue
+	private static function urlList(mixed $value, ?string $separator): NormalizedValue
 	{
 		$items = self::splitValues($value, $separator);
 		$urls = array();
@@ -151,7 +151,7 @@ final class ValueNormalizer
 		return NormalizedValue::valid(array_values(array_unique($urls)));
 	}
 
-	private static function taxonomyValue($value, ?string $separator, bool $multiple): NormalizedValue
+	private static function taxonomyValue(mixed $value, ?string $separator, bool $multiple): NormalizedValue
 	{
 		$items = self::splitValues($value, $multiple ? $separator : null);
 		$items = array_values(array_filter(array_map(array(Sanitizer::class, 'text'), $items), static fn (string $item): bool => $item !== ''));
@@ -170,10 +170,10 @@ final class ValueNormalizer
 	/**
 	 * @return array<int,string>
 	 */
-	private static function splitValues($value, ?string $separator): array
+	private static function splitValues(mixed $value, ?string $separator): array
 	{
 		if (is_array($value)) {
-			return array_map(static fn ($item): string => trim((string) $item), $value);
+			return array_map(static fn (mixed $item): string => trim((string) $item), $value);
 		}
 
 		if (!is_scalar($value) && $value !== null) {
