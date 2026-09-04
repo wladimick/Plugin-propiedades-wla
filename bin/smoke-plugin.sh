@@ -37,6 +37,11 @@ required_files=(
 	"src/Access/Capabilities.php"
 	"src/Access/RoleMatrix.php"
 	"src/Access/RoleManager.php"
+	"src/Localization/ChilePreset.php"
+	"src/Settings/Schema.php"
+	"src/Settings/Repository.php"
+	"src/Settings/Registry.php"
+	"src/Frontend/TemplateResolver.php"
 	"src/Properties/PostType.php"
 	"src/Properties/Capabilities.php"
 	"src/Properties/MetaSchema.php"
@@ -62,7 +67,7 @@ while IFS= read -r -d '' php_file; do
 	php -l "$php_file" >/dev/null
 done < <(find "$PLUGIN_DIR" -type f -name '*.php' -print0)
 
-php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
+php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Localization\\ChilePreset','WLA\\Inmo\\Settings\\Schema','WLA\\Inmo\\Settings\\Repository','WLA\\Inmo\\Settings\\Registry','WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
 if grep -RIEq 'wc_get_|WooCommerce|Elementor|WPCode|get_field[[:space:]]*\(|product_cat' "$PLUGIN_DIR/src" "$PLUGIN_DIR/wla-inmo.php"; then
 	echo "Forbidden legacy runtime dependency reference found in WLA Inmo core." >&2

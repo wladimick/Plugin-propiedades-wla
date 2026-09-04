@@ -6,6 +6,7 @@ use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Search\Indexer;
+use WLA\Inmo\Settings\Registry as SettingsRegistry;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
 final class Plugin
@@ -41,6 +42,7 @@ final class Plugin
 		add_action('init', array(MetaSchema::class, 'register'), 7);
 		add_action('admin_init', array(Installer::class, 'maybeUpgrade'), 1);
 		add_action('admin_init', array(RoleManager::class, 'maybeUpgrade'), 2);
+		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
 
 		Indexer::register();
 
