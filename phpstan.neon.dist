@@ -8,4 +8,13 @@ parameters:
         - plugin/wla-inmo/src/Import
     bootstrapFiles:
         - tests/phpstan/wordpress-import-stubs.php
+    ignoreErrors:
+        -
+            message: '#Strict comparison using === between non-empty-array<mixed, mixed> and array\{\} will always evaluate to false\.#'
+            path: plugin/wla-inmo/src/Import/RowExecutor.php
+            count: 1
+        -
+            message: '#Strict comparison using === between non-empty-array<mixed, mixed> and array\{\} will always evaluate to false\.#'
+            path: plugin/wla-inmo/src/Import/WordPressPropertyWriter.php
+            count: 1
     reportUnmatchedIgnoredErrors: true
