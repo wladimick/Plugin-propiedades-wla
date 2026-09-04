@@ -25,7 +25,7 @@ final class PageRenderer
 		if ($definition['slug'] === ScreenRegistry::ROOT_SLUG) {
 			self::renderDashboard();
 		} elseif ($definition['slug'] === 'wla-inmo-help') {
-			self::renderHelpLanding();
+			HelpCenter::render();
 		} elseif ($definition['slug'] === 'wla-inmo-quality') {
 			QualityPage::render();
 		} else {
@@ -37,6 +37,7 @@ final class PageRenderer
 
 	private static function renderDashboard(): void
 	{
+		Onboarding::renderDashboardCard();
 		echo '<section class="wla-inmo-admin__grid" aria-label="' . esc_attr__('Accesos rápidos', 'wla-inmo') . '">';
 
 		if (current_user_can(PropertyCapabilities::EDIT_POSTS)) {
@@ -78,7 +79,7 @@ final class PageRenderer
 
 		echo '</section>';
 		echo '<div class="notice notice-info inline wla-inmo-admin__notice"><p>';
-		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza la Calidad del catálogo para priorizar correcciones.', 'wla-inmo');
+		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza Calidad y el Centro de Ayuda.', 'wla-inmo');
 		echo '</p></div>';
 	}
 
@@ -91,29 +92,6 @@ final class PageRenderer
 		echo '<h2>' . esc_html__('Sección preparada', 'wla-inmo') . '</h2>';
 		echo '<p>' . esc_html__('La navegación y los permisos de esta sección ya forman parte del shell administrativo. Su funcionalidad se incorporará en la fase o PR indicada en la documentación del proyecto.', 'wla-inmo') . '</p>';
 		echo '<p><a class="button" href="' . esc_url(admin_url('admin.php?page=wla-inmo-help')) . '">' . esc_html__('Consultar ayuda', 'wla-inmo') . '</a></p>';
-		echo '</section>';
-	}
-
-	private static function renderHelpLanding(): void
-	{
-		$topics = array(
-			__('Crear una propiedad', 'wla-inmo'),
-			__('Actualizar precio y disponibilidad', 'wla-inmo'),
-			__('Fotografías y galería', 'wla-inmo'),
-			__('Ubicación pública y privada', 'wla-inmo'),
-			__('Destacar una propiedad', 'wla-inmo'),
-			__('Preparar una carga masiva', 'wla-inmo'),
-			__('Conceptos SEO básicos', 'wla-inmo'),
-		);
-
-		echo '<section class="wla-inmo-admin__panel">';
-		echo '<h2>' . esc_html__('Primeros temas de ayuda', 'wla-inmo') . '</h2>';
-		echo '<p>' . esc_html__('El Centro de Ayuda completo se desarrolla en PR 2.6. El shell ya reserva este espacio y los enlaces contextuales.', 'wla-inmo') . '</p>';
-		echo '<ul class="wla-inmo-admin__topic-list">';
-		foreach ($topics as $topic) {
-			echo '<li>' . esc_html($topic) . '</li>';
-		}
-		echo '</ul>';
 		echo '</section>';
 	}
 

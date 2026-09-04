@@ -1,0 +1,191 @@
+.wla-inmo-help__quick-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 20px;
+}
+
+.wla-inmo-help__onboarding,
+.wla-inmo-help__search,
+.wla-inmo-help__glossary {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	box-sizing: border-box;
+	margin: 0 0 20px;
+	padding: 20px;
+}
+
+.wla-inmo-help__section-heading,
+.wla-inmo-help__search {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+}
+
+.wla-inmo-help__search {
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.wla-inmo-help__search input[type="search"] {
+	min-width: min(100%, 320px);
+}
+
+.wla-inmo-help__search-status {
+	flex-basis: 100%;
+	margin: 0;
+}
+
+.wla-inmo-help__kicker {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: .08em;
+	margin: 0 0 4px;
+	text-transform: uppercase;
+}
+
+.wla-inmo-help__section-heading h2,
+.wla-inmo-help__search h2,
+.wla-inmo-help__glossary h2 {
+	margin-top: 0;
+}
+
+.wla-inmo-help__status,
+.wla-inmo-help__badge {
+	background: #f0f0f1;
+	border-radius: 999px;
+	display: inline-flex;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1;
+	padding: 6px 9px;
+}
+
+.wla-inmo-help__badge--available {
+	background: #edfaef;
+}
+
+.wla-inmo-help__checklist {
+	display: grid;
+	gap: 0;
+}
+
+.wla-inmo-help__check-item {
+	align-items: center;
+	border-top: 1px solid #f0f0f1;
+	display: flex;
+	gap: 12px;
+	justify-content: space-between;
+	padding: 12px 0;
+}
+
+.wla-inmo-help__check-item label {
+	align-items: flex-start;
+	display: flex;
+	gap: 8px;
+}
+
+.wla-inmo-help__actions {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-top: 12px;
+}
+
+.wla-inmo-help__topics {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	margin: 0 0 20px;
+}
+
+.wla-inmo-help__topic {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	box-sizing: border-box;
+	padding: 18px;
+}
+
+.wla-inmo-help__topic[hidden] {
+	display: none;
+}
+
+.wla-inmo-help__topic h3 {
+	font-size: 16px;
+	margin: 8px 0;
+}
+
+.wla-inmo-help__topic ol {
+	margin: 14px 0 0 20px;
+}
+
+.wla-inmo-help__topic li + li {
+	margin-top: 6px;
+}
+
+.wla-inmo-help__topic-meta {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+}
+
+.wla-inmo-help__topic-meta > span:first-child {
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.wla-inmo-help__empty {
+	background: #fff;
+	border: 1px dashed #c3c4c7;
+	border-radius: 8px;
+	margin: 0 0 20px;
+	padding: 20px;
+}
+
+.wla-inmo-help__glossary dl {
+	display: grid;
+	gap: 0;
+	margin: 0;
+}
+
+.wla-inmo-help__glossary dl > div {
+	border-top: 1px solid #f0f0f1;
+	display: grid;
+	gap: 4px;
+	grid-template-columns: minmax(160px, 220px) 1fr;
+	padding: 12px 0;
+}
+
+.wla-inmo-help__glossary dt {
+	font-weight: 700;
+}
+
+.wla-inmo-help__glossary dd {
+	margin: 0;
+}
+
+.wla-inmo-onboarding-card {
+	margin-bottom: 20px;
+}
+
+@media (max-width: 782px) {
+	.wla-inmo-help__section-heading,
+	.wla-inmo-help__search,
+	.wla-inmo-help__glossary dl > div {
+		display: block;
+	}
+
+	.wla-inmo-help__section-heading > * + *,
+	.wla-inmo-help__search > * + * {
+		margin-top: 12px;
+	}
+
+	.wla-inmo-help__topics {
+		grid-template-columns: 1fr;
+	}
+}
