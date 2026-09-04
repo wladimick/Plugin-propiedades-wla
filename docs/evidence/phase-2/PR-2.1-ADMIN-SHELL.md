@@ -1,10 +1,11 @@
 # Evidencia — Fase 2 / PR 2.1 Admin shell y navegación
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
-Issue: #23  
-PR: #24  
-Rama: `feat/phase2-admin-shell`
+Issue: #23 — CLOSED  
+PR: #24 — MERGED  
+Rama: `feat/phase2-admin-shell`  
+Squash merge: `50d3800477006af51cd4604009178105ed8002c0`
 
 ## Objetivo
 
@@ -58,8 +59,6 @@ Propiedades y Nueva propiedad permanecen como pantallas nativas de WordPress. `S
 La base utiliza headings semánticos, enlaces/botones nativos de WordPress, `aria-label` donde corresponde, layout responsive y navegación sin dependencia de JavaScript.
 
 ## QA automático final
-
-### Phase 1 CI heredado
 
 Run final: `33827079706`  
 Resultado global: `SUCCESS`.
@@ -115,8 +114,8 @@ Resultado: arquitectura simplificada y responsabilidad nativa preservada.
 
 ## Producción
 
-No afectada. PR #24 no se ha desplegado en `propiedadesmartinez.cl`.
+No afectada. PR #24 no fue desplegada en `propiedadesmartinez.cl` durante esta fase de desarrollo.
 
 ## Cierre
 
-Todos los quality gates aplicables están verdes. PR 2.1 queda `QA_PASSED / MERGE_PENDING` y solo pasará a `DONE` después del squash merge de PR #24.
+PR #24 fue squash-mergeada como `50d3800477006af51cd4604009178105ed8002c0`. PR 2.1 queda formalmente `DONE` y habilita PR 2.2 — listado profesional de Propiedades.
