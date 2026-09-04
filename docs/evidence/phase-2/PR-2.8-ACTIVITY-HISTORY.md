@@ -1,10 +1,11 @@
 # Evidencia — Fase 2 / PR 2.8 Actividad e historial
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
 Issue: #37  
 PR: #38  
-Rama: `feat/phase2-activity-history`
+Squash merge: `6f8de10db3ef03256d8f1bf73c894370fb5ac4b8`  
+Rama histórica: `feat/phase2-activity-history`
 
 ## Objetivo
 
@@ -117,7 +118,7 @@ La ficha de propiedad incorpora un metabox `Historial operativo` con los último
 
 ## QA final
 
-Head validado: `3b179b8574f5dfe02818723dc6d424e42bb8e47b`.
+Head de código validado: `3b179b8574f5dfe02818723dc6d424e42bb8e47b`.
 
 - Phase 1 CI `33863103340`: `SUCCESS`;
 - Quality Gate / PHP 8.1: `SUCCESS`;
@@ -137,7 +138,8 @@ Head validado: `3b179b8574f5dfe02818723dc6d424e42bb8e47b`.
 - Bootstrap Smoke `33863103346`: `SUCCESS`;
 - Artifact `9932885215`;
 - Artifact digest: `sha256:8f0a0e0f8c339ec85ce033904c7c73317b5da32dc9b8c5b767f88688d2a645af`;
-- ZIP SHA-256: `9251c7ae23ed4342a151f2d2ee7ef99697b0e8b6022c6c40389ba6e7838543e8`.
+- ZIP SHA-256: `9251c7ae23ed4342a151f2d2ee7ef99697b0e8b6022c6c40389ba6e7838543e8`;
+- squash merge final en `main`: `6f8de10db3ef03256d8f1bf73c894370fb5ac4b8`.
 
 ## Findings corregidos
 
@@ -150,6 +152,6 @@ No quedan findings críticos ni altos abiertos dentro del alcance de PR 2.8. Los
 
 `propiedadesmartinez.cl` no ha sido modificado.
 
-## Cierre pendiente
+## Cierre
 
-PR 2.8 queda `QA_PASSED / MERGE_PENDING`. Solo debe pasar a `DONE` después del squash merge efectivo de PR #38 y del registro del SHA final en `main`.
+PR 2.8 está `DONE`. PR #38 fue integrada mediante squash merge y el SHA final quedó registrado en este documento.
