@@ -5,6 +5,7 @@ namespace WLA\Inmo\Import;
 use Generator;
 use SplFileObject;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Parser exceptions use static messages plus internal numeric row metadata; no exception is rendered in this class.
 final class CsvReader
 {
 	private const UTF8_BOM = "\xEF\xBB\xBF";
@@ -264,3 +265,4 @@ final class CsvReader
 		return str_starts_with($value, self::UTF8_BOM) ? substr($value, 3) : $value;
 	}
 }
+// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
