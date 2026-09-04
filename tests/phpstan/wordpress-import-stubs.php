@@ -52,3 +52,84 @@ function __(string $text, string $domain = 'default'): string
 function do_action(string $hook_name, mixed ...$args): void
 {
 }
+
+/**
+ * @param array<string,mixed> $postarr
+ * @return mixed
+ */
+function wp_insert_post(array $postarr, bool $wp_error = false)
+{
+	return 1;
+}
+
+/**
+ * @param array<string,mixed> $postarr
+ * @return mixed
+ */
+function wp_update_post(array $postarr, bool $wp_error = false)
+{
+	return 1;
+}
+
+/** @return mixed */
+function wp_delete_post(int $post_id, bool $force_delete = false)
+{
+	return null;
+}
+
+function is_wp_error(mixed $thing): bool
+{
+	return false;
+}
+
+function taxonomy_exists(string $taxonomy): bool
+{
+	return true;
+}
+
+/** @return mixed */
+function term_exists(int|string $term, string $taxonomy = '', ?int $parent_term = null)
+{
+	return array('term_id' => 1, 'term_taxonomy_id' => 1);
+}
+
+/**
+ * @param int|array<int,int|string>|string $terms
+ * @return mixed
+ */
+function wp_set_object_terms(int $object_id, int|array|string $terms, string $taxonomy, bool $append = false)
+{
+	return array();
+}
+
+/** @return int|false */
+function update_post_meta(int $post_id, string $meta_key, mixed $meta_value, mixed $prev_value = '')
+{
+	return 1;
+}
+
+/** @return bool */
+function delete_post_meta(int $post_id, string $meta_key, mixed $meta_value = '')
+{
+	return true;
+}
+
+function metadata_exists(string $meta_type, int $object_id, string $meta_key): bool
+{
+	return false;
+}
+
+/** @return object|false|null */
+function get_post(int $post_id)
+{
+	return null;
+}
+
+/**
+ * @param array<string,mixed> $args
+ * @return mixed
+ */
+function wp_get_object_terms(int|array $object_ids, string|array $taxonomies, array $args = array())
+{
+	return array();
+}

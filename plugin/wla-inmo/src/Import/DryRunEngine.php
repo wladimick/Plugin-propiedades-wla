@@ -76,24 +76,28 @@ final class DryRunEngine
 					? trim((string) $values['meta.property_code'])
 					: '';
 
-				$resolution = $this->identityResolver->resolve(
-					new IdentityCandidate($this->profile->sourceKey(), $externalId, $propertyCode)
-				);
-
-				if ($resolution->status() === IdentityResolution::CONFLICT) {
-					$errors[] = array('code' => (string) $resolution->reason(), 'target' => 'identity');
-				} elseif ($resolution->status() === IdentityResolution::MATCH) {
-					$status = DryRunResult::STATUS_UPDATE;
-					$propertyId = $resolution->propertyId();
-					if ($propertyId !== null) {
-						$changedTargets = $this->changedTargets($propertyId, $values, $preservedTargets);
-					}
+				if ($externalId === '' && $propertyCode === '') {
+					$errors[] = array('code' => 'missing_identity', 'target' => 'identity');
 				} else {
-					$status = DryRunResult::STATUS_NEW;
-					$title = $values[TargetRegistry::POST_TITLE] ?? '';
-					if (!is_string($title) || trim($title) === '') {
-						$errors[] = array('code' => 'title_required_for_new', 'target' => TargetRegistry::POST_TITLE);
-						$status = DryRunResult::STATUS_ERROR;
+					$resolution = $this->identityResolver->resolve(
+						new IdentityCandidate($this->profile->sourceKey(), $externalId, $propertyCode)
+					);
+
+					if ($resolution->status() === IdentityResolution::CONFLICT) {
+						$errors[] = array('code' => (string) $resolution->reason(), 'target' => 'identity');
+					} elseif ($resolution->status() === IdentityResolution::MATCH) {
+						$status = DryRunResult::STATUS_UPDATE;
+						$propertyId = $resolution->propertyId();
+						if ($propertyId !== null) {
+							$changedTargets = $this->changedTargets($propertyId, $values, $preservedTargets);
+						}
+					} else {
+						$status = DryRunResult::STATUS_NEW;
+						$title = $values[TargetRegistry::POST_TITLE] ?? '';
+						if (!is_string($title) || trim($title) === '') {
+							$errors[] = array('code' => 'title_required_for_new', 'target' => TargetRegistry::POST_TITLE);
+							$status = DryRunResult::STATUS_ERROR;
+						}
 					}
 				}
 			}
