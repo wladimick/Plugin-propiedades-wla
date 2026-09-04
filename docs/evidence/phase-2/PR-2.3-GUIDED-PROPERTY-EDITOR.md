@@ -1,8 +1,9 @@
 # Evidencia — Fase 2 / PR 2.3 Editor guiado de Propiedad
 
-Estado documental: `IN_PROGRESS / QA PENDING`.
+Estado documental: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #27  
+PR: #28  
 Rama: `feat/phase2-guided-property-editor`
 
 ## Objetivo
@@ -11,141 +12,133 @@ Reemplazar la experiencia de edición técnica y dispersa por una ficha inmobili
 
 ## Experiencia de edición
 
-`Admin\\PropertyEditor` incorpora una ficha con 12 secciones:
+`Admin\\PropertyEditor` incorpora una ficha con 12 secciones: Estado de publicación, Identificación, Precio, Superficies, Características, Ubicación, Descripción, Multimedia, Contacto y privacidad, SEO/GEO/AEO, Calidad e Historial.
 
-1. Estado de publicación;
-2. Identificación;
-3. Precio;
-4. Superficies;
-5. Características;
-6. Ubicación;
-7. Descripción;
-8. Multimedia;
-9. Contacto y privacidad;
-10. SEO / GEO / AEO;
-11. Calidad;
-12. Historial.
-
-El editor de bloques se desactiva únicamente para `wla_property` para ofrecer un formulario administrativo determinista y ligero usando el editor clásico nativo de WordPress. Esto no instala Classic Editor ni modifica otros post types.
-
-Título, descripción, estado de publicación, imagen destacada y revisiones siguen siendo features nativas de WordPress.
+El editor de bloques se desactiva únicamente para `wla_property` para ofrecer un formulario administrativo determinista y ligero usando el editor clásico nativo de WordPress. No instala Classic Editor ni modifica otros post types. Título, descripción, estado de publicación, imagen destacada y revisiones siguen siendo features nativas.
 
 ## Fuente de verdad
 
 La ficha no crea un segundo schema de dominio:
 
-- `MetaSchema` define qué campos existen y sus callbacks canónicos;
-- `Sanitizer` realiza la normalización;
+- `MetaSchema` define los campos y callbacks canónicos;
+- `Sanitizer` normaliza;
 - `Validator` define validez de almacenamiento;
 - `TaxonomyRegistry` define operación, tipo, región, comuna y sector;
-- `PropertyEditor::controls()` contiene solamente presentación administrativa: etiqueta, tipo de control, ayuda y opciones de UX.
+- `PropertyEditor::controls()` solo describe presentación administrativa.
 
-Los tests verifican que cada campo editable pertenece a `MetaSchema` y que cada control aparece exactamente en una sección.
+Los tests comprueban que cada campo editable existe en `MetaSchema` y aparece exactamente en una sección.
 
-## Campos privados
+## Privacidad y taxonomías
 
-Se identifican visualmente como privados:
+`external_id`, `private_address` e `internal_notes` están identificados visualmente como privados. La dirección pública y la dirección exacta privada son conceptos separados y la ficha no cambia el contrato del Core: los campos privados no se exponen por REST público ni deben salir automáticamente al frontend.
 
-- `external_id`;
-- `private_address`;
-- `internal_notes`.
-
-La dirección pública y la dirección exacta privada aparecen como conceptos separados. La ficha no cambia la regla del Core: los campos privados no se exponen por REST público ni deben utilizarse automáticamente en frontend.
-
-## Taxonomías
-
-Los metaboxes dispersos de taxonomías se retiran del editor de propiedades y operación/tipo/región/comuna/sector se administran dentro de la ficha.
-
-- solo se muestran controles editables cuando el usuario posee `assign_terms`;
-- un usuario sin capability ve el valor actual, pero no recibe un control que simule permiso;
-- el handler vuelve a verificar capability antes de persistir;
-- IDs de términos se validan contra la taxonomía correspondiente.
+Los metaboxes dispersos de taxonomías se retiran del editor y operación/tipo/región/comuna/sector se integran en la ficha. Un usuario sin `assign_terms` puede ver el valor actual, pero no recibe control editable. El handler reautoriza y valida el término antes de persistir.
 
 ## Seguridad de escritura
 
-El handler propio ignora autosaves y revisiones y exige:
+El handler propio ignora autosaves/revisiones y exige:
 
-1. post type `wla_property`;
+1. `wla_property`;
 2. nonce WLA válido;
 3. `current_user_can('edit_post', $post_id)`;
-4. campos allowlisted por el editor;
-5. validación de dominio antes de escribir;
-6. capability de taxonomía antes de asignar términos.
+4. campos allowlisted;
+5. validación de dominio previa;
+6. capability de taxonomía y término válido.
 
-No se confía en hidden inputs para autorización.
+No se confía en hidden inputs como autorización.
 
-## Guardado atómico a nivel lógico
+## Guardado lógico consistente
 
-Los campos WLA se validan como conjunto antes de mutar datos.
+Los campos WLA se validan como conjunto antes de mutar datos. Si hay error, no se actualizan meta ni taxonomías WLA del envío; los valores seguros se conservan temporalmente para volver a mostrarlos y se presenta un resumen accesible con errores por campo.
 
-Si hay error de validación:
+Si una escritura de taxonomía falla después de validar, se restaura el snapshot previo de meta y términos. La UI aclara que título/descripción y otros campos nativos son gestionados por WordPress y pueden haberse guardado independientemente.
 
-- no se actualiza ningún meta WLA del envío;
-- no se actualiza ninguna taxonomía WLA del envío;
-- se conserva una copia segura de los valores ingresados durante unos minutos para volver a mostrarlos;
-- la ficha presenta resumen accesible y error por campo.
+## Código único
 
-Si una escritura de taxonomía falla después de validar, el editor restaura el snapshot previo de meta y términos.
+Antes de persistir `property_code`, el editor busca otra `wla_property` con el mismo código incluyendo borradores. Un conflicto impide escrituras parciales del conjunto WLA sin incorporar borradores al índice público.
 
-Los campos nativos de WordPress —título/descripción, por ejemplo— son gestionados por WordPress y pueden haberse guardado independientemente; la UI lo explica para no afirmar una transacción que WordPress no ofrece sobre todo el post.
-
-## Prevención de códigos duplicados
-
-Antes de persistir `property_code`, el editor busca otra `wla_property` con el mismo código en cualquier estado relevante mediante WordPress.
-
-Esto cubre también borradores, sin debilitar el contrato del índice público que continúa almacenando únicamente propiedades publicadas.
-
-Un conflicto devuelve un error asociado al campo y evita escrituras parciales del conjunto WLA.
-
-## Multimedia, calidad, historial y SEO
-
-PR 2.3 prepara las secciones sin duplicar trabajo futuro:
-
-- imagen principal continúa nativa;
-- galería/videos completos llegan en PR 2.4;
-- calidad calculada llega en PR 2.5;
-- SEO/GEO/AEO completo llega en Fase 6, pero `indexable` ya puede administrarse;
-- historial inmobiliario llega en PR 2.8.
-
-## Performance
+## Performance y alcance
 
 - cero framework JS nuevo;
-- editor PHP/HTML nativo;
-- editor de bloques deshabilitado solo en `wla_property`;
-- CSS reutiliza el asset admin condicional existente;
+- PHP/HTML nativo;
+- CSS administrativo condicional existente;
 - no requests externos críticos durante render;
-- términos se consultan por las APIs nativas de WordPress;
-- no se cargan galerías en esta PR.
+- no galería completa en esta PR;
+- galería/videos llegan en PR 2.4;
+- calidad calculada llega en PR 2.5;
+- SEO/GEO/AEO completo llega en Fase 6;
+- bitácora inmobiliaria llega en PR 2.8.
 
-## Tests incorporados
+## Tests
 
-`tests/smoke/property-editor.php` valida:
+`tests/smoke/property-editor.php` valida las 12 secciones, contrato con `MetaSchema`, privacidad, aislamiento del modo editor, sanitización, rechazo de valores inválidos, prevención de código duplicado y descarte de campos desconocidos.
 
-- 12 secciones;
-- todos los campos de UI existen en `MetaSchema`;
-- cada campo aparece exactamente una vez;
-- campos privados marcados;
-- aislamiento del modo de editor a `wla_property`;
-- sanitización canónica;
-- rechazo de números/coordenadas inválidas;
-- prevención de código duplicado;
-- omisión de campos desconocidos.
+La integración WordPress real valida guardado válido de código/precio/dirección privada, asignación de operación, rechazo de código duplicado sin escritura parcial, nonce inválido y usuario sin `edit_post`.
 
-La integración WordPress real amplía `assert-active.php` para validar:
+El release smoke exige `src/Admin/PropertyEditor.php` en el ZIP.
 
-- módulo `Admin\\PropertyEditor` disponible;
-- guardado válido de código, precio y dirección privada;
-- asignación de taxonomía canónica;
-- rechazo de código duplicado sin escritura parcial;
-- nonce inválido no puede mutar datos;
-- usuario sin `edit_post` no puede mutar la propiedad mediante POST directo.
+## QA automático final
 
-El release smoke exige `src/Admin/PropertyEditor.php` dentro del ZIP.
+Head de código validado: `48d6833932be5274c964f6696d27d2029aa1a937`.
+
+### Phase 1 CI heredado
+
+Run final: `33830157300`  
+Resultado: `SUCCESS`.
+
+- Quality Gate / PHP 8.1: SUCCESS;
+- PHP syntax: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan 2.2: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- guided editor smoke: SUCCESS;
+- property list y todos los smoke heredados: SUCCESS;
+- build ZIP: SUCCESS;
+- release ZIP smoke: SUCCESS;
+- WordPress `6.6.2` + PHP `8.1`: SUCCESS;
+- WordPress `latest` + PHP `8.3`: SUCCESS;
+- desactivación/uninstall conservan datos: SUCCESS.
+
+### Bootstrap Smoke
+
+Run final: `33830157352`  
+Resultado: `SUCCESS`.
+
+## Artifact QA
+
+- Artifact ID: `9921377798`;
+- nombre: `wla-inmo-0.1.0-alpha-quality`;
+- tamaño del contenedor: `73328` bytes;
+- digest: `sha256:fbfff4511dca2eed1aa3230369d33cd8f34f59d835dcd21787bc89973a97410a`;
+- ZIP instalable SHA-256: `3d3f6e68e27768cf10904fe468f90c4106382824ec0fd61d5c7915e5caf7660a`;
+- expiración: `2026-12-03`.
+
+## Findings corregidos
+
+### ADMIN-EDITOR-QA-1 — escaping del HTML dinámico
+
+El primer CI de PR #28 (`33829929983`) encontró tres errores WPCS porque atributos generados por helpers se concatenaban directamente durante el render de checkbox/select/textarea/input.
+
+Corrección: el HTML se emite por partes, todos los valores dinámicos pasan por funciones de escaping y los atributos booleanos/ARIA se agregan únicamente mediante ramas internas controladas. `checked()` se usa en modo de salida seguro.
+
+Resultado: WPCS verde en `33830157300`.
+
+### ADMIN-EDITOR-QA-2 — análisis estático del nonce
+
+El mismo run marcó la lectura intermedia de `$_POST` aunque el nonce se sanitizaba y verificaba inmediatamente después.
+
+Corrección: se mantuvo sanitización real + `wp_verify_nonce()` y se documentó una excepción PHPCS exclusivamente en esa lectura concreta; no se deshabilitó ningún sniff global.
+
+### ADMIN-EDITOR-UX-1 — coordenadas negativas
+
+Durante la revisión del fix se detectó que aplicar `min="0"` genéricamente a todos los inputs numéricos habría impedido latitudes/longitudes negativas válidas.
+
+Corrección: la restricción HTML de mínimo cero solo se aplica a campos numéricos no geográficos; latitud/longitud quedan gobernadas por los límites canónicos de `Validator`.
 
 ## Producción
 
 `propiedadesmartinez.cl` no ha sido modificado.
 
-## Cierre pendiente
+## Cierre
 
-Antes de marcar PR 2.3 como `DONE` deben registrarse PR, CI final, artifact/checksum, findings/correcciones y squash merge.
+Todos los quality gates aplicables están verdes. PR #28 queda `QA_PASSED / MERGE_PENDING` y solo pasará a `DONE` después del squash merge.
