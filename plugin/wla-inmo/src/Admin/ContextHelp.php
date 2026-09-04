@@ -35,10 +35,13 @@ final class ContextHelp
 
 	private static function requestedPage(): ?string
 	{
+		// `page` only determines whether contextual help applies to this read-only route.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only routing parameter.
 		if (!isset($_GET['page'])) {
 			return null;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only routing parameter; sanitized immediately.
 		$page = sanitize_key(wp_unslash((string) $_GET['page']));
 
 		return $page === '' ? null : $page;
