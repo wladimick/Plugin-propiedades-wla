@@ -21,16 +21,37 @@ final class ContextHelp
 		}
 
 		$helpUrl = admin_url('admin.php?page=wla-inmo-help');
-		$content = '<p>' . esc_html__('WLA Inmo incluye ayuda en lenguaje simple para las tareas inmobiliarias habituales.', 'wla-inmo') . '</p>';
-		$content .= '<p><a href="' . esc_url($helpUrl) . '">' . esc_html__('Abrir Centro de Ayuda', 'wla-inmo') . '</a></p>';
-
 		$screen->add_help_tab(
 			array(
 				'id'      => 'wla-inmo-context-help',
 				'title'   => __('Ayuda WLA Inmo', 'wla-inmo'),
-				'content' => $content,
+				'content' => '<p>' . esc_html__('WLA Inmo incluye ayuda en lenguaje simple para las tareas inmobiliarias habituales.', 'wla-inmo') . '</p><p><a href="' . esc_url($helpUrl) . '">' . esc_html__('Abrir Centro de Ayuda', 'wla-inmo') . '</a></p>',
 			)
 		);
+
+		if ($isProperty) {
+			$screen->add_help_tab(
+				array(
+					'id'      => 'wla-inmo-property-basics',
+					'title'   => __('Datos de la propiedad', 'wla-inmo'),
+					'content' => '<p>' . esc_html__('El código debe ser único. Completa primero operación, tipo, estado, precio y ubicación antes de publicar.', 'wla-inmo') . '</p><p><a href="' . esc_url($helpUrl . '#wla-help-crear-propiedad') . '">' . esc_html__('Ver guía para crear propiedades', 'wla-inmo') . '</a></p>',
+				)
+			);
+			$screen->add_help_tab(
+				array(
+					'id'      => 'wla-inmo-property-media-help',
+					'title'   => __('Multimedia', 'wla-inmo'),
+					'content' => '<p>' . esc_html__('La Imagen destacada es la fotografía principal. La galería puede ordenarse sin borrar archivos de la Biblioteca de Medios. Los videos se guardan como URLs, no como iframes.', 'wla-inmo') . '</p><p><a href="' . esc_url($helpUrl . '#wla-help-fotografias-galeria') . '">' . esc_html__('Ver guía de fotografías y galería', 'wla-inmo') . '</a></p>',
+				)
+			);
+			$screen->add_help_tab(
+				array(
+					'id'      => 'wla-inmo-property-quality-help',
+					'title'   => __('Calidad', 'wla-inmo'),
+					'content' => '<p>' . esc_html__('Calidad es una guía de completitud para administración. Un porcentaje bajo no bloquea borradores ni representa un ranking de Google.', 'wla-inmo') . '</p><p><a href="' . esc_url(admin_url('admin.php?page=wla-inmo-quality')) . '">' . esc_html__('Abrir Calidad del catálogo', 'wla-inmo') . '</a></p>',
+				)
+			);
+		}
 	}
 
 	private static function requestedPage(): ?string
