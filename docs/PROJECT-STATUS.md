@@ -13,20 +13,20 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
-- Issue de cierre Fase 0: #2
 - PR 1.1: #5 `DONE`
 - PR 1.2: #8 `DONE`
 - PR 1.3: #10 `DONE`
 - PR 1.4: #12 `DONE`
 - PR 1.5: #14 `DONE`
-- Issue activo Fase 1.6: #15
+- PR 1.6: #16 `DONE`
+- Issue activo Fase 1.7: #17
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
-| 0 | Gobierno y diseño | DONE | `/docs`, PR #1, Issue #2, ADR-001–ADR-013 |
-| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5/#8/#10/#12/#14, Issue #15, `docs/evidence/phase-1/` |
+| 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
+| 1 | Core del plugin | IN_PROGRESS | `PHASE-1-BACKLOG.md`, PR #5–#16, Issue #17, `docs/evidence/phase-1/` |
 | 2 | Administración | PLANNED | pendiente |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
@@ -37,109 +37,77 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 9 | Migración Propiedades Martínez | PLANNED | pendiente |
 | 10 | Release 1.0 | PLANNED | pendiente |
 
-## Checklist de Fase 0 — CERRADO
+## Checklist de Fase 0
 
-- [x] Visión y requisitos iniciales
-- [x] Arquitectura inicial
-- [x] Modelo de datos inicial
-- [x] Admin/UX inicial
-- [x] Help Center inicial
-- [x] Import/Export inicial
-- [x] SEO/GEO/AEO inicial
-- [x] Seguridad inicial
-- [x] Integración con temas
-- [x] Estrategia de migración
-- [x] Roadmap inicial
-- [x] Metodología de desarrollo
-- [x] Fases de desarrollo auditables
-- [x] Stack propuesto
-- [x] Estrategia de testing
-- [x] Catálogo base de tests
-- [x] Quality Gates
-- [x] Definition of Done
-- [x] Flujo de PR
-- [x] Auditoría y trazabilidad
-- [x] Estándar de documentación
-- [x] CI/CD propuesto
-- [x] Proceso de releases
-- [x] Secciones completas del administrador
-- [x] Plantilla de PR
-- [x] Plantilla ADR
-- [x] Validar decisiones críticas mediante ADR aceptados
-- [x] Validar versión mínima PHP/WordPress — PHP 8.1+ / WP 6.6+
-- [x] Aprobar arquitectura del índice de búsqueda como proyección canónica → índice
-- [x] Definir contrato plugin/tema inicial
-- [x] Definir proveedor de mapas de referencia
-- [x] Seleccionar estrategia XLSX
-- [x] Definir estrategia API/hooks
-- [x] Aprobar entrada a Fase 1
+Fase 0 se encuentra `DONE`. Arquitectura, requisitos, modelo, stack, metodología, testing, quality gates, administración, seguridad, SEO/GEO/AEO, migración, ADR y decisiones D01–D75 están documentados. Ver `docs/decisions/DECISION-REGISTER.md` y `docs/evidence/`.
 
 ## Progreso de Fase 1
 
 ### PR 1.1 — Bootstrap y build
-Estado: `DONE` — PR #5, squash `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`, CI SUCCESS.
+`DONE` — PR #5, squash `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`.
 
 ### PR 1.2 — Entidad Property
-Estado: `DONE` — PR #8, squash `da989ef50a9d066023ae2c00d776d05af3d3499c`, CI SUCCESS.
+`DONE` — PR #8, squash `da989ef50a9d066023ae2c00d776d05af3d3499c`.
 
 ### PR 1.3 — Taxonomías base
-Estado: `DONE` — PR #10, squash `61954bfbab9827b6d07d6b6151b9095677951dee`, CI SUCCESS.
+`DONE` — PR #10, squash `61954bfbab9827b6d07d6b6151b9095677951dee`.
 
 ### PR 1.4 — Meta schema canónico y validación
-Estado: `DONE` — PR #12, squash `344a681653970c3c9a3237c15aef99fbb281bb4b`, CI SUCCESS.
+`DONE` — PR #12, squash `344a681653970c3c9a3237c15aef99fbb281bb4b`.
 
 ### PR 1.5 — Índice de búsqueda y sincronización
-Estado: `DONE`
-
-- PR #14 — squash `01560207b4872aa73d58e23f5ee2a58adfa6d0be`.
-- CI final run `33824375224`: SUCCESS.
-- Índice reconstruible, sincronización incremental y rebuild por lotes incorporados.
-- Evidencia: `docs/evidence/phase-1/PR-1.5-PROPERTY-INDEX.md`.
+`DONE` — PR #14, squash `01560207b4872aa73d58e23f5ee2a58adfa6d0be`, CI SUCCESS.
 
 ### PR 1.6 — Roles y capabilities
-Estado: `IN_PROGRESS / QA PENDING`
+`DONE`
 
-Issue: #15  
-Rama: `feat/phase1-roles-capabilities`
+- PR #16 — squash `b09292c3d30972e2a1c097306312c989b84e3f11`.
+- CI run `33824793619`: SUCCESS.
+- Roles/capabilities de mínimo privilegio incorporados.
+- Evidencia: `docs/evidence/phase-1/PR-1.6-ROLES-CAPABILITIES.md`.
+
+### PR 1.7 — Settings y contratos públicos mínimos
+`IN_PROGRESS / QA PENDING`
+
+Issue: #17  
+Rama: `feat/phase1-settings-contracts`
 
 Alcance en implementación:
 
-- capabilities de módulos sin `manage_options` genérico;
-- separación de meta capabilities y primitivas del CPT;
-- roles `wla_inmo_manager`, `wla_property_editor`, `wla_lead_manager`;
-- matriz de mínimo privilegio;
-- Administrator recibe todas las capabilities WLA de forma aditiva;
-- reconciliación versionada/idempotente;
-- Editor puede administrar sus propiedades y multimedia, pero no imports/leads/SEO/settings/tools;
-- Gestor de leads no recibe edición de propiedades;
-- Administrador inmobiliario no recibe herramientas técnicas reservadas por defecto;
-- smoke tests de permisos y reconciliación;
-- documentación `ACCESS-CONTROL.md`.
+- opción namespaced `wla_inmo_settings`;
+- `Settings\\Schema`, `Repository` y `Registry`;
+- preset Chile encapsulado en `Localization\\ChilePreset`;
+- country/currency/unit/map provider/base de propiedades/branding opcional;
+- autorización con `manage_wla_inmo_settings`;
+- `property_base` configurable sin flush por request;
+- `Frontend\\TemplateResolver` independiente del tema;
+- overrides bajo `wla-inmo/` y fallback de plugin cuando exista;
+- protección contra path traversal;
+- hooks públicos mínimos para defaults/templates;
+- `SETTINGS-CONTRACT.md` y `TEMPLATE-CONTRACT.md`;
+- smoke tests del contrato.
 
-No marcar PR 1.6 como `DONE` hasta que su PR esté mergeada y CI esté verde.
+No marcar PR 1.7 `DONE` hasta merge + CI verde.
 
 ## Decisiones aceptadas
 
-Los ADR aceptados son ADR-001 a ADR-013; el detalle D01–D75 está en `docs/decisions/DECISION-REGISTER.md`.
+ADR-001 a ADR-013; detalle D01–D75 en `docs/decisions/DECISION-REGISTER.md`.
 
-## Entrada a Fase 1
+## Riesgos trasladados
 
-**Aprobada.** El backlog inicial se encuentra en `docs/PHASE-1-BACKLOG.md`. La implementación continúa sobre un core nativo y no está migrando el sitio productivo.
-
-## Riesgos trasladados a implementación
-
-1. Índices SQL exactos se ajustarán con benchmarks reales; no sobreindexar anticipadamente.
-2. PhpSpreadsheet debe medirse en tamaño/memoria antes de 1.0.
-3. Proveedor de tiles/geocoding de OpenStreetMap debe definirse para instalaciones de tráfico relevante.
-4. Adaptadores concretos para plugins SEO se implementarán y probarán en Fase 6.
-5. Compatibilidad Multisite se valida progresivamente y no bloquea v0.1.
-6. Lighthouse ≥95 es budget de referencia; CWV reales requerirán RUM/datos productivos.
-7. La UX preventiva de códigos duplicados se reforzará en Administración/Importador.
+1. Índices SQL se ajustarán con benchmarks reales.
+2. PhpSpreadsheet se medirá antes de 1.0.
+3. Proveedor OSM de tiles/geocoding se definirá para alto tráfico.
+4. Adaptadores SEO se validarán en Fase 6.
+5. Multisite se valida progresivamente.
+6. Lighthouse ≥95 es budget de referencia; CWV reales requieren datos productivos.
+7. UX preventiva de códigos duplicados se reforzará en Admin/Import.
+8. Cambiar `property_base` requerirá una operación controlada de rewrite en la futura UI.
 
 ## Regla de actualización
 
-Cuando un ítem pase a `DONE` debe existir una PR, test, evidencia o documento que lo sustente. Una decisión `accepted` no se modifica silenciosamente: requiere nuevo ADR/PR con impacto y motivo.
+Un ítem solo pasa a `DONE` con PR, tests/evidencia o documento que lo sustente. Una decisión aceptada no cambia silenciosamente: requiere ADR/PR.
 
 ## Auditoría
 
-Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar por este archivo, `docs/decisions/DECISION-REGISTER.md`, `DEVELOPMENT-PHASES.md`, PRs, `TEST-CASE-CATALOG.md` y evidencias.
+Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar aquí y continuar por Decision Register, fases, PRs, catálogo de tests y evidencias.
