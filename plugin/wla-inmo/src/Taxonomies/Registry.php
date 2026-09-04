@@ -11,6 +11,7 @@ final class Registry
 	public const REGION = 'wla_region';
 	public const COMMUNE = 'wla_commune';
 	public const SECTOR = 'wla_sector';
+	public const FEATURE = 'wla_feature';
 
 	public static function register(): void
 	{
@@ -30,38 +31,45 @@ final class Registry
 	{
 		return array(
 			self::OPERATION => array(
-				'singular'   => __('Operación', 'wla-inmo'),
-				'plural'     => __('Operaciones', 'wla-inmo'),
-				'rewrite'    => 'operacion',
-				'rest_base'  => 'wla-operations',
+				'singular'     => __('Operación', 'wla-inmo'),
+				'plural'       => __('Operaciones', 'wla-inmo'),
+				'rewrite'      => 'operacion',
+				'rest_base'    => 'wla-operations',
 				'hierarchical' => false,
 			),
 			self::PROPERTY_TYPE => array(
-				'singular'   => __('Tipo de propiedad', 'wla-inmo'),
-				'plural'     => __('Tipos de propiedad', 'wla-inmo'),
-				'rewrite'    => 'tipo',
-				'rest_base'  => 'wla-property-types',
+				'singular'     => __('Tipo de propiedad', 'wla-inmo'),
+				'plural'       => __('Tipos de propiedad', 'wla-inmo'),
+				'rewrite'      => 'tipo',
+				'rest_base'    => 'wla-property-types',
 				'hierarchical' => true,
 			),
 			self::REGION => array(
-				'singular'   => __('Región', 'wla-inmo'),
-				'plural'     => __('Regiones', 'wla-inmo'),
-				'rewrite'    => 'region',
-				'rest_base'  => 'wla-regions',
+				'singular'     => __('Región', 'wla-inmo'),
+				'plural'       => __('Regiones', 'wla-inmo'),
+				'rewrite'      => 'region',
+				'rest_base'    => 'wla-regions',
 				'hierarchical' => false,
 			),
 			self::COMMUNE => array(
-				'singular'   => __('Comuna', 'wla-inmo'),
-				'plural'     => __('Comunas', 'wla-inmo'),
-				'rewrite'    => 'comuna',
-				'rest_base'  => 'wla-communes',
+				'singular'     => __('Comuna', 'wla-inmo'),
+				'plural'       => __('Comunas', 'wla-inmo'),
+				'rewrite'      => 'comuna',
+				'rest_base'    => 'wla-communes',
 				'hierarchical' => false,
 			),
 			self::SECTOR => array(
-				'singular'   => __('Sector', 'wla-inmo'),
-				'plural'     => __('Sectores', 'wla-inmo'),
-				'rewrite'    => 'sector',
-				'rest_base'  => 'wla-sectors',
+				'singular'     => __('Sector', 'wla-inmo'),
+				'plural'       => __('Sectores', 'wla-inmo'),
+				'rewrite'      => 'sector',
+				'rest_base'    => 'wla-sectors',
+				'hierarchical' => false,
+			),
+			self::FEATURE => array(
+				'singular'     => __('Característica', 'wla-inmo'),
+				'plural'       => __('Características', 'wla-inmo'),
+				'rewrite'      => 'caracteristica',
+				'rest_base'    => 'wla-features',
 				'hierarchical' => false,
 			),
 		);

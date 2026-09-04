@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/BatchStatus.php';
 require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/SourceKey.php';
+require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/HeaderNormalizer.php';
 require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/CsvException.php';
 require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/CsvReader.php';
 require_once dirname(__DIR__, 2) . '/plugin/wla-inmo/src/Import/IdentityCandidate.php';

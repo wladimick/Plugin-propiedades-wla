@@ -212,7 +212,7 @@ final class CsvReader
 				$value = self::stripBom($value);
 			}
 
-			$header = self::normalizeHeader($value);
+			$header = HeaderNormalizer::normalize($value);
 			if ($header === '') {
 				throw new CsvException('empty_header', 'CSV contains an empty header after normalization.', $recordNumber);
 			}
@@ -232,35 +232,6 @@ final class CsvReader
 		if (preg_match('//u', $value) !== 1) {
 			throw new CsvException('invalid_utf8', 'CSV contains invalid UTF-8 data.', $recordNumber);
 		}
-	}
-
-	private static function normalizeHeader(string $value): string
-	{
-		$value = trim($value);
-		$value = strtr(
-			$value,
-			array(
-				'á' => 'a',
-				'é' => 'e',
-				'í' => 'i',
-				'ó' => 'o',
-				'ú' => 'u',
-				'ü' => 'u',
-				'ñ' => 'n',
-				'Á' => 'a',
-				'É' => 'e',
-				'Í' => 'i',
-				'Ó' => 'o',
-				'Ú' => 'u',
-				'Ü' => 'u',
-				'Ñ' => 'n',
-			)
-		);
-		$value = strtolower($value);
-		$value = preg_replace('/[^a-z0-9]+/', '_', $value) ?? '';
-		$value = preg_replace('/_+/', '_', $value) ?? '';
-
-		return trim($value, '_');
 	}
 
 	/**
