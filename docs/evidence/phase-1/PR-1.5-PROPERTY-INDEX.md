@@ -35,9 +35,9 @@ Crear `wp_wla_property_index` como proyección reconstruible para búsquedas rá
 
 Los cambios de post, meta y taxonomías se agrupan para sincronizar una sola vez por propiedad al final del request.
 
-## QA automático
+## QA automático final
 
-Workflow run: `33824308053`  
+Workflow run: `33824375224`  
 Job: `PHP 8.1 / Build Smoke`  
 Resultado: `SUCCESS`
 
@@ -45,12 +45,12 @@ Pasaron Composer validation, PHP syntax, todos los smoke tests, build ZIP, relea
 
 `tests/smoke/search-index.php` cubre schema, proyección, drafts, normalización, upsert, conflictos de código, delete/reset, hooks, `deleted_post_meta`, despublicación y rebuild reanudable.
 
-## Artefacto
+## Artefacto final de la PR
 
-- Artifact ID: `9919375168`
+- Artifact ID: `9919396460`
 - Nombre: `wla-inmo-0.1.0-alpha.1`
 - Tamaño: `30129` bytes
-- Digest: `sha256:f97a2b70695b1abba961b3b42a4fa68ed6710e4d6a638191066751ef797e22a1`
+- Digest: `sha256:a6602413d78624f5fe17ac7f77d0f06a013f4f4a81c23261958e10f499dbfe6f`
 - Expira: 2026-12-03
 
 ## Producción
