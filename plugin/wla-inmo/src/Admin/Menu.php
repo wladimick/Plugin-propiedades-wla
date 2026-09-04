@@ -103,11 +103,16 @@ final class Menu
 
 	private static function requestedPage(): ?string
 	{
+		// This GET parameter only selects a read-only admin route. It never
+		// mutates state, so a nonce is neither generated nor required here.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 		if (!isset($_GET['page'])) {
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
 			return null;
 		}
 
 		$page = sanitize_key(wp_unslash((string) $_GET['page']));
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		return $page === '' ? null : $page;
 	}
