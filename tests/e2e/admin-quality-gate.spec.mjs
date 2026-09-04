@@ -14,10 +14,9 @@ async function login(page, username, password) {
   await page.goto('/wp-login.php');
   await page.locator('#user_login').fill(username);
   await page.locator('#user_pass').fill(password);
-  await Promise.all([
-    page.waitForURL(/\/wp-admin\//),
-    page.locator('#wp-submit').click(),
-  ]);
+  await page.locator('#wp-submit').click();
+  await expect(page).toHaveURL(/\/wp-admin\//, { timeout: 30_000 });
+  await expect(page.locator('#wpadminbar')).toBeVisible({ timeout: 30_000 });
 }
 
 async function assertNoSeriousOwnUiViolations(page, include) {
