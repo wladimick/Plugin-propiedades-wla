@@ -12,7 +12,8 @@ final class Recorder
 		array $context = array(),
 		?int $actorUserId = null
 	) {
-		$eventType = sanitize_key($eventType);
+		$eventType = strtolower(trim($eventType));
+		$eventType = preg_replace('/[^a-z0-9._-]+/', '', $eventType) ?? '';
 		$objectType = sanitize_key($objectType);
 
 		if (!EventTypes::isAllowed($eventType) || $objectType === '') {
@@ -53,8 +54,8 @@ final class Recorder
 		/**
 		 * Fires after a WLA Inmo activity event has been persisted.
 		 *
-		 * @param int                  $id Event ID.
-		 * @param array<string,mixed>  $event Sanitized event payload.
+		 * @param int                 $id Event ID.
+		 * @param array<string,mixed> $event Sanitized event payload.
 		 */
 		do_action('wla_inmo_activity_recorded', $id, $event);
 
