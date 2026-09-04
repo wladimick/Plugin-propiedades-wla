@@ -1,11 +1,12 @@
 # Evidencia — PR 3.1 Import domain / CSV foundation
 
-Estado: `QA_PASSED / MERGE_PENDING`.
+Estado: `DONE`.
 
-Issue: #45  
-PR: #46  
+Issue: #45 — `CLOSED`  
+PR: #46 — `MERGED`  
 Rama: `feat/phase3-import-domain-csv`  
-Head funcional validado: `c134eda9c0cad3a94a02729ada5da5f2c250e778`
+Head funcional validado: `c134eda9c0cad3a94a02729ada5da5f2c250e778`  
+Squash en `main`: `74dcc032946df8ea582a57d1f58521a45f7d99f0`
 
 ## Objetivo
 
@@ -180,7 +181,7 @@ Regresiones heredadas sobre el mismo head:
 - Dashboard Integration: `SUCCESS`;
 - Administration Quality Gate / Playwright: `SUCCESS`.
 
-No quedan findings críticos/altos conocidos abiertos en PR 3.1.
+El commit documental final previo al merge también volvió a pasar los checks automáticos correspondientes. No quedan findings críticos/altos conocidos abiertos en PR 3.1.
 
 ## Artifact y checksum
 
@@ -192,10 +193,10 @@ Workflow `33877587885`:
 
 ## Criterio de salida
 
-PR 3.1 queda `QA_PASSED / MERGE_PENDING`.
+PR 3.1 está `DONE` y fue integrado mediante squash en `main`.
 
-Después del squash merge, Fase 3 continúa con **PR 3.2 — Mapping + Validation + Dry-run**. La persistencia real de propiedades sigue deliberadamente diferida a PR 3.3.
+Fase 3 continúa con **PR 3.2 — Mapping + Validation + Dry-run**. La persistencia real de propiedades sigue deliberadamente diferida a PR 3.3.
 
 ## Producción
 
-`propiedadesmartinez.cl` no se modifica ni recibe este código durante PR 3.1.
+`propiedadesmartinez.cl` no fue modificado ni recibió este código durante PR 3.1.
