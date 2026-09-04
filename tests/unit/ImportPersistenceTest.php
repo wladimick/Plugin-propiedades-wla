@@ -81,6 +81,7 @@ final class ImportPersistenceTest extends TestCase
 		self::assertNotNull($batch);
 		self::assertSame(BatchStatus::UPLOADED, $batch['status']);
 		self::assertSame(0, $batch['revision']);
+		self::assertSame(0, $batch['cursor_offset']);
 
 		self::assertFalse($repository->transition($uuid, BatchStatus::PROCESSING, 0));
 		self::assertTrue($repository->transition($uuid, BatchStatus::MAPPED, 0));
@@ -95,7 +96,8 @@ final class ImportPersistenceTest extends TestCase
 				5,
 				2,
 				2,
-				array('created' => 1, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0)
+				array('created' => 1, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0),
+				120
 			)
 		);
 		self::assertFalse(
@@ -104,7 +106,18 @@ final class ImportPersistenceTest extends TestCase
 				5,
 				3,
 				3,
-				array('created' => 2, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0)
+				array('created' => 2, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0),
+				180
+			)
+		);
+		self::assertFalse(
+			$repository->advanceProgress(
+				$uuid,
+				6,
+				3,
+				3,
+				array('created' => 2, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0),
+				119
 			)
 		);
 		self::assertFalse($repository->transition($uuid, BatchStatus::COMPLETED, 6));
@@ -116,7 +129,8 @@ final class ImportPersistenceTest extends TestCase
 				8,
 				3,
 				3,
-				array('created' => 2, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0)
+				array('created' => 2, 'updated' => 1, 'skipped' => 0, 'warnings' => 1, 'errors' => 0),
+				240
 			)
 		);
 		self::assertTrue($repository->transition($uuid, BatchStatus::COMPLETED, 9));
@@ -125,6 +139,7 @@ final class ImportPersistenceTest extends TestCase
 		self::assertNotNull($completed);
 		self::assertSame(BatchStatus::COMPLETED, $completed['status']);
 		self::assertSame(3, $completed['cursor_row']);
+		self::assertSame(240, $completed['cursor_offset']);
 		self::assertSame(3, $completed['processed_rows']);
 		self::assertSame(2, $completed['created_count']);
 		self::assertSame(1, $completed['updated_count']);
@@ -137,7 +152,9 @@ final class ImportPersistenceTest extends TestCase
 		$database = new PersistenceFakeDatabase();
 		$sql = BatchSchema::sql($database);
 
+		self::assertSame('2', BatchSchema::DB_VERSION);
 		self::assertStringContainsString('cursor_row int(10) unsigned', $sql);
+		self::assertStringContainsString('cursor_offset bigint(20) unsigned', $sql);
 		self::assertStringContainsString('processed_rows int(10) unsigned', $sql);
 		self::assertStringContainsString('revision bigint(20) unsigned', $sql);
 		self::assertStringContainsString('UNIQUE KEY batch_uuid (batch_uuid)', $sql);
@@ -263,7 +280,6 @@ final class PersistenceFakeDatabase
 			if ((string) $row['batch_uuid'] === $uuid) {
 				return $row;
 			}
-		}
 
 		return null;
 	}
