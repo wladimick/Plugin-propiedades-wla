@@ -6,18 +6,18 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 
 - Proyecto: WLA Inmo
 - Tema de referencia opcional: WLA Inmo Light
-- Etapa actual: `PHASE-2 / ADMINISTRATION`
+- Etapa actual: `PHASE-3 / IMPORT-EXPORT`
 - Fase 0: `DONE`
 - Fase 1: `DONE`
-- Fase 2: `QA_PASSED / MERGE_PENDING`
+- Fase 2: `DONE`
+- Fase 3: `PLANNING / ENTRY APPROVED`
 - Código de producto: `0.1.0-alpha`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
-- PR 2.1–2.9: `DONE`
-- PR 2.10: `QA_PASSED / MERGE_PENDING`
-- Próximo hito: squash merge PR #42 y apertura de Fase 3 — Import/Export
+- PR 2.1–2.10: `DONE`
+- Próximo hito: definir backlog ejecutable de Fase 3 y abrir PR 3.1
 
 ## Fases
 
@@ -25,8 +25,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | QA_PASSED / MERGE_PENDING | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | PLANNED | pendiente |
+| 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
+| 3 | Import/Export | PLANNING / ENTRY APPROVED | `docs/IMPORT-EXPORT.md`; backlog por crear |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -57,7 +57,7 @@ Estado: `DONE`.
 
 ## Fase 2 — Administración
 
-Estado: `QA_PASSED / MERGE_PENDING`.
+Estado: `DONE`.
 
 Backlog: `docs/PHASE-2-BACKLOG.md`.
 
@@ -72,7 +72,7 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 | 2.7 | Ajustes UI | #36 | DONE | `PR-2.7-SETTINGS-UI.md` |
 | 2.8 | Actividad / historial base | #38 | DONE | `PR-2.8-ACTIVITY-HISTORY.md` |
 | 2.9 | Dashboard / Resumen operativo | #40 | DONE | `PR-2.9-OPERATIONAL-DASHBOARD.md` |
-| 2.10 | Quality Gate de Administración | #42 | QA_PASSED / MERGE_PENDING | `PR-2.10-ADMIN-QUALITY-GATE.md` |
+| 2.10 | Quality Gate de Administración | #42 | DONE | `PR-2.10-ADMIN-QUALITY-GATE.md` |
 
 ### PR 2.1 — Admin shell
 
@@ -161,9 +161,10 @@ La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevenci�
 
 ### PR 2.10 — Quality Gate de Administración
 
-- Issue #41;
-- PR #42: `QA_PASSED / MERGE_PENDING`;
-- head validado `190cdf8787e92c17c715ce195e7620cd55cf704d`;
+- Issue #41: CLOSED;
+- PR #42: MERGED;
+- squash `5f8d314fe0cad79ba0d29c3feed7577ca5ec642b`;
+- head funcional validado `190cdf8787e92c17c715ce195e7620cd55cf704d`;
 - Administration Quality Gate `33874413262`: SUCCESS;
 - Playwright: **8/8 SUCCESS, retries=0**;
 - axe sobre UI WLA propia: sin findings serious/critical en los flujos cubiertos;
@@ -183,13 +184,34 @@ La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevenci�
 - ZIP SHA-256 `cb567d3a5abf320f49fbb238ec308ee64548303b0198e64667632e18876e2581`;
 - artifact E2E `9937305918`, digest `sha256:4aee29b463c856e20b0084d270b8e03fd920f4e9dfbab3bb307112d894b23682`;
 - findings responsive/test/UX detectados durante QA fueron corregidos y revalidados;
-- evidencia completa: `docs/evidence/phase-2/PR-2.10-ADMIN-QUALITY-GATE.md`.
+- evidencia final: `docs/evidence/phase-2/PR-2.10-ADMIN-QUALITY-GATE.md`.
 
 Los tiempos son referencias sintéticas de CI, no promesas de rendimiento productivo.
 
+## Fase 3 — Import/Export
+
+Estado: `PLANNING / ENTRY APPROVED`.
+
+Fuente funcional existente: `docs/IMPORT-EXPORT.md`.
+
+El siguiente trabajo debe convertir ese contrato en un backlog de PR pequeños, con prioridad inicial en identidad/upsert, parser CSV, dry-run, batching e historial antes de añadir XLSX, imágenes remotas o exportaciones avanzadas.
+
+Reglas de entrada ya aceptadas:
+
+- formatos objetivo XLSX, CSV UTF-8 y JSON;
+- flujo upload → detección → mapping → validación → dry-run → confirmación → batches → reporte;
+- identidad de reimportación: `external_id` cuando el perfil de origen lo define, luego `property_code`; nunca título/dirección;
+- vacíos preservan valor existente por defecto;
+- dry-run no crea posts ni descarga imágenes;
+- importación por lotes y reanudable;
+- imágenes remotas con controles SSRF/MIME/tamaño/timeout;
+- protección contra formula injection en exportaciones;
+- historial y evidencia por batch;
+- rollback únicamente donde sea técnicamente seguro y explicable.
+
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y del Quality Gate de Fase 2.
+No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y Fase 2.
 
 Deuda de prioridad baja heredada:
 
