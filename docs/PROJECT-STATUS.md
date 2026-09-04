@@ -10,14 +10,15 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Fase 0: `DONE`
 - Fase 1: `DONE`
 - Fase 2: `DONE`
-- Fase 3: `PLANNING / ENTRY APPROVED`
+- Fase 3: `IN_PROGRESS`
 - Código de producto: `0.1.0-alpha`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
-- Próximo hito: definir backlog ejecutable de Fase 3 y abrir PR 3.1
+- PR 3.1: `DONE`
+- Próximo hito: PR 3.2 — Mapping + Validation + Dry-run
 
 ## Fases
 
@@ -26,7 +27,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | PLANNING / ENTRY APPROVED | `docs/IMPORT-EXPORT.md`; backlog por crear |
+| 3 | Import/Export | IN_PROGRESS | PR #44/#46, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -190,28 +191,54 @@ Los tiempos son referencias sintéticas de CI, no promesas de rendimiento produc
 
 ## Fase 3 — Import/Export
 
-Estado: `PLANNING / ENTRY APPROVED`.
+Estado: `IN_PROGRESS`.
 
-Fuente funcional existente: `docs/IMPORT-EXPORT.md`.
+Backlog: `docs/PHASE-3-BACKLOG.md`.  
+Contrato funcional: `docs/IMPORT-EXPORT.md`.  
+Evidencia: `docs/evidence/phase-3/`.
 
-El siguiente trabajo debe convertir ese contrato en un backlog de PR pequeños, con prioridad inicial en identidad/upsert, parser CSV, dry-run, batching e historial antes de añadir XLSX, imágenes remotas o exportaciones avanzadas.
+| PR | Alcance | GitHub | Estado | Evidencia |
+|---|---|---|---|---|
+| 3.1 | Import domain / batch state / CSV foundation | #46 | DONE | `PR-3.1-IMPORT-DOMAIN-CSV.md` |
+| 3.2 | Mapping + validation + dry-run | pendiente | NEXT | pendiente |
+| 3.3 | Persistencia batches / resume / idempotencia | pendiente | PLANNED | pendiente |
+| 3.4 | UI Importar / historial | pendiente | PLANNED | pendiente |
+| 3.5 | JSON import/export | pendiente | PLANNED | pendiente |
+| 3.6 | XLSX + ADR/benchmark de dependencia | pendiente | PLANNED | pendiente |
+| 3.7 | Remote media | pendiente | PLANNED | pendiente |
+| 3.8 | CSV/XLSX export | pendiente | PLANNED | pendiente |
+| 3.9 | Rollback seguro | pendiente | PLANNED | pendiente |
+| 3.10 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
 
-Reglas de entrada ya aceptadas:
+### PR 3.1 — Import domain / CSV foundation
 
-- formatos objetivo XLSX, CSV UTF-8 y JSON;
-- flujo upload → detección → mapping → validación → dry-run → confirmación → batches → reporte;
-- identidad de reimportación: `external_id` cuando el perfil de origen lo define, luego `property_code`; nunca título/dirección;
-- vacíos preservan valor existente por defecto;
-- dry-run no crea posts ni descarga imágenes;
-- importación por lotes y reanudable;
-- imágenes remotas con controles SSRF/MIME/tamaño/timeout;
-- protección contra formula injection en exportaciones;
-- historial y evidencia por batch;
-- rollback únicamente donde sea técnicamente seguro y explicable.
+- Issue #45: CLOSED;
+- PR #46: MERGED;
+- squash `74dcc032946df8ea582a57d1f58521a45f7d99f0`;
+- dominio `WLA\Inmo\Import` base;
+- estados/transiciones de batch explícitos;
+- `source_key` normalizado y seguro para namespace de identidad externa;
+- resolución read-only `(source_key, external_id)` → `property_code`, con conflictos explícitos;
+- CSV UTF-8 incremental mediante `SplFileObject` + `Generator`;
+- BOM, coma, punto y coma, tab, headers normalizados, límites y errores por fila;
+- strings similares a fórmulas permanecen datos inertes;
+- findings P1/P2 de source key y autodetección de delimitador corregidos antes del merge;
+- PHP syntax/WPCS/PHPStan: SUCCESS;
+- PHPUnit: **13 tests / 91 assertions**;
+- smoke CSV y regresiones heredadas: SUCCESS;
+- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3: SUCCESS;
+- Administration Quality Gate: SUCCESS;
+- evidencia final: `docs/evidence/phase-3/PR-3.1-IMPORT-DOMAIN-CSV.md`.
+
+La persistencia real de propiedades, creación de términos y descarga de media continúan fuera de PR 3.1.
+
+### Próximo hito — PR 3.2
+
+Implementar mapping de columnas hacia el contrato canónico de WLA Inmo, validación por fila y dry-run sin mutaciones. Debe detectar duplicados dentro del archivo, coincidencias existentes, taxonomías desconocidas y producir conteos `new/update/warning/error` antes de habilitar cualquier confirmación futura.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y Fase 2.
+No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1, Fase 2 y PR 3.1.
 
 Deuda de prioridad baja heredada:
 
@@ -232,6 +259,7 @@ El texto obsoleto del editor sobre PR 2.4/2.5/2.8 fue corregido en PR 2.10 y ya 
 7. Migraciones futuras que cambien slugs existentes deberán conservar URLs o definir 301 explícitas.
 8. Una futura búsqueda indexada de borradores debe usar un mecanismo administrativo separado; no reutilizar el índice público.
 9. La optimización final de imágenes, lightbox y prioridades de carga frontend corresponde a Fase 4/5.
+10. Antes de persistir identidades externas en PR 3.3 debe congelarse el almacenamiento físico de `source_key` junto a `external_id`; no se permiten external IDs globales sin namespace.
 
 ## Producción
 
