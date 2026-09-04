@@ -60,6 +60,10 @@ final class MappingProfile
 				throw new MappingException('invalid_source_header', 'Mapping contains an invalid source header.');
 			}
 
+			if ($target === 'meta.gallery_ids') {
+				throw new MappingException('unsupported_target', 'Gallery attachment IDs are not importable in Phase 3.2.');
+			}
+
 			if (!TargetRegistry::isAllowed($target)) {
 				throw new MappingException('unknown_target', 'Mapping contains an unknown canonical target.');
 			}
