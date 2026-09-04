@@ -45,6 +45,7 @@ $expectedKeys = array(
 	'wla_region',
 	'wla_commune',
 	'wla_sector',
+	'wla_feature',
 );
 
 wlaTaxonomySmokeExpect(Registry::keys() === $expectedKeys, 'Base taxonomy keys changed unexpectedly.');
@@ -53,12 +54,13 @@ wlaTaxonomySmokeExpect(!in_array('product_cat', Registry::keys(), true), 'WooCom
 $definitions = Registry::definitions();
 $capabilities = Capabilities::map();
 
-wlaTaxonomySmokeExpect(count($definitions) === 5, 'Exactly five base taxonomies are expected in Phase 1.3.');
+wlaTaxonomySmokeExpect(count($definitions) === 6, 'Exactly six WLA Inmo taxonomies are expected after Phase 3.2.');
 wlaTaxonomySmokeExpect($definitions[Registry::PROPERTY_TYPE]['hierarchical'] === true, 'Property type must be hierarchical.');
 wlaTaxonomySmokeExpect($definitions[Registry::OPERATION]['hierarchical'] === false, 'Operation must be flat.');
 wlaTaxonomySmokeExpect($definitions[Registry::REGION]['hierarchical'] === false, 'Region must be flat.');
 wlaTaxonomySmokeExpect($definitions[Registry::COMMUNE]['hierarchical'] === false, 'Commune must be flat.');
 wlaTaxonomySmokeExpect($definitions[Registry::SECTOR]['hierarchical'] === false, 'Sector must be flat.');
+wlaTaxonomySmokeExpect($definitions[Registry::FEATURE]['hierarchical'] === false, 'Feature must be flat.');
 
 foreach ($definitions as $taxonomy => $definition) {
 	$args = Registry::arguments($taxonomy, $definition);
@@ -78,6 +80,7 @@ wlaTaxonomySmokeExpect($definitions[Registry::PROPERTY_TYPE]['rewrite'] === 'tip
 wlaTaxonomySmokeExpect($definitions[Registry::REGION]['rewrite'] === 'region', 'Region rewrite slug changed unexpectedly.');
 wlaTaxonomySmokeExpect($definitions[Registry::COMMUNE]['rewrite'] === 'comuna', 'Commune rewrite slug changed unexpectedly.');
 wlaTaxonomySmokeExpect($definitions[Registry::SECTOR]['rewrite'] === 'sector', 'Sector rewrite slug changed unexpectedly.');
+wlaTaxonomySmokeExpect($definitions[Registry::FEATURE]['rewrite'] === 'caracteristica', 'Feature rewrite slug changed unexpectedly.');
 
 wlaTaxonomySmokeExpect(!in_array('manage_categories', Capabilities::all(), true), 'Generic category capability leaked into WLA taxonomy contract.');
 wlaTaxonomySmokeExpect(Capabilities::ASSIGN_TERMS === 'assign_wla_property_terms', 'Assign capability contract changed unexpectedly.');
@@ -85,7 +88,7 @@ wlaTaxonomySmokeExpect(Capabilities::ASSIGN_TERMS === 'assign_wla_property_terms
 Registry::register();
 $registered = $GLOBALS['wla_inmo_smoke_taxonomies'] ?? array();
 
-wlaTaxonomySmokeExpect(count($registered) === 5, 'Registry::register() must register all five taxonomies.');
+wlaTaxonomySmokeExpect(count($registered) === 6, 'Registry::register() must register all six taxonomies.');
 
 foreach ($expectedKeys as $taxonomy) {
 	wlaTaxonomySmokeExpect(isset($registered[$taxonomy]), "$taxonomy was not registered.");
