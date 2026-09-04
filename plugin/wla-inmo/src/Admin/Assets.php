@@ -45,6 +45,15 @@ final class Assets
 			);
 		}
 
+		if (self::isActivityContext($hookSuffix) || PropertyMedia::isPropertyEditorContext($hookSuffix, $screen)) {
+			wp_enqueue_style(
+				'wla-inmo-activity',
+				WLA_INMO_URL . 'assets/admin/activity.css',
+				array('wla-inmo-admin'),
+				WLA_INMO_VERSION
+			);
+		}
+
 		if (!PropertyMedia::isPropertyEditorContext($hookSuffix, $screen)) {
 			return;
 		}
@@ -92,5 +101,10 @@ final class Assets
 	public static function isSettingsContext(string $hookSuffix): bool
 	{
 		return strpos($hookSuffix, 'wla-inmo-settings') !== false;
+	}
+
+	public static function isActivityContext(string $hookSuffix): bool
+	{
+		return strpos($hookSuffix, 'wla-inmo-activity') !== false;
 	}
 }

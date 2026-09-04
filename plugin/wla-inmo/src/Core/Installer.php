@@ -2,6 +2,7 @@
 
 namespace WLA\Inmo\Core;
 
+use WLA\Inmo\Activity\Schema as ActivitySchema;
 use WLA\Inmo\Quality\Schema as QualitySchema;
 use WLA\Inmo\Search\IndexSchema;
 
@@ -21,8 +22,10 @@ final class Installer
 
 		dbDelta(IndexSchema::sql($wpdb));
 		dbDelta(QualitySchema::sql($wpdb));
+		dbDelta(ActivitySchema::sql($wpdb));
 		update_option(IndexSchema::DB_VERSION_OPTION, IndexSchema::DB_VERSION, false);
 		update_option(QualitySchema::DB_VERSION_OPTION, QualitySchema::DB_VERSION, false);
+		update_option(ActivitySchema::DB_VERSION_OPTION, ActivitySchema::DB_VERSION, false);
 	}
 
 	/**
@@ -33,8 +36,13 @@ final class Installer
 	{
 		$currentIndex = (string) get_option(IndexSchema::DB_VERSION_OPTION, '0');
 		$currentQuality = (string) get_option(QualitySchema::DB_VERSION_OPTION, '0');
+		$currentActivity = (string) get_option(ActivitySchema::DB_VERSION_OPTION, '0');
 
-		if ($currentIndex === IndexSchema::DB_VERSION && $currentQuality === QualitySchema::DB_VERSION) {
+		if (
+			$currentIndex === IndexSchema::DB_VERSION
+			&& $currentQuality === QualitySchema::DB_VERSION
+			&& $currentActivity === ActivitySchema::DB_VERSION
+		) {
 			return;
 		}
 
