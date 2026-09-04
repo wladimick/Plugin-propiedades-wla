@@ -28,6 +28,8 @@ final class PageRenderer
 			HelpCenter::render();
 		} elseif ($definition['slug'] === 'wla-inmo-quality') {
 			QualityPage::render();
+		} elseif ($definition['slug'] === 'wla-inmo-settings') {
+			SettingsPage::render();
 		} else {
 			self::renderPlaceholder($definition);
 		}
@@ -79,7 +81,7 @@ final class PageRenderer
 
 		echo '</section>';
 		echo '<div class="notice notice-info inline wla-inmo-admin__notice"><p>';
-		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza Calidad y el Centro de Ayuda.', 'wla-inmo');
+		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza Calidad, Ayuda y Ajustes.', 'wla-inmo');
 		echo '</p></div>';
 	}
 
