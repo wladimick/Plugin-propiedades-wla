@@ -20,8 +20,28 @@ final class RewriteManager
 		}
 
 		self::$registered = true;
+		add_action('add_option_' . Schema::OPTION_NAME, array(self::class, 'onSettingsAdded'), 10, 2);
 		add_action('update_option_' . Schema::OPTION_NAME, array(self::class, 'onSettingsUpdated'), 10, 2);
 		add_action('admin_init', array(self::class, 'handleApplyRequest'), 30);
+	}
+
+	/**
+	 * WordPress fires a different hook when update_option() creates an option
+	 * for the first time. Compare that first stored value with canonical defaults
+	 * so a non-default property base cannot bypass the pending-rewrite workflow.
+	 *
+	 * @param mixed $optionName Added option name.
+	 * @param mixed $value Added option value.
+	 */
+	public static function onSettingsAdded($optionName, $value): void
+	{
+		unset($optionName);
+		$old = Schema::defaults();
+		$new = Schema::sanitize(is_array($value) ? $value : array());
+
+		if ($old['property_base'] !== $new['property_base']) {
+			self::markPending($new['property_base']);
+		}
 	}
 
 	/**
