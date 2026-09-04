@@ -62,7 +62,7 @@ final class RowMapper
 		return new MappedRow($rowNumber, $values, $preserved, $errors);
 	}
 
-	private static function isEmpty($value): bool
+	private static function isEmpty(mixed $value): bool
 	{
 		if ($value === null) {
 			return true;
