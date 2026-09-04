@@ -23,7 +23,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.7: #18 `DONE`
 - PR 1.8: #20 `DONE`
 - Issue activo Fase 2.1: #23
-- Rama activa Fase 2.1: `feat/phase2-admin-shell`
+- PR activa Fase 2.1: #24 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
@@ -31,7 +31,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, Issue #23, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -75,26 +75,48 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 
 ### PR 2.1 — Admin shell, navegación y screen registry
 
-Estado: `IN_PROGRESS / QA PENDING`.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #23  
+PR: #24  
 Rama: `feat/phase2-admin-shell`
 
-Alcance en implementación:
+Implementado:
 
 - `Admin\\ScreenRegistry` con las 16 secciones/enlaces documentados;
 - menú raíz `WLA Inmo` protegido por `view_wla_inmo_dashboard`;
-- CPT `wla_property` anidado bajo el menú WLA mediante `show_in_menu = wla-inmo`;
-- pantallas nativas Propiedades/Nueva propiedad delegadas a WordPress para evitar submenús duplicados;
-- placeholders de módulos futuros solo cuando el usuario posee la capability correspondiente;
-- segundo control de capability en el callback para proteger acceso directo por URL;
+- CPT `wla_property` anidado mediante `show_in_menu = wla-inmo`;
+- pantallas Propiedades/Nueva propiedad delegadas al mecanismo nativo de WordPress, sin registro duplicado;
+- placeholders de módulos futuros solo con capability correspondiente;
+- segundo control de capability para acceso directo por URL;
 - Resumen inicial sin queries de métricas;
 - patrón de ayuda contextual;
-- CSS admin namespaced y condicional, sin JavaScript/React;
-- smoke tests de permisos, assets, nesting y ayuda;
-- integración WordPress extendida para verificar el parent del CPT.
+- CSS admin namespaced/condicional, sin JS ni React;
+- smoke test `admin-shell.php`;
+- integración WordPress real del parent del CPT;
+- release ZIP actualizado con clases/assets Admin.
 
-No marcar PR 2.1 como `DONE` hasta que exista PR, CI verde, evidencia final y squash merge.
+QA final:
+
+- Phase 1 CI run `33827079706`: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan 2.2: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- smoke tests: SUCCESS;
+- WordPress 6.6.2 + PHP 8.1: SUCCESS;
+- WordPress latest + PHP 8.3: SUCCESS;
+- Bootstrap Smoke run `33827079713`: SUCCESS;
+- Artifact `9920346563`;
+- ZIP SHA-256 `f78779284caae48896a1c7f74de5f3d416fcac8eac2540a052ea0938fddfba6f`.
+
+Evidencia: `docs/evidence/phase-2/PR-2.1-ADMIN-SHELL.md`.
+
+Findings documentados y corregidos:
+
+- WPCS solicitó nonce sobre GET de routing exclusivamente de lectura; se documentaron excepciones lineales después de confirmar que no existe mutación y se mantuvo sanitización;
+- se evitó duplicación potencial de submenús al dejar Propiedades/Nueva propiedad bajo responsabilidad nativa de WordPress.
+
+**No marcar PR 2.1 como DONE hasta que PR #24 esté efectivamente mergeada.**
 
 ### Orden restante previsto
 
@@ -112,7 +134,7 @@ La implementación debe reutilizar capabilities, validators, settings e índice 
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 ni de PR 2.1 en estado QA.
 
 Deuda de prioridad baja heredada:
 
