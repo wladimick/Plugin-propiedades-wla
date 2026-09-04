@@ -14,7 +14,7 @@ final class IdentityIndexer
 		add_action('untrash_post', array(self::class, 'untrash'), 10, 1);
 	}
 
-	public static function sync(int $postId, $post = null, bool $update = false): void
+	public static function sync(int $postId, mixed $post = null, bool $update = false): void
 	{
 		unset($post, $update);
 
@@ -30,12 +30,12 @@ final class IdentityIndexer
 			return;
 		}
 
-		if (!$repository->upsert($projection) && function_exists('do_action')) {
+		if (!$repository->upsert($projection)) {
 			do_action('wla_inmo_import_identity_conflict', $postId, $projection);
 		}
 	}
 
-	public static function delete(int $postId, $post = null): void
+	public static function delete(int $postId, mixed $post = null): void
 	{
 		if ($post !== null && isset($post->post_type) && $post->post_type !== PostType::POST_TYPE) {
 			return;
