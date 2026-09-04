@@ -3,6 +3,8 @@
 namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Access\RoleManager;
+use WLA\Inmo\Activity\Observer as ActivityObserver;
+use WLA\Inmo\Activity\Retention as ActivityRetention;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
@@ -48,6 +50,8 @@ final class Plugin
 		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
 
 		RewriteManager::register();
+		ActivityObserver::register();
+		ActivityRetention::register();
 		Indexer::register();
 		QualityIndexer::register();
 
