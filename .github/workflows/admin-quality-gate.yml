@@ -6,6 +6,7 @@ on:
       - 'plugin/wla-inmo/**'
       - 'tests/e2e/**'
       - 'tests/integration/assert-admin-security.php'
+      - 'tests/integration/assert-admin-performance.php'
       - 'package.json'
       - 'package-lock.json'
       - 'playwright.config.mjs'
@@ -112,6 +113,11 @@ jobs:
           cd /tmp/wla-admin-e2e
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-admin-security.php" --allow-root
 
+      - name: Benchmark 100 / 1k / 5k administration catalogue
+        run: |
+          cd /tmp/wla-admin-e2e
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-admin-performance.php" --allow-root | tee /tmp/wla-inmo-admin-performance.log
+
       - name: Start WordPress server
         run: |
           cd /tmp/wla-admin-e2e
@@ -138,6 +144,7 @@ jobs:
             playwright-report/
             test-results/
             package-lock.json
+            /tmp/wla-inmo-admin-performance.log
             /tmp/wla-inmo-wp-server.log
           if-no-files-found: warn
           retention-days: 30
