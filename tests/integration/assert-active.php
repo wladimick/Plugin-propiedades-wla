@@ -19,6 +19,11 @@ if (!post_type_exists('wla_property')) {
 	$fail('wla_property CPT is not registered.');
 }
 
+$propertyType = get_post_type_object('wla_property');
+if (!is_object($propertyType) || $propertyType->show_in_menu !== 'wla-inmo') {
+	$fail('wla_property must be nested under the WLA Inmo admin menu.');
+}
+
 foreach (array('wla_operation', 'wla_property_type', 'wla_region', 'wla_commune', 'wla_sector') as $taxonomy) {
 	if (!taxonomy_exists($taxonomy)) {
 		$fail("Missing taxonomy {$taxonomy}.");
