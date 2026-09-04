@@ -53,7 +53,7 @@ final class MappingProfile
 
 		$targetSources = array();
 		foreach ($mapping as $header => $target) {
-			$header = self::normalizeHeader((string) $header);
+			$header = HeaderNormalizer::normalize((string) $header);
 			$target = trim((string) $target);
 
 			if ($header === '') {
@@ -62,10 +62,6 @@ final class MappingProfile
 
 			if (!TargetRegistry::isAllowed($target)) {
 				throw new MappingException('unknown_target', 'Mapping contains an unknown canonical target.');
-			}
-
-			if ($target === 'meta.gallery_ids') {
-				throw new MappingException('unsupported_target', 'Gallery attachment IDs are not importable in Phase 3.2.');
 			}
 
 			if (isset($this->mapping[$header])) {
@@ -81,7 +77,7 @@ final class MappingProfile
 		}
 
 		foreach ($separators as $header => $separator) {
-			$header = self::normalizeHeader((string) $header);
+			$header = HeaderNormalizer::normalize((string) $header);
 			$separator = (string) $separator;
 
 			if (!isset($this->mapping[$header])) {
@@ -130,7 +126,7 @@ final class MappingProfile
 
 	public function separatorFor(string $header): ?string
 	{
-		$header = self::normalizeHeader($header);
+		$header = HeaderNormalizer::normalize($header);
 
 		return $this->separators[$header] ?? null;
 	}
@@ -148,14 +144,5 @@ final class MappingProfile
 		}
 
 		return $headers;
-	}
-
-	private static function normalizeHeader(string $header): string
-	{
-		$header = trim(strtolower($header));
-		$header = preg_replace('/[^a-z0-9_]+/', '_', $header) ?? '';
-		$header = preg_replace('/_+/', '_', $header) ?? '';
-
-		return trim($header, '_');
 	}
 }
