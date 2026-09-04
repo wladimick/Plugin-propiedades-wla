@@ -45,6 +45,12 @@ if (!function_exists('sanitize_title')) {
 	function sanitize_title($value)
 	{
 		$value = strtolower(trim((string) $value));
+		$value = strtr(
+			$value,
+			array(
+				'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n',
+			)
+		);
 		$value = preg_replace('/[^a-z0-9]+/', '-', $value) ?? '';
 		return trim($value, '-');
 	}
