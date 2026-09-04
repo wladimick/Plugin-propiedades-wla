@@ -41,13 +41,13 @@ final class HelpCenter
 				'category' => __('Propiedades', 'wla-inmo'),
 				'title'    => __('Crear una propiedad', 'wla-inmo'),
 				'status'   => 'available',
-				'summary'  => __('Crea una ficha usando los campos nativos de WLA Inmo, sin WooCommerce ni ACF.', 'wla-inmo'),
+				'summary'  => __('Crea una ficha usando únicamente los campos nativos de WLA Inmo.', 'wla-inmo'),
 				'steps'    => array(
 					__('Ve a WLA Inmo → Nueva propiedad.', 'wla-inmo'),
 					__('Completa título, código, operación, tipo, estado y precio.', 'wla-inmo'),
 					__('Agrega ubicación, superficies y características relevantes.', 'wla-inmo'),
 					__('Selecciona una imagen principal y completa la galería.', 'wla-inmo'),
-					__('Revisa la Calidad del catálogo y luego publica cuando la información esté lista.', 'wla-inmo'),
+					__('Revisa la Calidad del catálogo y publica cuando la información esté lista.', 'wla-inmo'),
 				),
 			),
 			array(
@@ -94,11 +94,11 @@ final class HelpCenter
 				'category' => __('Multimedia', 'wla-inmo'),
 				'title'    => __('Agregar videos', 'wla-inmo'),
 				'status'   => 'available',
-				'summary'  => __('Guarda URLs de video seguras; no pegues iframes ni scripts.', 'wla-inmo'),
+				'summary'  => __('Guarda URLs de video seguras y evita pegar código embebido.', 'wla-inmo'),
 				'steps'    => array(
 					__('Abre la sección Multimedia de la propiedad.', 'wla-inmo'),
 					__('Pega una URL HTTP o HTTPS por línea.', 'wla-inmo'),
-					__('No pegues código iframe, HTML ni scripts.', 'wla-inmo'),
+					__('No pegues HTML, scripts ni código de inserción.', 'wla-inmo'),
 				),
 			),
 			array(
@@ -106,11 +106,11 @@ final class HelpCenter
 				'category' => __('Calidad', 'wla-inmo'),
 				'title'    => __('Publicar y revisar una propiedad', 'wla-inmo'),
 				'status'   => 'available',
-				'summary'  => __('La Calidad del catálogo te indica qué información falta antes o después de publicar.', 'wla-inmo'),
+				'summary'  => __('La Calidad del catálogo indica qué información falta antes o después de publicar.', 'wla-inmo'),
 				'steps'    => array(
 					__('Guarda la propiedad como borrador mientras la completas.', 'wla-inmo'),
 					__('Abre WLA Inmo → Calidad del catálogo.', 'wla-inmo'),
-					__('Corrige primero las propiedades con menor porcentaje o sin precio/imagen.', 'wla-inmo'),
+					__('Corrige primero las propiedades con menor porcentaje o sin precio o imagen.', 'wla-inmo'),
 					__('Publica cuando la ficha esté comercialmente lista.', 'wla-inmo'),
 				),
 			),
@@ -119,9 +119,9 @@ final class HelpCenter
 				'category' => __('Portada', 'wla-inmo'),
 				'title'    => __('Destacar propiedades en el inicio', 'wla-inmo'),
 				'status'   => 'planned',
-				'summary'  => __('La base de datos ya contempla propiedades destacadas. La gestión visual completa de portada se termina en una fase posterior.', 'wla-inmo'),
+				'summary'  => __('La base ya contempla propiedades destacadas. La gestión visual completa de portada se termina en una fase posterior.', 'wla-inmo'),
 				'steps'    => array(
-					__('Por ahora puedes marcar una propiedad como destacada desde su ficha cuando el campo esté disponible.', 'wla-inmo'),
+					__('Por ahora puedes preparar qué propiedades deberían recibir prioridad editorial.', 'wla-inmo'),
 					__('La composición final de bloques de portada no forma parte de esta fase.', 'wla-inmo'),
 				),
 			),
@@ -130,11 +130,11 @@ final class HelpCenter
 				'category' => __('Importar', 'wla-inmo'),
 				'title'    => __('Importar propiedades masivamente', 'wla-inmo'),
 				'status'   => 'planned',
-				'summary'  => __('El importador XLSX/CSV/JSON se implementará en Fase 3. Todavía no cargues archivos esperando que sean procesados por WLA Inmo.', 'wla-inmo'),
+				'summary'  => __('El importador XLSX, CSV y JSON se implementará en Fase 3. Todavía no cargues archivos esperando que sean procesados.', 'wla-inmo'),
 				'steps'    => array(
 					__('Prepara códigos de propiedad únicos y consistentes.', 'wla-inmo'),
 					__('Mantén columnas separadas para precio, operación, tipo, comuna y demás datos.', 'wla-inmo'),
-					__('Cuando Fase 3 esté disponible habrá mapeo, validación, vista previa y dry-run antes de importar.', 'wla-inmo'),
+					__('En Fase 3 habrá mapeo, validación, vista previa y dry-run antes de importar.', 'wla-inmo'),
 				),
 			),
 			array(
@@ -153,7 +153,7 @@ final class HelpCenter
 				'category' => __('Visibilidad', 'wla-inmo'),
 				'title'    => __('SEO básico de una propiedad', 'wla-inmo'),
 				'status'   => 'planned',
-				'summary'  => __('El módulo SEO/GEO/AEO completo corresponde a Fase 6. Ya puedes preparar contenido descriptivo, verificable y fotografías con ALT útil.', 'wla-inmo'),
+				'summary'  => __('El módulo SEO, GEO y AEO completo corresponde a Fase 6. Ya puedes preparar contenido descriptivo y verificable.', 'wla-inmo'),
 				'steps'    => array(
 					__('Usa títulos claros que describan el tipo de propiedad y ubicación.', 'wla-inmo'),
 					__('Escribe descripciones reales, útiles y sin texto duplicado innecesario.', 'wla-inmo'),
@@ -168,7 +168,7 @@ final class HelpCenter
 				'status'   => 'planned',
 				'summary'  => __('La gestión nativa de consultas y solicitudes de visita corresponde a Fase 7.', 'wla-inmo'),
 				'steps'    => array(
-					__('No existe todavía una bandeja funcional de leads dentro de WLA Inmo.', 'wla-inmo'),
+					__('Todavía no existe una bandeja funcional de leads dentro de WLA Inmo.', 'wla-inmo'),
 					__('Cuando se implemente, cada consulta podrá quedar asociada a la propiedad y a su origen.', 'wla-inmo'),
 				),
 			),
@@ -182,7 +182,7 @@ final class HelpCenter
 					__('¿Puedo usar dos veces el mismo código? No. El código identifica una propiedad y debe ser único.', 'wla-inmo'),
 					__('¿Quitar una foto de la galería la borra de WordPress? No. Solo se desasocia de esa propiedad.', 'wla-inmo'),
 					__('¿Un score bajo impide guardar? No. Calidad orienta y prioriza, pero no bloquea borradores.', 'wla-inmo'),
-					__('¿WLA Inmo necesita Elementor, WooCommerce o ACF? No. El Core no depende de ellos.', 'wla-inmo'),
+					__('¿WLA Inmo necesita los plugins o constructores usados por el sitio anterior? No. El Core no depende de ellos.', 'wla-inmo'),
 				),
 			),
 		);
