@@ -156,6 +156,8 @@ final class DryRunEngine
 	}
 
 	/**
+	 * Resolve an identity source through the exact same canonical value normalizer used by RowMapper.
+	 *
 	 * @param array<string,mixed> $sourceRow Source data.
 	 */
 	private function identitySourceValue(array $sourceRow, string $target): string
@@ -165,9 +167,22 @@ final class DryRunEngine
 			return '';
 		}
 
-		$raw = $sourceRow[$headers[0]] ?? '';
+		$definition = TargetRegistry::definition($target);
+		if ($definition === null) {
+			return '';
+		}
 
-		return is_scalar($raw) ? trim((string) $raw) : '';
+		$raw = $sourceRow[$headers[0]] ?? '';
+		if ($raw === null || (is_string($raw) && trim($raw) === '')) {
+			return '';
+		}
+
+		$normalized = ValueNormalizer::normalize($raw, $definition, $this->profile->separatorFor($headers[0]));
+		if (!$normalized->isValid() || !is_scalar($normalized->value())) {
+			return '';
+		}
+
+		return trim((string) $normalized->value());
 	}
 
 	/**
@@ -181,6 +196,11 @@ final class DryRunEngine
 		foreach ($values as $target => $value) {
 			$definition = TargetRegistry::definition($target);
 			if ($definition === null || ($definition['kind'] ?? '') !== 'taxonomy') {
+				continue;
+			}
+
+			// EMPTY_CLEAR is an explicit canonical intent. It must never be looked up as a term.
+			if ($value === null || (is_array($value) && $value === array())) {
 				continue;
 			}
 
