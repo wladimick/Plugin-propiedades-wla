@@ -1,10 +1,11 @@
 # Evidencia — Fase 2 / PR 2.6 Centro de Ayuda
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
-Issue: #33  
-PR: #34  
-Rama: `feat/phase2-help-center`
+Issue: #33 — `CLOSED`  
+PR: #34 — `MERGED`  
+Rama: `feat/phase2-help-center`  
+Squash merge: `56717aa3af97c74407d794f334b295216fe067f8`
 
 ## Objetivo
 
@@ -133,6 +134,6 @@ No quedaron findings críticos ni altos abiertos dentro del alcance de PR 2.6. L
 
 `propiedadesmartinez.cl` no ha sido modificado.
 
-## Cierre pendiente
+## Cierre
 
-PR 2.6 queda `QA_PASSED / MERGE_PENDING`. Solo debe pasar a `DONE` después del squash merge efectivo de PR #34 y del registro del SHA final en `main`.
+PR 2.6 cumple criterios funcionales, de seguridad, accesibilidad básica, permisos, integración WordPress y release smoke. El hito queda `DONE` con squash merge `56717aa3af97c74407d794f334b295216fe067f8`.
