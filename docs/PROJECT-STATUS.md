@@ -15,8 +15,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
-- PR 2.1–2.8: `DONE`
-- Próximo hito: `PR 2.9 — Dashboard / Resumen operativo`
+- PR 2.1–2.9: `DONE`
+- Próximo hito: `PR 2.10 — Quality Gate de Administración`
 
 ## Fases
 
@@ -24,7 +24,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34/#36/#38, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34/#36/#38/#40, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -72,8 +72,8 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 | 2.6 | Centro de Ayuda y onboarding | #34 | DONE | `PR-2.6-HELP-CENTER.md` |
 | 2.7 | Ajustes UI | #36 | DONE | `PR-2.7-SETTINGS-UI.md` |
 | 2.8 | Actividad / historial base | #38 | DONE | `PR-2.8-ACTIVITY-HISTORY.md` |
-| 2.9 | Dashboard / Resumen operativo | pendiente | NEXT | pendiente |
-| 2.10 | Quality Gate de Administración | pendiente | PLANNED | pendiente |
+| 2.9 | Dashboard / Resumen operativo | #40 | DONE | `PR-2.9-OPERATIONAL-DASHBOARD.md` |
+| 2.10 | Quality Gate de Administración | pendiente | NEXT | pendiente |
 
 ### PR 2.1 — Admin shell
 
@@ -184,15 +184,38 @@ La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevenci�
 - Artifact digest `sha256:8f0a0e0f8c339ec85ce033904c7c73317b5da32dc9b8c5b767f88688d2a645af`;
 - ZIP SHA-256 `9251c7ae23ed4342a151f2d2ee7ef99697b0e8b6022c6c40389ba6e7838543e8`.
 
+### PR 2.9 — Dashboard / Resumen operativo
+
+- Issue #39: CLOSED;
+- PR #40: MERGED;
+- squash `bcff7e17eeda5122d6845c3cc38f14a71d04b57c`;
+- `Dashboard\Snapshot` con consultas administrativas agregadas y bounded;
+- Resumen real con prioridades, métricas de catálogo, operaciones, estados comerciales, actividad reciente y acciones rápidas;
+- snapshot base limitado a cinco consultas principales incluso con crecimiento del catálogo;
+- integración validada con 100 propiedades sintéticas adicionales y presupuesto `<= 5` queries sin actividad;
+- no usa el índice público published-only para contar borradores/pendientes;
+- no expone dirección privada, notas internas, external IDs privados ni datos de contacto;
+- HTML/CSS accesible y responsive, sin Chart.js/React ni requests remotos;
+- Phase 1 CI `33865163656`: SUCCESS;
+- Dashboard Integration `33865163644`: SUCCESS en WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3;
+- Catalogue Quality Integration `33865163488`: SUCCESS;
+- Help Center Integration `33865163670`: SUCCESS;
+- Settings UI Integration `33865163568`: SUCCESS;
+- Activity Integration `33865163516`: SUCCESS;
+- Bootstrap Smoke `33865163647`: SUCCESS;
+- Artifact `9933662105`;
+- Artifact digest `sha256:0e55f530c2a0030b61abc0bf690ca8ebce6ed8be8c465f037c9fcb20ede0d13b`;
+- ZIP SHA-256 `690d78dfe8af14ebb465ef7ac1b5f1a69d44c854eff2180e480e95a212eea04b`.
+
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.8.
+No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.9.
 
 Deuda de prioridad baja heredada:
 
 - `composer.lock` de tooling aún no está versionado; resolver antes de Beta;
 - PHPStan debe expandir cobertura progresivamente;
-- la descripción estática de la sección Historial del editor guiado conserva una referencia antigua a que la bitácora llegaría en PR 2.8; la funcionalidad real ya existe mediante `Historial operativo`, por lo que esa copia debe limpiarse en una futura edición segura del editor;
+- la descripción estática de la sección Historial del editor guiado conserva una referencia antigua a que la bitácora llegaría en PR 2.8; la funcionalidad real ya existe mediante `Historial operativo`, por lo que esa copia debe limpiarse durante PR 2.10;
 - warnings Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
 
 ## Riesgos trasladados
