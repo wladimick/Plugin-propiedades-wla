@@ -4,9 +4,9 @@ namespace WLA\Inmo\Import;
 
 final class BatchRepository
 {
-	private $wpdb;
+	private mixed $wpdb;
 
-	public function __construct($database = null)
+	public function __construct(mixed $database = null)
 	{
 		if ($database === null) {
 			global $wpdb;
@@ -82,7 +82,7 @@ final class BatchRepository
 	public function find(string $batchUuid): ?array
 	{
 		$batchUuid = strtolower(trim($batchUuid));
-		if ($this->wpdb === null || !self::isUuid($batchUuid) || !method_exists($this->wpdb, 'prepare')) {
+		if ($this->wpdb === null || !self::isUuid($batchUuid)) {
 			return null;
 		}
 
@@ -149,7 +149,7 @@ final class BatchRepository
 	 * Persist monotonic progress. Callers must supply the full current counters,
 	 * which prevents accidental counter resets when a worker resumes.
 	 *
-	 * @param array<string,int> $counters created, updated, skipped, warnings, errors.
+	 * @param array<string,mixed> $counters created, updated, skipped, warnings, errors.
 	 */
 	public function advanceProgress(
 		string $batchUuid,
@@ -247,7 +247,7 @@ final class BatchRepository
 	}
 
 	/**
-	 * @param array<string,int> $counters Raw counters.
+	 * @param array<string,mixed> $counters Raw counters.
 	 * @return array<string,int>|null
 	 */
 	private static function normalizeCounters(array $counters): ?array
