@@ -15,8 +15,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
-- PR 2.1–2.6: `DONE`
-- Próximo hito: `PR 2.7 — Ajustes UI`
+- PR 2.1–2.7: `DONE`
+- Próximo hito: `PR 2.8 — Actividad / historial administrativo base`
 
 ## Fases
 
@@ -24,7 +24,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | PR #24/#26/#28/#30/#32/#34/#36, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -70,8 +70,8 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 | 2.4 | Multimedia y galería | #30 | DONE | `PR-2.4-PROPERTY-MEDIA.md` |
 | 2.5 | Calidad del catálogo | #32 | DONE | `PR-2.5-CATALOGUE-QUALITY.md` |
 | 2.6 | Centro de Ayuda y onboarding | #34 | DONE | `PR-2.6-HELP-CENTER.md` |
-| 2.7 | Ajustes UI | pendiente | NEXT | pendiente |
-| 2.8 | Actividad / historial base | pendiente | PLANNED | pendiente |
+| 2.7 | Ajustes UI | #36 | DONE | `PR-2.7-SETTINGS-UI.md` |
+| 2.8 | Actividad / historial base | pendiente | NEXT | pendiente |
 | 2.9 | Dashboard / Resumen operativo | pendiente | PLANNED | pendiente |
 | 2.10 | Quality Gate de Administración | pendiente | PLANNED | pendiente |
 
@@ -146,9 +146,26 @@ La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevenci�
 - Artifact `9931277294`;
 - ZIP SHA-256 `cc7b2f3b325fb187eb11d0501e21ea70db86edb607149a66dd43690efaf3fb66`.
 
+### PR 2.7 — Ajustes UI
+
+- Issue #35: CLOSED;
+- PR #36: MERGED;
+- squash `5c99ed02f4a71cf57716cc8d9a46cb4094856464`;
+- pantalla real de Ajustes con 8 pestañas;
+- contrato canónico de contacto y políticas de retención;
+- `property_base` con pending state y aplicación controlada de rewrites, sin flush en cada request ni durante sanitización;
+- cobertura del primer guardado de settings mediante `add_option_wla_inmo_settings`;
+- Phase 1 CI `33861845409`: SUCCESS;
+- Settings UI Integration `33861845590`: SUCCESS en WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3;
+- Catalogue Quality Integration `33861845599`: SUCCESS;
+- Help Center Integration `33861845705`: SUCCESS;
+- Bootstrap Smoke `33861845445`: SUCCESS;
+- Artifact `9932423348`;
+- ZIP SHA-256 `a04e74b6c19a1a296f9960e5237785be6c3352b042a4b91cb01317137b18e6a9`.
+
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.6.
+No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.7.
 
 Deuda de prioridad baja heredada:
 
@@ -164,7 +181,7 @@ Deuda de prioridad baja heredada:
 4. Adaptadores SEO se validarán en Fase 6.
 5. Multisite se valida progresivamente.
 6. Lighthouse ≥95 es budget de referencia; CWV reales requieren datos productivos.
-7. Cambiar `property_base` requerirá una operación controlada de rewrite en la UI.
+7. Migraciones futuras que cambien slugs existentes deberán conservar URLs o definir 301 explícitas; el cambio manual de `property_base` ya usa operación controlada.
 8. Una futura búsqueda indexada de borradores debe usar un mecanismo administrativo separado; no reutilizar el índice público.
 9. La optimización final de imágenes, lightbox y prioridades de carga frontend corresponde a Fase 4/5.
 
