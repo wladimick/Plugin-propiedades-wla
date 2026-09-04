@@ -1,9 +1,11 @@
 # Evidencia — PR 3.1 Import domain / CSV foundation
 
-Estado: `IN_PROGRESS / QA_PENDING`.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #45  
-Rama: `feat/phase3-import-domain-csv`
+PR: #46  
+Rama: `feat/phase3-import-domain-csv`  
+Head funcional validado: `c134eda9c0cad3a94a02729ada5da5f2c250e778`
 
 ## Objetivo
 
@@ -33,6 +35,8 @@ Ejemplo:
 Portal Proveedor Ñ 2026 → portal_proveedor_n_2026
 ```
 
+La normalización translitera vocales acentuadas, Ü y Ñ tanto en mayúscula como en minúscula antes de reducir el valor al alfabeto permitido. Esto evita que una `Ñ` mayúscula desaparezca y provoque colisiones silenciosas entre proveedores.
+
 El parser no usa el nombre del archivo como identidad de fuente.
 
 ### Identidad read-only
@@ -55,8 +59,8 @@ Contratos incorporados:
 - UTF-8;
 - BOM UTF-8 soportado;
 - delimitadores soportados: coma, punto y coma y tab;
-- detección acotada desde el header cuando no se configura delimitador;
-- normalización de headers a snake_case ASCII básico;
+- detección desde la primera fila no vacía cuando no se configura delimitador;
+- normalización de headers a snake_case ASCII básico, incluyendo acentos españoles en mayúscula/minúscula;
 - headers duplicados después de normalizar: error;
 - límite de filas;
 - límite de columnas;
@@ -75,15 +79,17 @@ Los mensajes de excepción incluyen una razón técnica corta y número de fila 
 - `tests/smoke/import-csv.php`;
 - namespace `plugin/wla-inmo/src/Import` añadido al gate PHPStan.
 
-Cobertura prevista antes del merge:
+Cobertura final:
 
-- transiciones válidas/invalidas;
-- normalización de source key;
+- transiciones válidas/inválidas;
+- normalización de source key con `Ñ` mayúscula;
 - match externo;
 - fallback por código;
 - conflictos de identidad;
 - BOM;
 - `;`, `,` y tab;
+- líneas vacías antes del header;
+- headers españoles en mayúscula;
 - formula-like strings tratados como datos;
 - headers duplicados;
 - row/cell/encoding limits;
@@ -107,11 +113,88 @@ Este PR no contiene:
 - no se descargan URLs;
 - no se escriben paths entregados por el archivo;
 - límites básicos existen antes de mapping/persistencia;
-- no se registran filas completas como error.
+- no se registran filas completas como error;
+- external IDs nunca se resuelven globalmente sin `source_key`.
 
-## QA pendiente
+## Findings detectados y corregidos
 
-Antes de `DONE` se debe ejecutar CI real del PR y corregir cualquier finding WPCS/PHPStan/PHPUnit/smoke. Los resultados concretos se registrarán aquí después de la ejecución.
+### F3.1-001 — WPCS sobre metadata numérica de excepción
+
+WPCS interpretó el número interno de fila entregado al constructor de `CsvException` como output no escapado.
+
+Clasificación: tooling/static-analysis, no vulnerabilidad de render.  
+Corrección: se acotó la excepción del sniff exclusivamente a `CsvReader`, documentando que los mensajes son estáticos y el número de fila no se renderiza en esa clase. WPCS final quedó verde.
+
+### F3.1-002 — guard redundante después de `array_combine`
+
+PHPStan detectó que el `is_array()` posterior era imposible de fallar bajo los contratos de longitud ya demostrados.
+
+Clasificación: limpieza de tipos.  
+Corrección: se eliminó el branch muerto. PHPStan final quedó verde.
+
+### F3.1-003 — `Ñ` mayúscula podía desaparecer del source key
+
+Review detectó que `strtolower()` de PHP no translitera caracteres UTF-8 mayúsculos, pudiendo transformar proveedores distintos en la misma clave.
+
+Clasificación: P1 / integridad de identidad externa.  
+Corrección: transliteración explícita de variantes mayúsculas y minúsculas antes de `strtolower()`, con prueba de regresión.
+
+### F3.1-004 — delimitador con líneas vacías iniciales
+
+Review detectó que una primera línea vacía hacía caer la autodetección a coma aunque el archivo real fuera `;` o tab.
+
+Clasificación: P2 / robustez de importación.  
+Corrección: la detección avanza hasta la primera línea no vacía y valida UTF-8 durante el recorrido. Se agregó prueba de regresión.
+
+### F3.1-005 — fixture de límite por celda probaba el header
+
+La primera versión del test configuró un límite menor que el header `codigo`, por lo que correctamente fallaba en fila 1 y no en la celda de datos pretendida.
+
+Clasificación: finding del test.  
+Corrección: el fixture usa un header válido dentro del budget y una celda de datos que lo excede.
+
+## QA final
+
+Head funcional: `c134eda9c0cad3a94a02729ada5da5f2c250e778`.
+
+Phase 1 CI `33877587885`: `SUCCESS`.
+
+- PHP syntax: `SUCCESS`;
+- WordPress Coding Standards: `SUCCESS`;
+- PHPStan: `SUCCESS`, 0 errores;
+- PHPUnit: **13 tests / 91 assertions**, `SUCCESS`;
+- source smoke tests: `SUCCESS`, incluido `WLA Inmo import CSV foundation smoke tests passed`;
+- build del ZIP: `SUCCESS`;
+- release ZIP smoke: `SUCCESS`;
+- WordPress 6.6.2 / PHP 8.1: `SUCCESS`;
+- WordPress latest / PHP 8.3: `SUCCESS`;
+- preservación tras deactivate/uninstall: `SUCCESS`.
+
+Regresiones heredadas sobre el mismo head:
+
+- Bootstrap Smoke: `SUCCESS`;
+- Catalogue Quality Integration: `SUCCESS`;
+- Help Center Integration: `SUCCESS`;
+- Settings UI Integration: `SUCCESS`;
+- Activity Integration: `SUCCESS`;
+- Dashboard Integration: `SUCCESS`;
+- Administration Quality Gate / Playwright: `SUCCESS`.
+
+No quedan findings críticos/altos conocidos abiertos en PR 3.1.
+
+## Artifact y checksum
+
+Workflow `33877587885`:
+
+- artifact `9938487353`;
+- artifact digest `sha256:2c41ae15ff69dc8784257d16458a60d1ec921c231daf2a1fd23e3b8d138bc5a4`;
+- ZIP `wla-inmo-0.1.0-alpha.zip` SHA-256 `0c78bbcee835517f56d83856b5f0c12ee95ec736db93d7c20bd00bcdb95a7b5e`.
+
+## Criterio de salida
+
+PR 3.1 queda `QA_PASSED / MERGE_PENDING`.
+
+Después del squash merge, Fase 3 continúa con **PR 3.2 — Mapping + Validation + Dry-run**. La persistencia real de propiedades sigue deliberadamente diferida a PR 3.3.
 
 ## Producción
 
