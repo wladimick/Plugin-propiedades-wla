@@ -21,9 +21,6 @@ final class Capabilities
 	/**
 	 * Explicit post type capability mapping.
 	 *
-	 * Roles receive these capabilities later in Phase 1 / PR 1.6. Defining
-	 * the contract here avoids relying on generic post/product permissions.
-	 *
 	 * @return array<string, string>
 	 */
 	public static function postTypeMap(): array
@@ -47,10 +44,46 @@ final class Capabilities
 	}
 
 	/**
+	 * Meta capabilities are mapped by WordPress to primitive capabilities and
+	 * should not be assigned directly to roles.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function meta(): array
+	{
+		return array(
+			self::EDIT_POST,
+			self::READ_POST,
+			self::DELETE_POST,
+		);
+	}
+
+	/**
+	 * Primitive capabilities that belong on roles.
+	 *
+	 * @return array<int, string>
+	 */
+	public static function primitive(): array
+	{
+		return array(
+			self::EDIT_POSTS,
+			self::EDIT_OTHERS_POSTS,
+			self::PUBLISH_POSTS,
+			self::READ_PRIVATE_POSTS,
+			self::DELETE_POSTS,
+			self::DELETE_PRIVATE_POSTS,
+			self::DELETE_PUBLISHED_POSTS,
+			self::DELETE_OTHERS_POSTS,
+			self::EDIT_PRIVATE_POSTS,
+			self::EDIT_PUBLISHED_POSTS,
+		);
+	}
+
+	/**
 	 * @return array<int, string>
 	 */
 	public static function all(): array
 	{
-		return array_values(array_unique(self::postTypeMap()));
+		return array_values(array_unique(array_merge(self::meta(), self::primitive())));
 	}
 }
