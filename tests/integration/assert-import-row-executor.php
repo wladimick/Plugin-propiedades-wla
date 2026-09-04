@@ -178,8 +178,15 @@ $searchTable = $wpdb->prefix . 'wla_property_index';
 $indexedId = (int) $wpdb->get_var(
 	$wpdb->prepare("SELECT property_id FROM {$searchTable} WHERE property_id = %d LIMIT 1", $propertyId)
 );
-if ($indexedId !== $propertyId) {
-	$fail('Public/search projection was not synchronized after execution.');
+if ($indexedId !== 0) {
+	$fail('Draft property leaked into the public/search projection.');
+}
+$qualityTable = $wpdb->prefix . 'wla_property_quality';
+$qualityId = (int) $wpdb->get_var(
+	$wpdb->prepare("SELECT property_id FROM {$qualityTable} WHERE property_id = %d LIMIT 1", $propertyId)
+);
+if ($qualityId !== $propertyId) {
+	$fail('Catalogue-quality projection was not synchronized after execution.');
 }
 
 // A stale UPDATE may never retarget a different property silently.
