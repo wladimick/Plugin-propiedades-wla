@@ -43,6 +43,17 @@ async function saveClassicPost(page, buttonId) {
   ]);
 }
 
+async function openEditorSection(page, title) {
+  const section = page.locator('details.wla-inmo-property-editor__section').filter({ hasText: title });
+  await expect(section).toBeVisible();
+
+  if (!(await section.evaluate((element) => element.open))) {
+    await section.locator('summary').click();
+  }
+
+  await expect(section).toHaveJSProperty('open', true);
+}
+
 test.describe.serial('WLA Inmo administration quality gate', () => {
   test.beforeEach(async ({ page }) => {
     await login(page, adminUser, adminPass);
@@ -64,6 +75,8 @@ test.describe.serial('WLA Inmo administration quality gate', () => {
     await page.locator('#wla-inmo-field-price_clp').fill('125000000');
     await page.locator('#wla-inmo-taxonomy-wla_operation').selectOption({ label: 'Venta' });
     await page.locator('#wla-inmo-taxonomy-wla_property_type').selectOption({ label: 'Casa' });
+
+    await openEditorSection(page, '6. Ubicación');
     await page.locator('#wla-inmo-taxonomy-wla_commune').selectOption({ label: 'Curicó' });
     await assertNoSeriousOwnUiViolations(page, '#wla-inmo-property-editor');
 
