@@ -1,6 +1,6 @@
 # Fase 2 — Administración
 
-Estado: `PLANNED / ENTRY APPROVED`  
+Estado: `QA_PASSED / MERGE_PENDING`  
 Dependencia: Fase 1 `DONE`  
 Versión de entrada: `0.1.0-alpha`
 
@@ -18,67 +18,47 @@ La interfaz debe hablar en lenguaje de negocio. Un usuario no debería necesitar
 - validaciones explicadas en lenguaje humano;
 - no ocultar errores técnicos importantes, pero traducirlos a una acción concreta;
 - evitar pantallas sobrecargadas;
-- keyboard-first y WCAG 2.2 AA;
+- keyboard-first y WCAG 2.2 AA como objetivo de producto;
 - mobile/tablet usable para tareas operativas, aunque desktop sea el contexto principal;
 - no introducir React como framework global si PHP + JS ligero resuelve el flujo;
 - no cargar assets de WLA Inmo fuera de sus propias pantallas salvo necesidad demostrada.
 
-## Orden de PR
+## Resultado de implementación
 
-### PR 2.1 — Admin shell, navegación y screen registry
+| PR | Alcance | GitHub | Estado |
+|---|---|---|---|
+| 2.1 | Admin shell, navegación y screen registry | #24 | DONE |
+| 2.2 | Listado profesional de Propiedades | #26 | DONE |
+| 2.3 | Editor guiado de Propiedad | #28 | DONE |
+| 2.4 | Multimedia y galería | #30 | DONE |
+| 2.5 | Calidad del catálogo | #32 | DONE |
+| 2.6 | Centro de Ayuda y ayuda contextual | #34 | DONE |
+| 2.7 | Ajustes UI | #36 | DONE |
+| 2.8 | Actividad e historial administrativo base | #38 | DONE |
+| 2.9 | Dashboard / Resumen operativo | #40 | DONE |
+| 2.10 | Quality Gate de Administración | #42 | QA_PASSED / MERGE_PENDING |
 
-Objetivo: crear la estructura administrativa sin implementar aún cada módulo completo.
+La evidencia detallada vive en `docs/evidence/phase-2/` y el estado ejecutivo en `docs/PROJECT-STATUS.md`.
 
-Incluye:
+## Alcance entregado
+
+### Admin shell y navegación
 
 - menú superior `WLA Inmo`;
 - registro declarativo de pantallas;
 - capability por pantalla;
-- Resumen como landing del plugin;
-- enlaces a Propiedades y Nueva propiedad;
-- placeholders controlados para módulos futuros;
-- patrón de notices/mensajes;
-- patrón de ayuda contextual;
-- assets namespaced y cargados solo en pantallas WLA;
-- tests de visibilidad por rol/capability;
-- ninguna pantalla accesible solo por conocer la URL si falta capability.
+- Resumen como landing;
+- Propiedades/Nueva propiedad mediante pantallas nativas WordPress;
+- assets namespaced y condicionales;
+- acceso directo por URL protegido por capability.
 
-### PR 2.2 — Listado profesional de Propiedades
+### Listado profesional
 
-Objetivo: transformar el listado de `wla_property` en una herramienta operativa.
+Columnas y lectura operativa para miniatura, código, título, operación, tipo, ubicación, precio, estado, destacada, calidad y actualización, con filtros y búsqueda sin reutilizar el índice público para borradores.
 
-Columnas previstas:
+### Editor guiado
 
-- miniatura;
-- código;
-- título;
-- operación;
-- tipo;
-- ubicación;
-- precio principal;
-- estado comercial;
-- destacada;
-- calidad/completitud;
-- actualización.
-
-Filtros:
-
-- operación;
-- estado;
-- tipo;
-- región/comuna;
-- destacadas;
-- incompletas;
-- sin precio;
-- sin imágenes.
-
-Búsqueda ampliada por código, título y campos aprobados, sin consultas N+1.
-
-### PR 2.3 — Editor guiado de Propiedad
-
-Objetivo: reemplazar la experiencia técnica de metaboxes dispersos por una ficha organizada.
-
-Secciones:
+Secciones de negocio:
 
 1. Estado de publicación
 2. Identificación
@@ -93,235 +73,141 @@ Secciones:
 11. Calidad
 12. Historial
 
-Reglas:
+La escritura propia usa nonce, autorización por objeto, MetaSchema, Sanitizer y Validator. El código duplicado se previene y la dirección privada queda explícitamente separada.
 
-- nonce y capability en toda escritura propia;
-- usar `MetaSchema`, `Sanitizer` y `Validator`, sin segunda lógica paralela;
-- errores asociados al campo y resumen accesible;
-- drafts permitidos aunque falten datos de calidad;
-- código duplicado prevenido antes de guardar cuando sea posible;
-- dirección privada claramente marcada como privada.
+### Multimedia
 
-### PR 2.4 — Multimedia y galería
+- Media Library nativa;
+- imagen principal WordPress;
+- galería ordenable;
+- ALT según permisos;
+- videos como URLs validadas;
+- desasociar no borra físicamente attachments;
+- sin HTML/iframe arbitrario como valor canónico.
 
-Objetivo: hacer simple la gestión visual de cada propiedad usando Media Library nativa.
+### Calidad del catálogo
 
-Incluye:
+- proyección administrativa propia;
+- score de completitud explicable, no ranking Google;
+- checks accionables;
+- filtros y pantalla de prioridad de corrección;
+- rebuild seguro.
 
-- imagen principal;
-- galería ordenable y accesible;
-- selección múltiple desde Media Library;
-- eliminar/reordenar sin borrar el attachment accidentalmente;
-- contador y advertencias de imágenes;
-- ALT visible/editable según permisos;
-- video URLs con validación existente;
-- no aceptar iframe/HTML arbitrario como valor canónico.
+### Centro de Ayuda
 
-### PR 2.5 — Calidad del catálogo
+- artículos locales y versionados;
+- búsqueda, FAQ y glosario;
+- onboarding por usuario;
+- ayuda contextual;
+- módulos futuros claramente marcados como próximos.
 
-Objetivo: convertir completitud/calidad en una guía accionable, no en un score decorativo.
+### Ajustes
 
-Checks iniciales:
+- ocho pestañas;
+- settings sanitizados;
+- contacto/privacidad/retención;
+- `property_base` con estado pendiente y aplicación controlada de rewrites;
+- sin `flush_rewrite_rules()` en cada request.
 
-- código;
-- operación;
-- tipo;
-- precio o precio a consultar;
-- ubicación;
-- superficie;
-- descripción;
-- imagen principal;
-- cantidad mínima recomendada de imágenes;
-- ALT;
-- última verificación;
-- SEO mínimo cuando el módulo exista.
+### Actividad e historial
 
-Entregables:
+- tabla versionada con contexto allowlisted;
+- eventos relevantes de negocio;
+- historial por propiedad;
+- retención configurable y limpieza por lotes;
+- sin secretos, cookies, nonces, IP/user-agent ni campos privados innecesarios.
 
-- score interno explicable;
-- reasons/checks individuales;
-- filtros de listado;
-- panel `Calidad del catálogo`;
-- links directos a corregir.
+### Dashboard
 
-El score no debe presentarse como factor de ranking de Google.
+- excepciones y trabajo pendiente primero;
+- métricas de catálogo;
+- distribuciones accesibles sin librería gráfica;
+- actividad reciente bounded;
+- acciones rápidas por capability;
+- presupuesto base de cinco queries sin Actividad.
 
-### PR 2.6 — Centro de Ayuda y ayuda contextual
-
-Objetivo: permitir que una persona no técnica aprenda dentro del producto.
-
-Artículos mínimos:
-
-- primeros pasos;
-- crear una propiedad;
-- actualizar precio;
-- cambiar disponibilidad;
-- fotografías y galería;
-- videos;
-- destacar una propiedad;
-- conceptos de ubicación privada/pública;
-- preparación para carga masiva;
-- errores frecuentes;
-- SEO básico de una propiedad;
-- preguntas frecuentes.
-
-Incluye:
-
-- buscador simple de ayuda;
-- enlaces contextuales desde editor/listado;
-- glosario;
-- contenido versionable dentro del repo;
-- no depender de un sitio externo para la ayuda esencial.
-
-### PR 2.7 — Ajustes UI
-
-Objetivo: exponer el contrato `wla_inmo_settings` con UX segura.
-
-Pestañas iniciales:
-
-- General;
-- Propiedades;
-- Contacto;
-- SEO (preparación/placeholder funcional mínimo si Fase 6 aún no existe);
-- Integraciones;
-- Rendimiento;
-- Privacidad;
-- Avanzado.
-
-Cambios de `property_base` deben advertir sobre rewrites y ejecutarse mediante una operación controlada; nunca hacer `flush_rewrite_rules()` en cada request.
-
-### PR 2.8 — Actividad e historial administrativo base
-
-Objetivo: establecer la bitácora que fases posteriores reutilizarán.
-
-Eventos iniciales:
-
-- propiedad creada;
-- cambios de precio;
-- cambios de estado;
-- destacado activado/desactivado;
-- cambios de ajustes;
-- futuras importaciones podrán anexar batch/origen.
-
-No registrar secretos, cookies, nonces ni contenido sensible innecesario.
-
-### PR 2.9 — Dashboard/Resumen operativo
-
-Objetivo: completar la portada administrativa una vez que existan datos confiables de calidad y actividad.
-
-Indicadores:
-
-- total propiedades;
-- venta/arriendo;
-- estados comerciales;
-- destacadas;
-- nuevas/actualizadas;
-- calidad del catálogo;
-- sin precio/fotos/ubicación;
-- acciones rápidas.
-
-Priorizar tareas y excepciones sobre gráficos decorativos.
-
-### PR 2.10 — Quality Gate de Administración
-
-Incluye:
-
-- smoke/unit/integration de capacidades;
-- E2E con Playwright para flujos críticos;
-- accesibilidad automática + revisión manual documentada;
-- responsive admin;
-- performance de listado/editor con catálogo sintético;
-- pruebas negativas de nonce/capability;
-- verificación de assets condicionales;
-- actualización de evidencias;
-- artifact alpha actualizado.
-
-## Matriz de permisos esperada
+## Matriz de permisos verificada
 
 ### Administrator
 
-Acceso completo a pantallas WLA según capabilities instaladas.
+Acceso completo según capabilities instaladas.
 
 ### Administrador inmobiliario
 
-Acceso operativo a propiedades, destacados, import/export futuro, leads futuro, SEO y settings permitidos; herramientas técnicas reservadas continúan restringidas por capability.
+Acceso operativo a propiedades, settings permitidos y actividad, sin recibir Herramientas técnicas por conveniencia.
 
 ### Editor de propiedades
 
-Puede crear/editar/publicar sus propiedades y multimedia y asignar términos existentes. No puede administrar taxonomías, settings sensibles, imports, SEO global, leads o herramientas técnicas.
+Puede operar sus propiedades según capabilities, pero no editar objetos de otros autores ni acceder a settings/actividad sensibles.
 
 ### Gestor de leads
 
-Durante Fase 2 solo debe ver las pantallas que correspondan a sus capabilities existentes. No recibe permisos de propiedades por conveniencia del menú.
+No recibe permisos de propiedades/settings por el mero hecho de aparecer en el ecosistema WLA.
 
-## Seguridad mínima por PR
+La matriz fue verificada positiva y negativamente en PR 2.10, incluyendo autorización por objeto con nonce válido.
 
-Toda PR administrativa que escriba datos debe demostrar:
+## Seguridad de salida
 
-- capability exacta;
-- nonce/CSRF protection;
-- sanitización;
-- validación de dominio;
-- escaping tardío;
-- protección contra IDOR mediante autorización sobre el objeto;
-- no confiar en campos ocultos como control de acceso;
-- no exponer datos privados en HTML/JS por comodidad;
-- pruebas negativas.
+PR 2.10 verificó:
 
-## Performance budget administrativo
+- nonce ausente e inválido;
+- capability ausente;
+- autorización sobre objeto ajeno;
+- código duplicado;
+- dominio de moneda inválido;
+- acceso directo por URL;
+- assets condicionales;
+- no exposición deliberada de datos privados en el Dashboard;
+- regresión de WPCS/PHPStan/smoke tests.
 
-Metas iniciales:
+## Performance de salida
 
-- assets del admin solo en pantallas WLA;
-- evitar consultas por fila en listados;
-- paginación server-side;
-- no traer galerías completas para construir listados;
-- acciones masivas por lotes cuando corresponda;
-- editor sin requests externos críticos durante render;
-- medir con catálogo sintético creciente antes del cierre de fase.
+Benchmark sintético final del runner CI:
 
-## Tests mínimos para cerrar Fase 2
+- Dashboard 100: 5 queries / 0,0033 s;
+- Dashboard 1.000: 5 queries / 0,0037 s;
+- Dashboard 5.000: 5 queries / 0,0085 s;
+- listado con catálogo 5k: 2 queries / 0,0040 s;
+- Actividad: 2 queries / 0,0011 s.
 
-- cada menú/pantalla respeta capabilities;
-- acceso directo por URL también respeta capabilities;
-- crear borrador;
-- publicar propiedad válida;
-- editar precio y estado;
-- rechazo de datos inválidos;
-- prevención/explicación de código duplicado;
-- dirección privada no filtrada en outputs públicos;
-- galería seleccionable/reordenable;
-- calidad explica qué falta;
-- ayuda accesible desde editor;
-- settings sanitizados;
-- cambios críticos auditables;
-- assets no cargan globalmente;
-- teclado/focus/labels adecuados;
-- no regressions en Phase 1 CI.
+Son referencias sintéticas para detectar regresiones, no SLA de producción.
 
-## Fuera de alcance
+## Accesibilidad y responsive de salida
 
-Fase 2 NO implementa todavía:
+- axe sobre UI propia en flujos prioritarios, sin findings serious/critical en la ejecución final;
+- prueba de teclado focus + Enter sobre disclosure del editor;
+- labels/controles HTML nativos/mensajes accesibles revisados en código/render;
+- viewports 360, 390, 768, 1024 y 1440 px;
+- Resumen, Calidad, Actividad, Ayuda, Ajustes, Editor, Multimedia y listado incluidos en la revisión responsive;
+- finding real de overflow en Calidad 360/390 corregido mediante scroll local de la tabla.
 
-- importación XLSX/CSV/JSON completa — Fase 3;
-- frontend final — Fase 4;
-- WLA Inmo Light — Fase 5;
-- SEO/GEO/AEO completo — Fase 6;
-- leads reales e indicadores — Fase 7;
-- security hardening final — Fase 8;
-- migración Propiedades Martínez — Fase 9.
-
-Puede crear contratos/espacios de UI necesarios para esas fases, pero no duplicar su lógica anticipadamente.
+La evidencia constituye QA automatizado y revisión asistida por código, no una certificación humana externa de accesibilidad.
 
 ## Quality Gate de salida
 
-Fase 2 pasa a `DONE` solamente si:
+Head funcional validado: `190cdf8787e92c17c715ce195e7620cd55cf704d`.
 
-1. PR 2.1–2.10 aplicables están mergeadas con evidencia;
-2. CI/E2E relevante está verde;
-3. no hay findings críticos/altos abiertos del alcance;
-4. la matriz de permisos está verificada positiva y negativamente;
-5. los principales flujos son utilizables por una persona no técnica;
-6. accesibilidad y performance tienen evidencia;
-7. `PROJECT-STATUS.md` está actualizado;
-8. producción continúa sin cambios salvo que exista una solicitud explícita posterior.
+- Administration Quality Gate `33874413262`: SUCCESS;
+- Playwright: 8/8 SUCCESS con `retries=0`;
+- Phase 1 CI `33874412820`: SUCCESS;
+- integraciones heredadas de Calidad, Ayuda, Settings, Actividad, Dashboard y Bootstrap: SUCCESS;
+- artifact plugin `9937251373`;
+- ZIP SHA-256 `cb567d3a5abf320f49fbb238ec308ee64548303b0198e64667632e18876e2581`;
+- artifact E2E `9937305918`;
+- cero findings críticos/altos abiertos conocidos.
+
+Fase 2 pasa formalmente a `DONE` únicamente después del squash merge efectivo de PR #42 y registro del SHA final en `main`.
+
+## Fuera de alcance de Fase 2
+
+- importación/exportación XLSX/CSV/JSON completa — Fase 3;
+- frontend público final — Fase 4;
+- WLA Inmo Light — Fase 5;
+- SEO/GEO/AEO completo — Fase 6;
+- leads e indicadores reales — Fase 7;
+- security hardening final global — Fase 8;
+- migración Propiedades Martínez — Fase 9.
+
+## Producción
+
+`propiedadesmartinez.cl` permanece sin cambios. Fase 2 se desarrolló y validó fuera de producción.
