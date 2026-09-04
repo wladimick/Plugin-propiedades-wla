@@ -44,9 +44,9 @@ final class WordPressPropertyWriter implements PropertyWriterInterface
 			$this->syncSecondaryProjections($propertyId);
 		} catch (Throwable $exception) {
 			$deleted = wp_delete_post($propertyId, true);
-			(new IdentityRepository())->delete($propertyId);
+			$identityDeleted = (new IdentityRepository())->delete($propertyId);
 
-			if ($deleted === false || $deleted === null) {
+			if ($deleted === false || $deleted === null || !$identityDeleted) {
 				throw new ExecutionException('rollback_failed', 'persistence', $exception);
 			}
 
@@ -435,10 +435,8 @@ final class WordPressPropertyWriter implements PropertyWriterInterface
 		}
 
 		foreach ($snapshot['meta'] as $metaKey => $state) {
-			if (!empty($state['exists'])) {
-				update_post_meta($propertyId, (string) $metaKey, $state['value']);
-			} else {
-				delete_post_meta($propertyId, (string) $metaKey);
+			if (!$this->restoreMetaState($propertyId, (string) $metaKey, $state)) {
+				return false;
 			}
 		}
 
@@ -452,11 +450,30 @@ final class WordPressPropertyWriter implements PropertyWriterInterface
 		$projection = IdentityProjection::fromProperty($propertyId);
 		$identityRepository = new IdentityRepository();
 		if ($projection === null) {
-			$identityRepository->delete($propertyId);
+			if (!$identityRepository->delete($propertyId)) {
+				return false;
+			}
 		} elseif (!$identityRepository->upsert($projection)) {
 			return false;
 		}
 
 		return SearchIndexer::syncNow($propertyId) && QualityIndexer::syncNow($propertyId);
+	}
+
+	/**
+	 * @param array<string,mixed> $state Snapshot metadata state.
+	 */
+	private function restoreMetaState(int $propertyId, string $metaKey, array $state): bool
+	{
+		if (!empty($state['exists'])) {
+			update_post_meta($propertyId, $metaKey, $state['value']);
+
+			return metadata_exists('post', $propertyId, $metaKey)
+				&& get_post_meta($propertyId, $metaKey, true) === $state['value'];
+		}
+
+		delete_post_meta($propertyId, $metaKey);
+
+		return !metadata_exists('post', $propertyId, $metaKey);
 	}
 }
