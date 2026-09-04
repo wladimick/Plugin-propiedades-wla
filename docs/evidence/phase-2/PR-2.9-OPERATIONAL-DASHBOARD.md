@@ -1,11 +1,12 @@
 # Evidencia — Fase 2 / PR 2.9 Dashboard / Resumen operativo
 
-Estado documental: `QA_PASSED / MERGE_PENDING`.
+Estado documental: `DONE`.
 
 Issue: #39  
 PR: #40  
 Rama: `feat/phase2-operational-dashboard`  
-Head funcional validado: `d0e7f7db675bad568b9f747599c0eb5a607d14d9`
+Head funcional validado: `d0e7f7db675bad568b9f747599c0eb5a607d14d9`  
+Squash merge en `main`: `bcff7e17eeda5122d6845c3cc38f14a71d04b57c`
 
 ## Objetivo
 
@@ -146,6 +147,6 @@ No quedan findings críticos ni altos abiertos dentro del alcance de PR 2.9. Los
 
 `propiedadesmartinez.cl` no ha sido modificado.
 
-## Cierre pendiente
+## Cierre
 
-PR 2.9 queda `QA_PASSED / MERGE_PENDING`. Solo debe pasar a `DONE` después del squash merge efectivo de PR #40 y del registro del SHA final en `main`.
+PR 2.9 queda `DONE` después del squash merge de PR #40 en `bcff7e17eeda5122d6845c3cc38f14a71d04b57c`. La siguiente actividad de Fase 2 es PR 2.10 — Quality Gate de Administración.
