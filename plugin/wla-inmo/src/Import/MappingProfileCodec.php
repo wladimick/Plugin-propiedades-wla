@@ -56,14 +56,20 @@ final class MappingProfileCodec
 		$normalizedMapping = self::stringMap($mapping);
 		$normalizedSeparators = self::stringMap($separators);
 
-		return new MappingProfile(
-			$sourceKey,
-			$normalizedMapping,
-			$name,
-			$emptyPolicy,
-			$normalizedSeparators,
-			$version
-		);
+		try {
+			return new MappingProfile(
+				$sourceKey,
+				$normalizedMapping,
+				$name,
+				$emptyPolicy,
+				$normalizedSeparators,
+				$version
+			);
+		} catch (MappingException $exception) {
+			throw $exception;
+		} catch (\InvalidArgumentException) {
+			throw new MappingException('invalid_profile_source_key', 'Mapping profile source key is invalid.');
+		}
 	}
 
 	/**
