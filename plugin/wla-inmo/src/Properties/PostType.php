@@ -2,6 +2,8 @@
 
 namespace WLA\Inmo\Properties;
 
+use WLA\Inmo\Settings\Repository as SettingsRepository;
+
 final class PostType
 {
 	public const POST_TYPE = 'wla_property';
@@ -56,6 +58,15 @@ final class PostType
 	 */
 	public static function arguments(): array
 	{
+		$archiveSlug = self::ARCHIVE_SLUG;
+
+		if (class_exists(SettingsRepository::class)) {
+			$configured = SettingsRepository::get('property_base', self::ARCHIVE_SLUG);
+			if (is_string($configured) && $configured !== '') {
+				$archiveSlug = $configured;
+			}
+		}
+
 		return array(
 			'labels'              => self::labels(),
 			'description'         => __('Propiedades inmobiliarias administradas por WLA Inmo.', 'wla-inmo'),
@@ -74,9 +85,9 @@ final class PostType
 			'map_meta_cap'        => true,
 			'hierarchical'        => false,
 			'supports'            => array('title', 'editor', 'excerpt', 'thumbnail', 'revisions'),
-			'has_archive'         => self::ARCHIVE_SLUG,
+			'has_archive'         => $archiveSlug,
 			'rewrite'             => array(
-				'slug'       => self::ARCHIVE_SLUG,
+				'slug'       => $archiveSlug,
 				'with_front' => false,
 				'feeds'      => false,
 				'pages'      => true,
