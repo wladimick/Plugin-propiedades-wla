@@ -20,8 +20,8 @@ final class MappingProfileCodec
 				),
 				JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
 			);
-		} catch (JsonException $exception) {
-			throw new MappingException('profile_encode_failed', 'Mapping profile could not be encoded.', $exception);
+		} catch (JsonException) {
+			throw new MappingException('profile_encode_failed', 'Mapping profile could not be encoded.');
 		}
 	}
 
@@ -29,8 +29,8 @@ final class MappingProfileCodec
 	{
 		try {
 			$payload = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
-		} catch (JsonException $exception) {
-			throw new MappingException('invalid_profile_json', 'Mapping profile JSON is invalid.', $exception);
+		} catch (JsonException) {
+			throw new MappingException('invalid_profile_json', 'Mapping profile JSON is invalid.');
 		}
 
 		if (!is_array($payload)) {
