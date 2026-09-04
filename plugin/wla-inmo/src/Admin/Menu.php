@@ -32,6 +32,13 @@ final class Menu
 				continue;
 			}
 
+			if ($definition['kind'] === 'native') {
+				// WordPress adds CPT native submenus because wla_property points its
+				// show_in_menu to ScreenRegistry::ROOT_SLUG. Registering them here
+				// would create duplicate entries.
+				continue;
+			}
+
 			if ($key === 'dashboard') {
 				$hook = add_submenu_page(
 					ScreenRegistry::ROOT_SLUG,
@@ -42,17 +49,6 @@ final class Menu
 					array(self::class, 'renderCurrentPage')
 				);
 				self::rememberHook($hook);
-				continue;
-			}
-
-			if ($definition['kind'] === 'link') {
-				add_submenu_page(
-					ScreenRegistry::ROOT_SLUG,
-					$definition['page_title'],
-					$definition['menu_title'],
-					$definition['capability'],
-					$definition['slug']
-				);
 				continue;
 			}
 
