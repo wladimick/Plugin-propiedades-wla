@@ -17,8 +17,9 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.1–1.8: `DONE`
 - PR 2.1: #24 `DONE`
 - PR 2.2: #26 `DONE`
-- Issue activo Fase 2.3: #27
-- PR activa Fase 2.3: #28 `QA_PASSED / MERGE_PENDING`
+- PR 2.3: #28 `DONE`
+- Issue activo Fase 2.4: #29
+- PR activa Fase 2.4: #30 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
@@ -26,7 +27,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26/#28, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26/#28/#30, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -94,59 +95,84 @@ El índice derivado continúa almacenando solo propiedades publicadas. No se inc
 
 ### PR 2.3 — Editor guiado de Propiedad
 
-Estado: `QA_PASSED / MERGE_PENDING`.
+Estado: `DONE`.
 
-Issue: #27  
-PR: #28  
-Rama: `feat/phase2-guided-property-editor`
-
-Implementado:
-
-- ficha guiada de 12 secciones;
-- editor clásico nativo exclusivamente para `wla_property`, sin plugin externo y sin afectar otros post types;
-- título, descripción, publicación, imagen destacada y revisiones siguen siendo nativos;
-- UI apoyada en `MetaSchema`, `Sanitizer` y `Validator`, sin segundo schema de dominio;
-- operación, tipo, región, comuna y sector integrados en la ficha;
-- campos `external_id`, `private_address` e `internal_notes` identificados como privados;
-- nonce + `edit_post` + capability/validez de términos en escrituras;
-- autosaves/revisiones ignorados;
-- validación completa antes de persistir el conjunto WLA;
-- prevención de `property_code` duplicado incluyendo borradores, sin debilitar el índice público;
-- snapshot/rollback de meta y términos si falla una escritura de taxonomía;
-- errores accesibles con resumen y asociación al campo;
-- valores seguros conservados temporalmente después de un error;
-- cero framework JS nuevo;
-- smoke test específico e integración WordPress con guardado válido, nonce inválido, duplicados y usuario sin permiso;
-- release smoke exige `Admin\\PropertyEditor`.
-
-QA final sobre head de código `48d6833932be5274c964f6696d27d2029aa1a937`:
-
+- Issue #27: CLOSED;
+- PR #28: MERGED;
+- squash `a02b0bd6fa0c0ceb3430d5410c0c2a46bc0f5b35`;
 - CI `33830157300`: SUCCESS;
 - Quality Gate PHP 8.1: SUCCESS;
 - WPCS security profile: SUCCESS;
-- PHPStan 2.2: SUCCESS;
+- PHPStan: SUCCESS;
 - PHPUnit: `3 tests / 40 assertions`;
-- guided editor smoke y smoke heredados: SUCCESS;
+- guided editor y smoke heredados: SUCCESS;
 - WordPress 6.6.2 + PHP 8.1: SUCCESS;
 - WordPress latest + PHP 8.3: SUCCESS;
 - Bootstrap Smoke `33830157352`: SUCCESS;
 - Artifact `9921377798`;
 - Artifact digest `sha256:fbfff4511dca2eed1aa3230369d33cd8f34f59d835dcd21787bc89973a97410a`;
-- ZIP SHA-256 `3d3f6e68e27768cf10904fe468f90c4106382824ec0fd61d5c7915e5caf7660a`.
+- ZIP SHA-256 `3d3f6e68e27768cf10904fe468f90c4106382824ec0fd61d5c7915e5caf7660a`;
+- evidencia `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
 
-Findings corregidos:
+PR 2.3 dejó una ficha guiada de 12 secciones, guardado con nonce/autorización por objeto, prevención de código duplicado y rollback lógico de meta/términos WLA.
 
-- WPCS detectó concatenación de atributos dinámicos en el primer run; el render fue reestructurado para emitir atributos controlados y valores escapados;
-- lectura de nonce documentada con excepción PHPCS lineal manteniendo sanitización y `wp_verify_nonce()` reales;
-- se corrigió preventivamente el mínimo HTML genérico de números para no impedir coordenadas negativas válidas.
+### PR 2.4 — Multimedia y galería
 
-Evidencia: `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
-**No marcar PR 2.3 como DONE hasta que PR #28 esté efectivamente squash-mergeada.**
+Issue: #29  
+PR: #30  
+Rama: `feat/phase2-property-media`
+
+Implementado:
+
+- panel Multimedia dedicado dentro del editor de `wla_property`;
+- selección múltiple desde la Biblioteca de Medios nativa mediante `wp.media`;
+- galería ordenable con botones accesibles mover antes/después;
+- quitar una imagen solo desasocia el attachment, sin borrado físico;
+- `gallery_ids` conserva orden y usa el MetaSchema canónico;
+- cada ID debe corresponder a un attachment de imagen existente;
+- contador de galería con `aria-live`;
+- miniaturas livianas en administración;
+- ALT visible y editable solo con `edit_post` sobre el attachment;
+- persistencia de ALT vuelve a verificar capability en servidor;
+- `video_urls` se administra como una URL HTTP/HTTPS por línea;
+- iframe/HTML/scripts se rechazan como valor canónico;
+- nonce específico + `edit_post` sobre la propiedad;
+- autosaves/revisiones ignorados;
+- assets CSS/JS de Multimedia solo cargan en `post.php` / `post-new.php` de `wla_property`;
+- JS vanilla sobre `wp.media`, sin framework adicional ni jQuery propio;
+- smoke test `tests/smoke/property-media.php`;
+- integración WordPress real prueba orden, ALT, no-borrado, attachment no imagen, HTML inválido, nonce inválido y usuario sin permiso;
+- release smoke exige clase y assets de Multimedia dentro del ZIP.
+
+QA final de código sobre head `ea3678e0ba8d88a8c79517d3a8a0085f492a514c`:
+
+- CI `33832297066`: SUCCESS;
+- Quality Gate PHP 8.1: SUCCESS;
+- PHP syntax: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- property media + smoke heredados: SUCCESS;
+- WordPress 6.6.2 + PHP 8.1: SUCCESS;
+- WordPress latest + PHP 8.3: SUCCESS;
+- desactivación/uninstall conservan datos: SUCCESS;
+- Bootstrap Smoke `33832297062`: SUCCESS;
+- Artifact `9922097254`;
+- Artifact digest `sha256:bdfa0492fffed8aa289e26a12a387e1b73f367333d6e4e909c9ce75e1c17033f`;
+- ZIP SHA-256 `20acd3332d8d34ec735d14d86c6905562c12ac5c3cd51d95ea619c8a4ce64982`.
+
+Finding corregido:
+
+- el primer run `33832232777` reveló que el smoke administrativo cargaba `Assets` sin cargar `PropertyMedia`, algo que Composer resuelve en WordPress real pero el test aislado no; se corrigió el orden de `require_once` y el run final quedó verde.
+
+Evidencia: `docs/evidence/phase-2/PR-2.4-PROPERTY-MEDIA.md`.
+
+Los commits documentales posteriores al head de código disparan una validación final adicional antes del squash merge; no marcar PR 2.4 como `DONE` hasta que PR #30 esté efectivamente mergeada.
 
 ### Orden restante previsto
 
-- PR 2.4 multimedia/galería;
 - PR 2.5 Calidad del catálogo;
 - PR 2.6 Centro de Ayuda y ayuda contextual;
 - PR 2.7 Ajustes UI;
@@ -156,7 +182,7 @@ Evidencia: `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1, PR 2.1, PR 2.2 ni PR 2.3 en estado QA.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 y PR 2.1–2.3, ni en el código QA de PR 2.4.
 
 Deuda de prioridad baja heredada:
 
@@ -176,6 +202,7 @@ Deuda de prioridad baja heredada:
 8. Cambiar `property_base` requerirá una operación controlada de rewrite en la UI.
 9. Lock de tooling debe resolverse antes de Beta.
 10. Una futura búsqueda indexada de borradores debe usar un mecanismo administrativo separado; no reutilizar el índice público.
+11. La optimización final de imágenes, lightbox y prioridades de carga frontend corresponden a Fase 4/5 y no deben introducirse en el admin.
 
 ## Producción
 

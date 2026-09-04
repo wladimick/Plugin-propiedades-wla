@@ -1,0 +1,124 @@
+.wla-inmo-property-media {
+	display: grid;
+	gap: 18px;
+}
+
+.wla-inmo-property-media__section {
+	display: grid;
+	gap: 12px;
+	padding: 16px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.wla-inmo-property-media__heading {
+	display: flex;
+	gap: 16px;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.wla-inmo-property-media__list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.wla-inmo-property-media__item {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr) auto;
+	gap: 14px;
+	align-items: center;
+	margin: 0;
+	padding: 12px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #f6f7f7;
+}
+
+.wla-inmo-property-media__preview {
+	display: grid;
+	width: 96px;
+	height: 72px;
+	place-items: center;
+	overflow: hidden;
+	border-radius: 6px;
+	background: #fff;
+}
+
+.wla-inmo-property-media__thumb {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.wla-inmo-property-media__missing {
+	padding: 8px;
+	color: #646970;
+	font-size: 12px;
+	text-align: center;
+}
+
+.wla-inmo-property-media__meta {
+	display: grid;
+	gap: 6px;
+	min-width: 0;
+}
+
+.wla-inmo-property-media__meta .regular-text {
+	width: 100%;
+	max-width: 520px;
+}
+
+.wla-inmo-property-media__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: flex-end;
+}
+
+.wla-inmo-property-media__error {
+	margin: 0;
+	color: #b32d2e;
+	font-weight: 600;
+}
+
+@media (max-width: 960px) {
+	.wla-inmo-property-media__item {
+		grid-template-columns: 82px minmax(0, 1fr);
+	}
+
+	.wla-inmo-property-media__preview {
+		width: 82px;
+		height: 64px;
+	}
+
+	.wla-inmo-property-media__actions {
+		grid-column: 1 / -1;
+		justify-content: flex-start;
+	}
+}
+
+@media (max-width: 600px) {
+	.wla-inmo-property-media__heading {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.wla-inmo-property-media__item {
+		grid-template-columns: 1fr;
+	}
+
+	.wla-inmo-property-media__preview {
+		width: 100%;
+		height: 160px;
+	}
+
+	.wla-inmo-property-media__actions {
+		grid-column: auto;
+	}
+}

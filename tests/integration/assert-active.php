@@ -32,6 +32,10 @@ if (!class_exists(WLA\Inmo\Admin\PropertyEditor::class)) {
 	$fail('Guided property editor module is unavailable.');
 }
 
+if (!class_exists(WLA\Inmo\Admin\PropertyMedia::class)) {
+	$fail('Native property media module is unavailable.');
+}
+
 foreach (array('wla_operation', 'wla_property_type', 'wla_region', 'wla_commune', 'wla_sector') as $taxonomy) {
 	if (!taxonomy_exists($taxonomy)) {
 		$fail("Missing taxonomy {$taxonomy}.");
@@ -224,6 +228,126 @@ if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
 	$fail('Invalid nonce was able to mutate guided property fields.');
 }
 
+$createAttachment = static function (string $name, string $mime, string $contents) use ($fail): int {
+	$upload = wp_upload_bits($name, null, $contents);
+	if (!is_array($upload) || !empty($upload['error']) || empty($upload['file'])) {
+		$fail('Unable to create media fixture file.');
+	}
+
+	$attachmentId = wp_insert_attachment(
+		array(
+			'post_mime_type' => $mime,
+			'post_title' => $name,
+			'post_status' => 'inherit',
+		),
+		$upload['file'],
+		0,
+		true
+	);
+	if (is_wp_error($attachmentId) || (int) $attachmentId < 1) {
+		$fail('Unable to create media fixture attachment.');
+	}
+
+	return (int) $attachmentId;
+};
+
+$pngBytes = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z8+UAAAAASUVORK5CYII=', true);
+if (!is_string($pngBytes)) {
+	$fail('Unable to decode CI PNG fixture.');
+}
+$imageOneId = $createAttachment('wla-ci-one.png', 'image/png', $pngBytes);
+$imageTwoId = $createAttachment('wla-ci-two.png', 'image/png', $pngBytes);
+$textAttachmentId = $createAttachment('wla-ci-not-image.txt', 'text/plain', 'not an image');
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => wp_create_nonce('wla_inmo_save_property_media'),
+	'wla_inmo_media' => array(
+		'gallery_ids' => $imageTwoId . ',' . $imageOneId,
+		'video_urls' => "https://example.test/video-one\nhttps://example.test/video-two",
+	),
+	'wla_inmo_media_alt' => array(
+		$imageOneId => 'Fachada CI',
+		$imageTwoId => 'Interior CI',
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+
+$gallery = get_post_meta($guidedId, '_wla_inmo_gallery_ids', true);
+if (!is_array($gallery) || array_map('intval', $gallery) !== array($imageTwoId, $imageOneId)) {
+	$fail('Property media did not preserve gallery order.');
+}
+$videos = get_post_meta($guidedId, '_wla_inmo_video_urls', true);
+if (!is_array($videos) || $videos !== array('https://example.test/video-one', 'https://example.test/video-two')) {
+	$fail('Property media did not persist canonical video URLs.');
+}
+if (get_post_meta($imageOneId, '_wp_attachment_image_alt', true) !== 'Fachada CI' || get_post_meta($imageTwoId, '_wp_attachment_image_alt', true) !== 'Interior CI') {
+	$fail('Property media did not persist authorized attachment ALT values.');
+}
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => wp_create_nonce('wla_inmo_save_property_media'),
+	'wla_inmo_media' => array(
+		'gallery_ids' => (string) $imageOneId,
+		'video_urls' => "https://example.test/video-one\nhttps://example.test/video-two",
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+$gallery = get_post_meta($guidedId, '_wla_inmo_gallery_ids', true);
+if (!is_array($gallery) || array_map('intval', $gallery) !== array($imageOneId)) {
+	$fail('Property media did not remove a gallery association correctly.');
+}
+if (!(get_post($imageTwoId) instanceof WP_Post)) {
+	$fail('Removing a gallery image deleted the WordPress attachment.');
+}
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => wp_create_nonce('wla_inmo_save_property_media'),
+	'wla_inmo_media' => array(
+		'gallery_ids' => (string) $textAttachmentId,
+		'video_urls' => 'https://example.test/valid-after-invalid-gallery',
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+$gallery = get_post_meta($guidedId, '_wla_inmo_gallery_ids', true);
+$videos = get_post_meta($guidedId, '_wla_inmo_video_urls', true);
+if (!is_array($gallery) || array_map('intval', $gallery) !== array($imageOneId)) {
+	$fail('Non-image gallery validation allowed a partial gallery write.');
+}
+if (!is_array($videos) || $videos !== array('https://example.test/video-one', 'https://example.test/video-two')) {
+	$fail('Non-image gallery validation allowed a partial video write.');
+}
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => wp_create_nonce('wla_inmo_save_property_media'),
+	'wla_inmo_media' => array(
+		'gallery_ids' => (string) $imageOneId,
+		'video_urls' => '<iframe src="https://example.test/embed"></iframe>',
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+$videos = get_post_meta($guidedId, '_wla_inmo_video_urls', true);
+if (!is_array($videos) || $videos !== array('https://example.test/video-one', 'https://example.test/video-two')) {
+	$fail('Invalid video HTML was able to mutate canonical media data.');
+}
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => 'invalid-nonce',
+	'wla_inmo_media' => array(
+		'gallery_ids' => (string) $imageTwoId,
+		'video_urls' => 'https://example.test/invalid-nonce',
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+$gallery = get_post_meta($guidedId, '_wla_inmo_gallery_ids', true);
+if (!is_array($gallery) || array_map('intval', $gallery) !== array($imageOneId)) {
+	$fail('Invalid media nonce was able to mutate gallery data.');
+}
+
 $subscriberId = wp_create_user('wla-ci-subscriber-' . $guidedId, wp_generate_password(24, true), 'wla-ci-' . $guidedId . '@example.test');
 if (is_wp_error($subscriberId)) {
 	$fail('Unable to create least-privilege CI user.');
@@ -243,6 +367,20 @@ WLA\Inmo\Admin\PropertyEditor::save($guidedId, get_post($guidedId), true);
 $_POST = array();
 if ((int) get_post_meta($guidedId, '_wla_inmo_price_clp', true) !== 222000000) {
 	$fail('User without edit_post capability mutated guided property fields.');
+}
+
+$_POST = array(
+	'wla_inmo_property_media_nonce' => wp_create_nonce('wla_inmo_save_property_media'),
+	'wla_inmo_media' => array(
+		'gallery_ids' => (string) $imageTwoId,
+		'video_urls' => 'https://example.test/forbidden',
+	),
+);
+WLA\Inmo\Admin\PropertyMedia::save($guidedId, get_post($guidedId), true);
+$_POST = array();
+$gallery = get_post_meta($guidedId, '_wla_inmo_gallery_ids', true);
+if (!is_array($gallery) || array_map('intval', $gallery) !== array($imageOneId)) {
+	$fail('User without edit_post capability mutated property media.');
 }
 wp_set_current_user($adminUser->ID);
 
