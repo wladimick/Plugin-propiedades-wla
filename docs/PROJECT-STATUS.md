@@ -18,7 +18,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 2.1: #24 `DONE`
 - PR 2.2: #26 `DONE`
 - Issue activo Fase 2.3: #27
-- Rama activa Fase 2.3: `feat/phase2-guided-property-editor`
+- PR activa Fase 2.3: #28 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
@@ -26,7 +26,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26, Issue #27, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26/#28, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -94,42 +94,55 @@ El índice derivado continúa almacenando solo propiedades publicadas. No se inc
 
 ### PR 2.3 — Editor guiado de Propiedad
 
-Estado: `IN_PROGRESS / QA PENDING`.
+Estado: `QA_PASSED / MERGE_PENDING`.
 
 Issue: #27  
+PR: #28  
 Rama: `feat/phase2-guided-property-editor`
 
-Alcance implementado en la rama:
+Implementado:
 
 - ficha guiada de 12 secciones;
-- editor clásico nativo habilitado exclusivamente para `wla_property`, sin plugin externo y sin afectar otros post types;
-- título, descripción, publicación, imagen destacada y revisiones siguen siendo nativos de WordPress;
-- UI de campos apoyada en `MetaSchema`, `Sanitizer` y `Validator` sin segundo schema de dominio;
-- operación, tipo, región, comuna y sector integrados dentro de la ficha;
-- metaboxes de taxonomías dispersos retirados del editor de propiedades;
+- editor clásico nativo exclusivamente para `wla_property`, sin plugin externo y sin afectar otros post types;
+- título, descripción, publicación, imagen destacada y revisiones siguen siendo nativos;
+- UI apoyada en `MetaSchema`, `Sanitizer` y `Validator`, sin segundo schema de dominio;
+- operación, tipo, región, comuna y sector integrados en la ficha;
 - campos `external_id`, `private_address` e `internal_notes` identificados como privados;
-- nonce + `edit_post` + capability de términos en escrituras;
-- autosaves/revisiones ignorados por el handler propio;
-- validación completa antes de persistir meta/términos WLA;
-- prevención de `property_code` duplicado incluyendo borradores, sin meter borradores al índice público;
-- snapshot/rollback de meta y términos si una escritura de taxonomía falla;
-- errores accesibles con resumen y error asociado al campo;
-- valores ingresados se conservan de forma segura temporalmente después de un error;
+- nonce + `edit_post` + capability/validez de términos en escrituras;
+- autosaves/revisiones ignorados;
+- validación completa antes de persistir el conjunto WLA;
+- prevención de `property_code` duplicado incluyendo borradores, sin debilitar el índice público;
+- snapshot/rollback de meta y términos si falla una escritura de taxonomía;
+- errores accesibles con resumen y asociación al campo;
+- valores seguros conservados temporalmente después de un error;
 - cero framework JS nuevo;
-- smoke test `tests/smoke/property-editor.php`;
-- integración WordPress ampliada con casos de nonce inválido, código duplicado y usuario sin permiso;
+- smoke test específico e integración WordPress con guardado válido, nonce inválido, duplicados y usuario sin permiso;
 - release smoke exige `Admin\\PropertyEditor`.
 
-Pendiente:
+QA final sobre head de código `48d6833932be5274c964f6696d27d2029aa1a937`:
 
-- abrir PR;
-- ejecutar WPCS/PHPStan/PHPUnit/smoke/integración real;
-- corregir findings;
-- registrar artifact/checksum;
-- squash merge;
-- actualizar evidencia a `DONE`.
+- CI `33830157300`: SUCCESS;
+- Quality Gate PHP 8.1: SUCCESS;
+- WPCS security profile: SUCCESS;
+- PHPStan 2.2: SUCCESS;
+- PHPUnit: `3 tests / 40 assertions`;
+- guided editor smoke y smoke heredados: SUCCESS;
+- WordPress 6.6.2 + PHP 8.1: SUCCESS;
+- WordPress latest + PHP 8.3: SUCCESS;
+- Bootstrap Smoke `33830157352`: SUCCESS;
+- Artifact `9921377798`;
+- Artifact digest `sha256:fbfff4511dca2eed1aa3230369d33cd8f34f59d835dcd21787bc89973a97410a`;
+- ZIP SHA-256 `3d3f6e68e27768cf10904fe468f90c4106382824ec0fd61d5c7915e5caf7660a`.
 
-Evidencia en progreso: `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
+Findings corregidos:
+
+- WPCS detectó concatenación de atributos dinámicos en el primer run; el render fue reestructurado para emitir atributos controlados y valores escapados;
+- lectura de nonce documentada con excepción PHPCS lineal manteniendo sanitización y `wp_verify_nonce()` reales;
+- se corrigió preventivamente el mínimo HTML genérico de números para no impedir coordenadas negativas válidas.
+
+Evidencia: `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
+
+**No marcar PR 2.3 como DONE hasta que PR #28 esté efectivamente squash-mergeada.**
 
 ### Orden restante previsto
 
@@ -143,7 +156,7 @@ Evidencia en progreso: `docs/evidence/phase-2/PR-2.3-GUIDED-PROPERTY-EDITOR.md`.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance ya cerrado de Fase 1, PR 2.1 y PR 2.2.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1, PR 2.1, PR 2.2 ni PR 2.3 en estado QA.
 
 Deuda de prioridad baja heredada:
 
