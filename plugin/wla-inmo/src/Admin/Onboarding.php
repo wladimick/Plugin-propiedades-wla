@@ -116,9 +116,10 @@ final class Onboarding
 		}
 
 		if ($action === 'save') {
-			$submitted = isset($_POST['wla_inmo_onboarding_steps']) && is_array($_POST['wla_inmo_onboarding_steps'])
-				? wp_unslash($_POST['wla_inmo_onboarding_steps'])
-				: array();
+			// The field is an array; each element is sanitized and checked against the explicit allowlist below.
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$submittedRaw = isset($_POST['wla_inmo_onboarding_steps']) ? wp_unslash($_POST['wla_inmo_onboarding_steps']) : array();
+			$submitted = is_array($submittedRaw) ? $submittedRaw : array();
 			$allowed = array_keys(self::steps());
 			$progress = array();
 
