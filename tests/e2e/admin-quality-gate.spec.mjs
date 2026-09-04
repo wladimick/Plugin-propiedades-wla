@@ -131,6 +131,19 @@ test.describe.serial('WLA Inmo administration quality gate', () => {
     await expect(page.locator('body')).toContainText(/not allowed|no tienes permisos|no tienes autorización|sorry/i);
   });
 
+  test('guided editor disclosure works with keyboard focus', async ({ page }) => {
+    await page.goto('/wp-admin/post-new.php?post_type=wla_property');
+    const section = page.locator('details.wla-inmo-property-editor__section').filter({ hasText: '6. Ubicación' });
+    const summary = section.locator('summary');
+
+    await expect(section).not.toHaveAttribute('open', '');
+    await summary.focus();
+    await expect(summary).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(section).toHaveJSProperty('open', true);
+    await expect(page.locator('#wla-inmo-taxonomy-wla_commune')).toBeVisible();
+  });
+
   test('@responsive administration remains usable across priority screens', async ({ page }) => {
     const ownScreens = [
       ['/wp-admin/admin.php?page=wla-inmo', '.wla-inmo-admin', 'Resumen'],
