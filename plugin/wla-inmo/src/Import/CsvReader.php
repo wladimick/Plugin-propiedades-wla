@@ -93,13 +93,6 @@ final class CsvReader
 			}
 
 			$data = array_combine($headers, $values);
-			if (!is_array($data)) {
-				throw new CsvException(
-					'column_count_mismatch',
-					'CSV row could not be mapped to the normalized header.',
-					$recordNumber
-				);
-			}
 
 			yield $dataRows => array(
 				'row_number' => $recordNumber,
