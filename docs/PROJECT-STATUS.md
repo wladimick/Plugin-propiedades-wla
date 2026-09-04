@@ -22,8 +22,9 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.6: #16 `DONE`
 - PR 1.7: #18 `DONE`
 - PR 1.8: #20 `DONE`
-- Issue activo Fase 2.1: #23
-- PR activa Fase 2.1: #24 `QA_PASSED / MERGE_PENDING`
+- PR 2.1: #24 `DONE`
+- Issue activo Fase 2.2: #25
+- PR activa Fase 2.2: #26 `QA_PASSED / MERGE_PENDING`
 
 ## Fases
 
@@ -31,7 +32,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24, `docs/evidence/phase-2/` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, PR #24/#26, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -75,52 +76,71 @@ Backlog: `docs/PHASE-2-BACKLOG.md`.
 
 ### PR 2.1 — Admin shell, navegación y screen registry
 
+Estado: `DONE`.
+
+- Issue #23: CLOSED.
+- PR #24: MERGED.
+- Squash merge: `50d3800477006af51cd4604009178105ed8002c0`.
+- CI final `33827079706`: SUCCESS.
+- Bootstrap Smoke `33827079713`: SUCCESS.
+- WPCS, PHPStan, PHPUnit y smoke tests: SUCCESS.
+- WordPress 6.6.2 + PHP 8.1: SUCCESS.
+- WordPress latest + PHP 8.3: SUCCESS.
+- Artifact `9920346563`.
+- ZIP SHA-256 `f78779284caae48896a1c7f74de5f3d416fcac8eac2540a052ea0938fddfba6f`.
+- Evidencia: `docs/evidence/phase-2/PR-2.1-ADMIN-SHELL.md`.
+
+### PR 2.2 — Listado profesional de Propiedades
+
 Estado: `QA_PASSED / MERGE_PENDING`.
 
-Issue: #23  
-PR: #24  
-Rama: `feat/phase2-admin-shell`
+Issue: #25  
+PR: #26  
+Rama: `feat/phase2-property-list`
 
 Implementado:
 
-- `Admin\\ScreenRegistry` con las 16 secciones/enlaces documentados;
-- menú raíz `WLA Inmo` protegido por `view_wla_inmo_dashboard`;
-- CPT `wla_property` anidado mediante `show_in_menu = wla-inmo`;
-- pantallas Propiedades/Nueva propiedad delegadas al mecanismo nativo de WordPress, sin registro duplicado;
-- placeholders de módulos futuros solo con capability correspondiente;
-- segundo control de capability para acceso directo por URL;
-- Resumen inicial sin queries de métricas;
-- patrón de ayuda contextual;
-- CSS admin namespaced/condicional, sin JS ni React;
-- smoke test `admin-shell.php`;
-- integración WordPress real del parent del CPT;
-- release ZIP actualizado con clases/assets Admin.
+- columnas profesionales: foto, título, código, operación, tipo, ubicación, precio, estado, destacada y actualización;
+- precio administrativo basado únicamente en campos canónicos, respetando `hide_price`, `price_on_request` y `currency_primary`;
+- filtros por operación, tipo, región, comuna, sector, estado y destacada;
+- búsqueda ampliada por código y `external_id`, sin renderizar `external_id` en la tabla;
+- filtros y orden por código apoyados en `wp_wla_property_index`;
+- `LEFT JOIN` limitado al main query administrativo de `wla_property` y solo cuando hace falta;
+- paginación nativa de WordPress preservada;
+- DB schema version 2 con índices específicos para región, sector y estado/destacada;
+- estilos responsivos y miniaturas sin cargar galerías completas;
+- smoke test `tests/smoke/property-list.php`;
+- integración WordPress real del upgrade de índice y presentación canónica;
+- release smoke actualizado para exigir `Admin\\PropertyList` dentro del ZIP.
 
-QA final:
+QA final sobre head `9baffcbcb54af6ac32a50fe037b042a73a9bab2f`:
 
-- Phase 1 CI run `33827079706`: SUCCESS;
+- CI run `33829256386`: SUCCESS;
+- Quality Gate PHP 8.1: SUCCESS;
 - WPCS security profile: SUCCESS;
 - PHPStan 2.2: SUCCESS;
 - PHPUnit: `3 tests / 40 assertions`;
 - smoke tests: SUCCESS;
 - WordPress 6.6.2 + PHP 8.1: SUCCESS;
 - WordPress latest + PHP 8.3: SUCCESS;
-- Bootstrap Smoke run `33827079713`: SUCCESS;
-- Artifact `9920346563`;
-- ZIP SHA-256 `f78779284caae48896a1c7f74de5f3d416fcac8eac2540a052ea0938fddfba6f`.
+- Bootstrap Smoke `33829256549`: SUCCESS;
+- Artifact `9921060323`;
+- Artifact digest `sha256:37bf4b613fd59c221126307f0147cc2241f476d3dfa4fe76301abc9d2f54dcae`;
+- ZIP SHA-256 `660253f9ddb801ca64471066234f7db05fdbec2c6fd6674a9f34edfd4af611bb`.
 
-Evidencia: `docs/evidence/phase-2/PR-2.1-ADMIN-SHELL.md`.
+Findings corregidos:
 
-Findings documentados y corregidos:
+- WPCS no seguía la sanitización/whitelist de dos filtros GET a través de variables intermedias; se conservaron los controles reales y se documentaron únicamente esas dos lecturas mediante excepciones lineales;
+- la aserción de precio CLP de integración se hizo independiente del locale del WordPress de CI sin cambiar el render productivo.
 
-- WPCS solicitó nonce sobre GET de routing exclusivamente de lectura; se documentaron excepciones lineales después de confirmar que no existe mutación y se mantuvo sanitización;
-- se evitó duplicación potencial de submenús al dejar Propiedades/Nueva propiedad bajo responsabilidad nativa de WordPress.
+El índice derivado mantiene la regla de Fase 1 y contiene solo propiedades publicadas. No se debilita ese contrato para permitir búsqueda de borradores.
 
-**No marcar PR 2.1 como DONE hasta que PR #24 esté efectivamente mergeada.**
+Evidencia: `docs/evidence/phase-2/PR-2.2-PROPERTY-LIST.md`.
+
+**No marcar PR 2.2 como DONE hasta que PR #26 esté efectivamente squash-mergeada.**
 
 ### Orden restante previsto
 
-- PR 2.2 listado profesional de Propiedades;
 - PR 2.3 editor guiado de Propiedad;
 - PR 2.4 multimedia/galería;
 - PR 2.5 Calidad del catálogo;
@@ -130,15 +150,15 @@ Findings documentados y corregidos:
 - PR 2.9 Dashboard/Resumen operativo;
 - PR 2.10 Quality Gate de Administración.
 
-La implementación debe reutilizar capabilities, validators, settings e índice de Fase 1; no crear lógica de dominio paralela en el admin.
+La implementación debe reutilizar capabilities, validators, settings e índice del Core; no crear lógica de dominio paralela en el admin.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1 ni de PR 2.1 en estado QA.
+No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1, PR 2.1 ni PR 2.2 en estado QA.
 
 Deuda de prioridad baja heredada:
 
-- el `composer.lock` exacto del quality gate quedó archivado dentro del artifact, pero no está versionado en el repositorio; decidir/incorporar antes de Beta;
+- el `composer.lock` exacto del quality gate queda archivado dentro de cada artifact, pero aún no está versionado en el repositorio; decidir/incorporar antes de Beta;
 - PHPStan nivel 6 cubre inicialmente contratos puros seleccionados y debe expandirse progresivamente;
 - warnings deprecatorios Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
 
@@ -153,6 +173,7 @@ Deuda de prioridad baja heredada:
 7. UX preventiva de códigos duplicados se refuerza desde Fase 2 y Fase 3.
 8. Cambiar `property_base` requerirá una operación controlada de rewrite en la UI.
 9. Lock de tooling debe resolverse antes de Beta.
+10. Si el administrador necesita búsqueda indexada de borradores, debe diseñarse un índice administrativo separado; no reutilizar el índice público.
 
 ## Producción
 

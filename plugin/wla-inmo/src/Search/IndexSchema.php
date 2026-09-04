@@ -4,7 +4,7 @@ namespace WLA\Inmo\Search;
 
 final class IndexSchema
 {
-	public const DB_VERSION = '1';
+	public const DB_VERSION = '2';
 	public const DB_VERSION_OPTION = 'wla_inmo_db_version';
 	public const TABLE_SUFFIX = 'wla_property_index';
 
@@ -44,7 +44,10 @@ PRIMARY KEY  (property_id),
 UNIQUE KEY property_code (property_code),
 KEY operation_status (operation_slug,status),
 KEY type_slug (type_slug),
+KEY region_slug (region_slug),
 KEY commune_slug (commune_slug),
+KEY sector_slug (sector_slug),
+KEY status_featured (status,featured),
 KEY price_clp (price_clp),
 KEY featured_updated (featured,updated_at)
 ) {$charsetCollate};";
