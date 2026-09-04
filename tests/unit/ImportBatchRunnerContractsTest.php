@@ -57,6 +57,13 @@ final class ImportBatchRunnerContractsTest extends TestCase
 		} catch (MappingException $exception) {
 			self::assertSame('invalid_profile_snapshot', $exception->reason());
 		}
+
+		try {
+			MappingProfileCodec::decode('{"version":1,"source_key":"!","name":"Bad","empty_policy":"preserve","mapping":{"titulo":"post.title"},"separators":{}}');
+			self::fail('Invalid persisted source key should fail as a mapping error.');
+		} catch (MappingException $exception) {
+			self::assertSame('invalid_profile_source_key', $exception->reason());
+		}
 	}
 
 	public function testBatchRunResultContainsOnlyOperationalCodes(): void
