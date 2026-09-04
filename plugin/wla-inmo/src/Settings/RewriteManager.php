@@ -103,9 +103,11 @@ final class RewriteManager
 			wp_die(esc_html__('La solicitud para actualizar los enlaces no es válida. Vuelve a intentarlo.', 'wla-inmo'));
 		}
 
-		if (self::isPending()) {
+		$pendingBase = self::pendingBase();
+		if ($pendingBase !== null) {
 			flush_rewrite_rules(false);
 			delete_option(self::PENDING_OPTION);
+			do_action('wla_inmo_rewrite_rules_applied', $pendingBase);
 		}
 
 		wp_safe_redirect(admin_url('admin.php?page=wla-inmo-settings&tab=advanced&rewrites=applied'));
