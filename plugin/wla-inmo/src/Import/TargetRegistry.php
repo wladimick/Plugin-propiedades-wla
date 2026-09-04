@@ -136,6 +136,10 @@ final class TargetRegistry
 			return 'url_list';
 		}
 
+		if (in_array($field, array('location_text', 'internal_notes'), true)) {
+			return 'textarea';
+		}
+
 		if (in_array($field, array('price_clp', 'common_expenses_clp', 'bedrooms', 'bathrooms', 'parking', 'storage_units', 'construction_year', 'home_order'), true)) {
 			return 'non_negative_integer';
 		}
