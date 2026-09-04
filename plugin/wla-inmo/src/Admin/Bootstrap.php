@@ -19,8 +19,10 @@ final class Bootstrap
 		add_action('current_screen', array(ContextHelp::class, 'add'));
 
 		PropertyList::register();
+		PropertyQualityList::register();
 		PropertyEditor::register();
 		PropertyMedia::register();
+		QualityPage::register();
 	}
 
 	public static function resetForTests(): void
