@@ -5,7 +5,7 @@
  * This file is parsed by PHPStan only and is never shipped as runtime code.
  */
 
-function add_action(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): true
+function add_action(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool
 {
 	return true;
 }
