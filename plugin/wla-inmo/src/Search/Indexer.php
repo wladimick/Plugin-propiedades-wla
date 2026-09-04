@@ -58,9 +58,13 @@ final class Indexer
 	}
 
 	/**
+	 * WordPress passes an int for added/updated meta and an array of IDs for
+	 * deleted meta, so the first argument intentionally remains untyped.
+	 *
+	 * @param mixed $metaId Meta ID or IDs.
 	 * @param mixed $metaValue Metadata value.
 	 */
-	public static function onMetaChanged(int $metaId, int $objectId, string $metaKey, $metaValue): void
+	public static function onMetaChanged($metaId, int $objectId, string $metaKey, $metaValue): void
 	{
 		unset($metaId, $metaValue);
 
