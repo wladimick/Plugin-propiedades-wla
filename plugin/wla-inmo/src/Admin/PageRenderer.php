@@ -30,6 +30,8 @@ final class PageRenderer
 			QualityPage::render();
 		} elseif ($definition['slug'] === 'wla-inmo-settings') {
 			SettingsPage::render();
+		} elseif ($definition['slug'] === 'wla-inmo-activity') {
+			ActivityPage::render();
 		} else {
 			self::renderPlaceholder($definition);
 		}
@@ -63,6 +65,15 @@ final class PageRenderer
 			);
 		}
 
+		if (current_user_can(AccessCapabilities::VIEW_ACTIVITY)) {
+			self::renderActionCard(
+				__('Actividad', 'wla-inmo'),
+				__('Revisa cambios operativos relevantes del catálogo y los ajustes.', 'wla-inmo'),
+				admin_url('admin.php?page=wla-inmo-activity'),
+				__('Ver actividad', 'wla-inmo')
+			);
+		}
+
 		self::renderActionCard(
 			__('Ayuda', 'wla-inmo'),
 			__('Encuentra instrucciones en lenguaje simple para las tareas habituales.', 'wla-inmo'),
@@ -81,7 +92,7 @@ final class PageRenderer
 
 		echo '</section>';
 		echo '<div class="notice notice-info inline wla-inmo-admin__notice"><p>';
-		echo esc_html__('El Resumen operativo incorporará métricas reales al final de Fase 2. Esta versión ya enlaza Calidad, Ayuda y Ajustes.', 'wla-inmo');
+		echo esc_html__('El Resumen operativo incorporará métricas consolidadas en PR 2.9. Esta versión ya enlaza Calidad, Actividad, Ayuda y Ajustes.', 'wla-inmo');
 		echo '</p></div>';
 	}
 
