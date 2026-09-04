@@ -88,7 +88,7 @@ final class BatchRepository
 
 		$table = BatchSchema::tableName($this->wpdb);
 		$sql = $this->wpdb->prepare("SELECT * FROM {$table} WHERE batch_uuid = %s LIMIT 1", $batchUuid);
-		$row = $this->wpdb->get_row($sql, ARRAY_A);
+		$row = $this->wpdb->get_row($sql, 'ARRAY_A');
 
 		return is_array($row) ? self::normalizeRow($row) : null;
 	}
