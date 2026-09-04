@@ -1,0 +1,95 @@
+name: Import Persistence Integration
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/src/Import/**'
+      - 'plugin/wla-inmo/src/Core/Installer.php'
+      - 'plugin/wla-inmo/src/Core/Plugin.php'
+      - 'bin/**'
+      - 'tests/integration/assert-import-persistence.php'
+      - '.github/workflows/import-persistence-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wordpress-import-persistence:
+    name: WP ${{ matrix.wordpress }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.6.2'
+            php: '8.1'
+          - wordpress: 'latest'
+            php: '8.3'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: mysqli
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Install WordPress
+        run: |
+          mkdir -p /tmp/wla-import-persistence-wordpress
+          cd /tmp/wla-import-persistence-wordpress
+          wp core download --version="${{ matrix.wordpress }}" --force --quiet --allow-root
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --allow-root
+          ADMIN_PASS="$(openssl rand -hex 16)"
+          wp core install \
+            --url=http://import-persistence.wla.test \
+            --title='WLA Inmo Import Persistence CI' \
+            --admin_user=admin \
+            --admin_password="$ADMIN_PASS" \
+            --admin_email=import-persistence-ci@example.test \
+            --skip-email \
+            --allow-root
+
+      - name: Install and activate release ZIP
+        run: |
+          cd /tmp/wla-import-persistence-wordpress
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
+          wp plugin status wla-inmo --allow-root
+
+      - name: Validate identity and resumable batches
+        run: |
+          cd /tmp/wla-import-persistence-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-persistence.php" --allow-root

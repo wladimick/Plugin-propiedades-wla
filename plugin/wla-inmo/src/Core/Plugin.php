@@ -6,6 +6,8 @@ use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Activity\Observer as ActivityObserver;
 use WLA\Inmo\Activity\Retention as ActivityRetention;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
+use WLA\Inmo\Import\IdentityIndexer;
+use WLA\Inmo\Import\IdentityMeta;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Quality\Indexer as QualityIndexer;
@@ -45,6 +47,7 @@ final class Plugin
 		add_action('init', array(PostType::class, 'register'), 5);
 		add_action('init', array(TaxonomyRegistry::class, 'register'), 6);
 		add_action('init', array(MetaSchema::class, 'register'), 7);
+		add_action('init', array(IdentityMeta::class, 'register'), 8);
 		add_action('admin_init', array(Installer::class, 'maybeUpgrade'), 1);
 		add_action('admin_init', array(RoleManager::class, 'maybeUpgrade'), 2);
 		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
@@ -53,6 +56,7 @@ final class Plugin
 		ActivityObserver::register();
 		ActivityRetention::register();
 		Indexer::register();
+		IdentityIndexer::register();
 		QualityIndexer::register();
 
 		if (is_admin()) {

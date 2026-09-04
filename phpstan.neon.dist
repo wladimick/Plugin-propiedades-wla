@@ -6,4 +6,6 @@ parameters:
         - plugin/wla-inmo/src/Properties/Capabilities.php
         - plugin/wla-inmo/src/Taxonomies/Capabilities.php
         - plugin/wla-inmo/src/Import
+    bootstrapFiles:
+        - tests/phpstan/wordpress-import-stubs.php
     reportUnmatchedIgnoredErrors: true
