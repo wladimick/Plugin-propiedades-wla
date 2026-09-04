@@ -18,6 +18,7 @@ final class Bootstrap
 		add_action('admin_enqueue_scripts', array(Assets::class, 'enqueue'));
 		add_action('current_screen', array(ContextHelp::class, 'add'));
 
+		Onboarding::register();
 		PropertyList::register();
 		PropertyQualityList::register();
 		PropertyEditor::register();
