@@ -3,6 +3,7 @@
 namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Access\RoleManager;
+use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Search\Indexer;
@@ -45,6 +46,10 @@ final class Plugin
 		add_action('admin_init', array(SettingsRegistry::class, 'register'), 3);
 
 		Indexer::register();
+
+		if (is_admin()) {
+			AdminBootstrap::register();
+		}
 
 		/**
 		 * Fires after WLA Inmo Core has completed its bootstrap.
