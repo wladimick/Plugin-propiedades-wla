@@ -16,6 +16,7 @@ final class ActivityPage
 		}
 
 		$filters = self::filtersFromRequest();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Pagination is a read-only GET filter.
 		$page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
 		$result = Repository::paginate($filters, $page, 30);
 
@@ -59,10 +60,15 @@ final class ActivityPage
 	private static function filtersFromRequest(): array
 	{
 		return array(
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only activity filter.
 			'event_type' => isset($_GET['event_type']) ? sanitize_text_field(wp_unslash((string) $_GET['event_type'])) : '',
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only activity filter.
 			'object_id' => isset($_GET['object_id']) ? absint($_GET['object_id']) : 0,
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only activity filter.
 			'actor_user_id' => isset($_GET['actor_user_id']) ? absint($_GET['actor_user_id']) : 0,
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only activity filter.
 			'from' => isset($_GET['from']) ? sanitize_text_field(wp_unslash((string) $_GET['from'])) : '',
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only activity filter.
 			'to' => isset($_GET['to']) ? sanitize_text_field(wp_unslash((string) $_GET['to'])) : '',
 		);
 	}
@@ -104,7 +110,7 @@ final class ActivityPage
 				echo '<tr>';
 				echo '<td>' . esc_html(self::localDate((string) $event->created_at)) . '</td>';
 				echo '<td><strong>' . esc_html(EventTypes::label((string) $event->event_type)) . '</strong></td>';
-				echo '<td>' . self::objectHtml((string) $event->object_type, $objectId, $properties) . '</td>';
+				echo '<td>' . wp_kses_post(self::objectHtml((string) $event->object_type, $objectId, $properties)) . '</td>';
 				echo '<td>' . esc_html($actorId > 0 ? ($actors[$actorId] ?? __('Usuario eliminado', 'wla-inmo')) : __('Sistema', 'wla-inmo')) . '</td>';
 				echo '<td>' . esc_html(self::eventDetail($event)) . '</td>';
 				echo '</tr>';
