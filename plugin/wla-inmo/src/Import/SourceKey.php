@@ -32,7 +32,7 @@ final class SourceKey
 
 	public static function normalize(string $value): string
 	{
-		$value = trim(strtolower($value));
+		$value = trim($value);
 		$value = strtr(
 			$value,
 			array(
@@ -43,8 +43,16 @@ final class SourceKey
 				'ú' => 'u',
 				'ü' => 'u',
 				'ñ' => 'n',
+				'Á' => 'a',
+				'É' => 'e',
+				'Í' => 'i',
+				'Ó' => 'o',
+				'Ú' => 'u',
+				'Ü' => 'u',
+				'Ñ' => 'n',
 			)
 		);
+		$value = strtolower($value);
 		$value = preg_replace('/[^a-z0-9_-]+/', '_', $value) ?? '';
 		$value = preg_replace('/_+/', '_', $value) ?? '';
 
