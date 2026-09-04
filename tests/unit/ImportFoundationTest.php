@@ -158,9 +158,9 @@ final class ImportFoundationTest extends TestCase
 			self::assertSame(3, $exception->rowNumber());
 		}
 
-		$cellLimitPath = $this->temporaryFile("codigo,nota\nA-1,123456\n");
+		$cellLimitPath = $this->temporaryFile("codigo,nota\nA-1,123456789\n");
 		try {
-			iterator_to_array((new CsvReader(10, 10, 5))->rows($cellLimitPath), false);
+			iterator_to_array((new CsvReader(10, 10, 8))->rows($cellLimitPath), false);
 			self::fail('Expected cell limit exception.');
 		} catch (CsvException $exception) {
 			self::assertSame('cell_limit_exceeded', $exception->reason());
