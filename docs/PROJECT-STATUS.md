@@ -6,10 +6,10 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 
 - Proyecto: WLA Inmo
 - Tema de referencia: WLA Inmo Light
-- Etapa actual: `PHASE-2 / ADMINISTRATION — ENTRY APPROVED`
+- Etapa actual: `PHASE-2 / ADMINISTRATION`
 - Fase 0: `DONE`
 - Fase 1: `DONE`
-- Fase 2: `PLANNED / ENTRY APPROVED`
+- Fase 2: `IN_PROGRESS`
 - Código de producto: `0.1.0-alpha`
 - Producción: no afectada
 - Decisiones críticas: D01–D75 `ACCEPTED`
@@ -22,8 +22,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.6: #16 `DONE`
 - PR 1.7: #18 `DONE`
 - PR 1.8: #20 `DONE`
-- Issue Fase 1.8: #19 `CLOSED`
-- Entrada Fase 2: aprobada y documentada en `docs/PHASE-2-BACKLOG.md`
+- Issue activo Fase 2.1: #23
+- Rama activa Fase 2.1: `feat/phase2-admin-shell`
 
 ## Fases
 
@@ -31,7 +31,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 |---|---|---|---|
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
-| 2 | Administración | PLANNED / ENTRY APPROVED | `PHASE-2-BACKLOG.md`, `ADMIN-SECTIONS.md` |
+| 2 | Administración | IN_PROGRESS | `PHASE-2-BACKLOG.md`, Issue #23, `docs/evidence/phase-2/` |
 | 3 | Import/Export | PLANNED | pendiente |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
@@ -51,80 +51,53 @@ Arquitectura, requisitos, modelo, stack, metodología, testing, quality gates, a
 
 Estado: `DONE`.
 
-### PR 1.1 — Bootstrap y build
-
-PR #5 — squash `7ca5b05f6763a7f8dc83f60995b2dc0760f68114`.
-
-### PR 1.2 — Entidad Property
-
-PR #8 — squash `da989ef50a9d066023ae2c00d776d05af3d3499c`.
-
-### PR 1.3 — Taxonomías base
-
-PR #10 — squash `61954bfbab9827b6d07d6b6151b9095677951dee`.
-
-### PR 1.4 — Meta schema canónico y validación
-
-PR #12 — squash `344a681653970c3c9a3237c15aef99fbb281bb4b`.
-
-### PR 1.5 — Índice de búsqueda y sincronización
-
-PR #14 — squash `01560207b4872aa73d58e23f5ee2a58adfa6d0be`, CI SUCCESS.
-
-### PR 1.6 — Roles y capabilities
-
-PR #16 — squash `b09292c3d30972e2a1c097306312c989b84e3f11`, CI SUCCESS.
-
-### PR 1.7 — Settings y contratos públicos mínimos
-
-PR #18 — squash `2f0f215ee4d68501af11a0168b8be31c9a9144be`, CI SUCCESS.
-
-### PR 1.8 — Quality Gate y release `0.1.0-alpha`
-
-Estado: `DONE`.
-
-- Issue #19: CLOSED.
-- PR #20: MERGED.
-- Squash merge: `a142a4373ef37e14cd20b5a99105abeab0c1778d`.
-- Phase 1 CI final: `33826185833` — SUCCESS.
-- Bootstrap Smoke final: `33826185820` — SUCCESS.
-- WPCS security profile: SUCCESS.
-- PHPStan 2.2: SUCCESS.
-- PHPUnit: `3 tests / 40 assertions`.
+- PR #5 — 1.1 Bootstrap/build.
+- PR #8 — 1.2 Entidad Property.
+- PR #10 — 1.3 Taxonomías.
+- PR #12 — 1.4 Meta schema/validación.
+- PR #14 — 1.5 Índice/sincronización.
+- PR #16 — 1.6 Roles/capabilities.
+- PR #18 — 1.7 Settings/contrato con temas.
+- PR #20 — 1.8 Quality Gate/release `0.1.0-alpha`, squash `a142a4373ef37e14cd20b5a99105abeab0c1778d`.
+- Phase 1 CI final `33826185833`: SUCCESS.
 - WordPress 6.6.2 + PHP 8.1: SUCCESS.
 - WordPress latest + PHP 8.3: SUCCESS.
-- Desactivación conserva datos: SUCCESS.
-- Uninstall conserva datos: SUCCESS.
+- Artifact QA: ID `9920034253`.
+- ZIP SHA-256: `c6189cd0a295fbec807c412e93ffe1c545df1b594e9219a8d18465db02767dde`.
 
-Artefacto QA:
-
-- Artifact ID `9920034253`.
-- Nombre `wla-inmo-0.1.0-alpha-quality`.
-- Artifact digest `sha256:fd4cc13c55f9dec8d8355b1836b429f76345d9f64c62777d3a5c60547e4ccd45`.
-- ZIP instalable SHA-256 `c6189cd0a295fbec807c412e93ffe1c545df1b594e9219a8d18465db02767dde`.
-- Evidencia `docs/evidence/phase-1/PR-1.8-QUALITY-GATE.md`.
-
-### Criterio de salida de Fase 1
-
-Cumplido:
-
-- PR 1.1–1.8 mergeadas;
-- CI relevante verde;
-- integración WordPress real verde;
-- datos conservados al desactivar/uninstall;
-- artifact instalable generado;
-- evidencia disponible;
-- sin findings críticos/altos abiertos conocidos del alcance.
+Evidencia completa en `docs/evidence/phase-1/`.
 
 ## Fase 2 — Administración
 
-Estado: `PLANNED / ENTRY APPROVED`.
+Estado: `IN_PROGRESS`.
 
 Backlog: `docs/PHASE-2-BACKLOG.md`.
 
-Orden previsto:
+### PR 2.1 — Admin shell, navegación y screen registry
 
-- PR 2.1 Admin shell, navegación y screen registry;
+Estado: `IN_PROGRESS / QA PENDING`.
+
+Issue: #23  
+Rama: `feat/phase2-admin-shell`
+
+Alcance en implementación:
+
+- `Admin\\ScreenRegistry` con las 16 secciones/enlaces documentados;
+- menú raíz `WLA Inmo` protegido por `view_wla_inmo_dashboard`;
+- CPT `wla_property` anidado bajo el menú WLA mediante `show_in_menu = wla-inmo`;
+- pantallas nativas Propiedades/Nueva propiedad delegadas a WordPress para evitar submenús duplicados;
+- placeholders de módulos futuros solo cuando el usuario posee la capability correspondiente;
+- segundo control de capability en el callback para proteger acceso directo por URL;
+- Resumen inicial sin queries de métricas;
+- patrón de ayuda contextual;
+- CSS admin namespaced y condicional, sin JavaScript/React;
+- smoke tests de permisos, assets, nesting y ayuda;
+- integración WordPress extendida para verificar el parent del CPT.
+
+No marcar PR 2.1 como `DONE` hasta que exista PR, CI verde, evidencia final y squash merge.
+
+### Orden restante previsto
+
 - PR 2.2 listado profesional de Propiedades;
 - PR 2.3 editor guiado de Propiedad;
 - PR 2.4 multimedia/galería;
@@ -135,13 +108,13 @@ Orden previsto:
 - PR 2.9 Dashboard/Resumen operativo;
 - PR 2.10 Quality Gate de Administración.
 
-La implementación debe reutilizar las capabilities, validators, settings e índice de Fase 1; no crear lógica de dominio paralela en el admin.
+La implementación debe reutilizar capabilities, validators, settings e índice de Fase 1; no crear lógica de dominio paralela en el admin.
 
 ## Findings / deuda no bloqueante conocida
 
 No existen findings críticos/altos abiertos conocidos dentro del alcance cerrado de Fase 1.
 
-Deuda de prioridad baja:
+Deuda de prioridad baja heredada:
 
 - el `composer.lock` exacto del quality gate quedó archivado dentro del artifact, pero no está versionado en el repositorio; decidir/incorporar antes de Beta;
 - PHPStan nivel 6 cubre inicialmente contratos puros seleccionados y debe expandirse progresivamente;
@@ -161,7 +134,7 @@ Deuda de prioridad baja:
 
 ## Producción
 
-`propiedadesmartinez.cl` no ha sido modificado por las Fases 0–1 ni por el cierre documental. Cualquier despliegue/migración productiva requerirá una solicitud explícita posterior y su propia evidencia.
+`propiedadesmartinez.cl` no ha sido modificado. Cualquier despliegue/migración productiva requerirá una solicitud explícita posterior y su propia evidencia.
 
 ## Regla de actualización
 
