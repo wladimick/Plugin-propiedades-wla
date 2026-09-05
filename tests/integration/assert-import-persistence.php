@@ -28,6 +28,11 @@ if ((string) get_option(WLA\Inmo\Import\BatchSchema::DB_VERSION_OPTION, '0') !==
 	$fail('Batch schema version is not installed.');
 }
 
+$batchColumns = $wpdb->get_col("SHOW COLUMNS FROM {$batchTable}");
+if (!in_array('cursor_offset', $batchColumns, true)) {
+	$fail('Import batch byte cursor column is not installed.');
+}
+
 $registeredMeta = get_registered_meta_keys('post', 'wla_property');
 if (!isset($registeredMeta[WLA\Inmo\Import\IdentityMeta::SOURCE_KEY_META])) {
 	$fail('External source key metadata is not registered.');
@@ -130,12 +135,18 @@ if (
 		$revision,
 		1,
 		1,
-		array('created' => 1, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0)
+		array('created' => 1, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0),
+		100
 	)
 ) {
 	$fail('Unable to persist first resumable batch checkpoint.');
 }
 ++$revision;
+
+$firstCheckpoint = $batchRepository->find($batchUuid);
+if (!is_array($firstCheckpoint) || (int) $firstCheckpoint['cursor_offset'] !== 100) {
+	$fail('First resumable byte checkpoint was not persisted.');
+}
 
 if (
 	$batchRepository->advanceProgress(
@@ -143,10 +154,24 @@ if (
 		$revision - 1,
 		2,
 		2,
-		array('created' => 2, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0)
+		array('created' => 2, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0),
+		200
 	)
 ) {
 	$fail('Stale optimistic-lock revision was accepted.');
+}
+
+if (
+	$batchRepository->advanceProgress(
+		$batchUuid,
+		$revision,
+		2,
+		2,
+		array('created' => 2, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0),
+		99
+	)
+) {
+	$fail('Regressive byte checkpoint was accepted.');
 }
 
 if ($batchRepository->transition($batchUuid, WLA\Inmo\Import\BatchStatus::COMPLETED, $revision)) {
@@ -159,7 +184,8 @@ if (
 		$revision,
 		2,
 		2,
-		array('created' => 2, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0)
+		array('created' => 2, 'updated' => 0, 'skipped' => 0, 'warnings' => 0, 'errors' => 0),
+		200
 	)
 ) {
 	$fail('Unable to persist final resumable batch checkpoint.');
@@ -171,7 +197,12 @@ if (!$batchRepository->transition($batchUuid, WLA\Inmo\Import\BatchStatus::COMPL
 }
 
 $completed = $batchRepository->find($batchUuid);
-if (!is_array($completed) || $completed['status'] !== WLA\Inmo\Import\BatchStatus::COMPLETED || (int) $completed['processed_rows'] !== 2) {
+if (
+	!is_array($completed)
+	|| $completed['status'] !== WLA\Inmo\Import\BatchStatus::COMPLETED
+	|| (int) $completed['processed_rows'] !== 2
+	|| (int) $completed['cursor_offset'] !== 200
+) {
 	$fail('Completed batch state is inconsistent.');
 }
 

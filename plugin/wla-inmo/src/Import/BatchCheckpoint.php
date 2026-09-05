@@ -16,10 +16,20 @@ final class BatchCheckpoint
 	 *
 	 * Error results are deliberately not checkpointed: a caller may retry the
 	 * row after correcting/recovering the failure without advancing the cursor.
+	 * The byte offset is persisted atomically with the logical row checkpoint so
+	 * resumed CSV slices do not need to rescan previously confirmed rows.
 	 */
-	public function confirm(string $batchUuid, int $expectedRevision, RowExecutionResult $result): bool
-	{
-		if (!$result->isSuccessful() || $result->status() === RowExecutionResult::STATUS_ERROR) {
+	public function confirm(
+		string $batchUuid,
+		int $expectedRevision,
+		RowExecutionResult $result,
+		?int $cursorOffset = null
+	): bool {
+		if (
+			!$result->isSuccessful()
+			|| $result->status() === RowExecutionResult::STATUS_ERROR
+			|| ($cursorOffset !== null && $cursorOffset < 0)
+		) {
 			return false;
 		}
 
@@ -62,7 +72,8 @@ final class BatchCheckpoint
 			$expectedRevision,
 			$cursor,
 			$processed,
-			$counters
+			$counters,
+			$cursorOffset
 		);
 	}
 }

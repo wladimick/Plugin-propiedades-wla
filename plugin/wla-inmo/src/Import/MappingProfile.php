@@ -128,6 +128,14 @@ final class MappingProfile
 		return $this->mapping;
 	}
 
+	/**
+	 * @return array<string,string>
+	 */
+	public function separators(): array
+	{
+		return $this->separators;
+	}
+
 	public function separatorFor(string $header): ?string
 	{
 		$header = HeaderNormalizer::normalize($header);

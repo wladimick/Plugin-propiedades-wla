@@ -10,6 +10,7 @@ final class CsvReader
 {
 	private const UTF8_BOM = "\xEF\xBB\xBF";
 	private const DETECTION_BYTES = 65536;
+	private const HASH_CHUNK_BYTES = 1048576;
 
 	private int $maxRows;
 
@@ -106,6 +107,97 @@ final class CsvReader
 	}
 
 	/**
+	 * Read a confirmed CSV from a durable byte checkpoint.
+	 *
+	 * The shared lock, SHA-256 verification and row iteration all use the same
+	 * SplFileObject handle. Replacing the pathname after the handle is opened
+	 * therefore cannot swap in unverified bytes for the current run.
+	 *
+	 * `startDataRow` is the number of data rows already checkpointed. For
+	 * resumed batches, `startOffset` must point immediately after that row.
+	 *
+	 * @return Generator<int,array{row_number:int,data:array<string,string>,next_offset:int}>
+	 */
+	public function verifiedRows(
+		string $path,
+		string $expectedHash,
+		int $startOffset = 0,
+		int $startDataRow = 0
+	): Generator {
+		if ($startOffset < 0 || $startDataRow < 0 || $startDataRow > $this->maxRows) {
+			throw new CsvException('invalid_resume_cursor', 'CSV resume cursor is invalid.');
+		}
+
+		if ($startDataRow > 0 && $startOffset === 0) {
+			throw new CsvException('resume_offset_missing', 'CSV resume offset is missing.');
+		}
+
+		if ($path === '' || !is_file($path) || !is_readable($path)) {
+			throw new CsvException('source_unreadable', 'CSV source is not readable.');
+		}
+
+		$file = new SplFileObject($path, 'rb');
+		if (!$file->flock(LOCK_SH)) {
+			throw new CsvException('source_lock_failed', 'CSV source could not be locked for reading.');
+		}
+
+		try {
+			$this->verifyHash($file, $expectedHash);
+			$delimiter = $this->delimiter ?? $this->detectDelimiterFromFile($file);
+			$file->setFlags(SplFileObject::DROP_NEW_LINE);
+			$file->setCsvControl($delimiter, '"', '\\');
+
+			[$headers, $headerOffset] = $this->readHeadersFromFile($file);
+			$effectiveOffset = $startOffset > 0 ? $startOffset : $headerOffset;
+
+			if ($effectiveOffset < $headerOffset || $file->fseek($effectiveOffset) !== 0) {
+				throw new CsvException('invalid_resume_offset', 'CSV resume offset is outside the data area.');
+			}
+
+			$dataRows = $startDataRow;
+			while (!$file->eof()) {
+				$row = $file->fgetcsv();
+				$nextOffset = $file->ftell();
+				if ($nextOffset === false) {
+					throw new CsvException('source_offset_failed', 'CSV source position could not be read.');
+				}
+
+				if (!is_array($row) || $row === array(null) || self::isEmptyRow($row)) {
+					continue;
+				}
+
+				$rowNumber = $dataRows + 2;
+				$values = $this->normalizeCells($row, $rowNumber);
+				if (count($values) > count($headers)) {
+					throw new CsvException(
+						'column_count_mismatch',
+						'CSV row has more columns than the header.',
+						$rowNumber
+					);
+				}
+
+				if (count($values) < count($headers)) {
+					$values = array_pad($values, count($headers), '');
+				}
+
+				++$dataRows;
+				if ($dataRows > $this->maxRows) {
+					throw new CsvException('row_limit_exceeded', 'CSV row limit exceeded.', $rowNumber);
+				}
+
+				$data = array_combine($headers, $values);
+				yield $dataRows => array(
+					'row_number' => $rowNumber,
+					'data' => $data,
+					'next_offset' => (int) $nextOffset,
+				);
+			}
+		} finally {
+			$file->flock(LOCK_UN);
+		}
+	}
+
+	/**
 	 * @return array<int,string>
 	 */
 	public static function supportedDelimiters(): array
@@ -153,6 +245,39 @@ final class CsvReader
 			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
 		}
 
+		return $this->delimiterFromSample($sample);
+	}
+
+	private function detectDelimiterFromFile(SplFileObject $file): string
+	{
+		$file->rewind();
+		$sample = null;
+		$sampleRow = 0;
+
+		while (!$file->eof()) {
+			$candidate = $file->fgets();
+			++$sampleRow;
+			$candidate = substr($candidate, 0, self::DETECTION_BYTES);
+			$candidate = self::stripBom($candidate);
+			$this->assertUtf8($candidate, $sampleRow);
+			if (trim($candidate) === '') {
+				continue;
+			}
+
+			$sample = $candidate;
+			break;
+		}
+
+		$file->rewind();
+		if ($sample === null) {
+			throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+		}
+
+		return $this->delimiterFromSample($sample);
+	}
+
+	private function delimiterFromSample(string $sample): string
+	{
 		$bestDelimiter = ',';
 		$bestCount = 1;
 
@@ -166,6 +291,84 @@ final class CsvReader
 		}
 
 		return $bestDelimiter;
+	}
+
+	private function verifyHash(SplFileObject $file, string $expectedHash): void
+	{
+		$expectedHash = strtolower(trim($expectedHash));
+		if (preg_match('/^[a-f0-9]{64}$/', $expectedHash) !== 1) {
+			throw new CsvException('source_hash_failed', 'CSV source hash is invalid.');
+		}
+
+		$before = $file->fstat();
+		$context = hash_init('sha256');
+		$file->rewind();
+
+		while (!$file->eof()) {
+			$chunk = $file->fread(self::HASH_CHUNK_BYTES);
+			if ($chunk === '') {
+				if ($file->eof()) {
+					break;
+				}
+				continue;
+			}
+			hash_update($context, $chunk);
+		}
+
+		$actualHash = hash_final($context);
+		$after = $file->fstat();
+		$file->rewind();
+
+		if (!$this->sameFileState($before, $after)) {
+			throw new CsvException('source_changed_during_validation', 'CSV source changed during validation.');
+		}
+
+		if (!hash_equals($expectedHash, $actualHash)) {
+			throw new CsvException('source_hash_mismatch', 'CSV source hash does not match the confirmed batch.');
+		}
+	}
+
+	/**
+	 * @return array{0:array<int,string>,1:int}
+	 */
+	private function readHeadersFromFile(SplFileObject $file): array
+	{
+		$file->rewind();
+		$recordNumber = 0;
+
+		while (!$file->eof()) {
+			$row = $file->fgetcsv();
+			++$recordNumber;
+			if (!is_array($row) || $row === array(null) || self::isEmptyRow($row)) {
+				continue;
+			}
+
+			$values = $this->normalizeCells($row, $recordNumber);
+			$headers = $this->normalizeHeaders($values, $recordNumber);
+			$offset = $file->ftell();
+			if ($offset === false) {
+				throw new CsvException('source_offset_failed', 'CSV header position could not be read.');
+			}
+
+			return array($headers, (int) $offset);
+		}
+
+		throw new CsvException('missing_header', 'CSV file does not contain a usable header row.');
+	}
+
+	/**
+	 * @param array<string|int,mixed> $before File state before hashing.
+	 * @param array<string|int,mixed> $after File state after hashing.
+	 */
+	private function sameFileState(array $before, array $after): bool
+	{
+		foreach (array('dev', 'ino', 'size', 'mtime') as $field) {
+			if (isset($before[$field], $after[$field]) && (string) $before[$field] !== (string) $after[$field]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

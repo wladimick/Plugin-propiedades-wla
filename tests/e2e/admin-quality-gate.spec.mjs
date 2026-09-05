@@ -6,16 +6,40 @@ const adminPass = process.env.WLA_E2E_ADMIN_PASS;
 const editorUser = process.env.WLA_E2E_EDITOR_USER;
 const editorPass = process.env.WLA_E2E_EDITOR_PASS;
 
+async function submitLogin(page, username, password) {
+  await page.goto('/wp-login.php');
+  await page.locator('#user_login').fill(username);
+  await page.locator('#user_pass').fill(password);
+  await page.locator('#wp-submit').click();
+}
+
 async function login(page, username, password) {
   if (!username || !password) {
     throw new Error('Missing E2E credentials supplied by the CI environment.');
   }
 
-  await page.goto('/wp-login.php');
-  await page.locator('#user_login').fill(username);
-  await page.locator('#user_pass').fill(password);
-  await page.locator('#wp-submit').click();
-  await expect(page).toHaveURL(/\/wp-admin\//, { timeout: 30_000 });
+  await submitLogin(page, username, password);
+
+  try {
+    await expect(page).toHaveURL(/\/wp-admin\//, { timeout: 10_000 });
+  } catch (firstAttemptError) {
+    if (!/\/wp-login\.php/.test(page.url())) {
+      throw firstAttemptError;
+    }
+
+    const loginError = page.locator('#login_error');
+    if (await loginError.isVisible().catch(() => false)) {
+      throw new Error(`WordPress rejected E2E credentials: ${(await loginError.innerText()).trim()}`);
+    }
+
+    // The PHP built-in server used by CI can occasionally leave a login POST
+    // on wp-login.php without an authentication error while Playwright runs
+    // the responsive projects serially. Retry exactly once, but never retry a
+    // real WordPress authentication error.
+    await submitLogin(page, username, password);
+    await expect(page).toHaveURL(/\/wp-admin\//, { timeout: 30_000 });
+  }
+
   await expect(page.locator('#wpadminbar')).toBeVisible({ timeout: 30_000 });
 }
 
