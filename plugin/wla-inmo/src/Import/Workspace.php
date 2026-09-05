@@ -24,6 +24,8 @@ final class Workspace
 			return self::failure('invalid_user');
 		}
 
+		self::cleanupExpiredDraftFiles();
+
 		$error = isset($file['error']) && is_scalar($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
 		if ($error !== UPLOAD_ERR_OK) {
 			return self::failure('upload_failed');
@@ -110,7 +112,11 @@ final class Workspace
 		}
 
 		$state = get_transient(self::transientKey($token));
-		if (!is_array($state) || (int) ($state['created_by'] ?? 0) !== $userId) {
+		if (!is_array($state)) {
+			self::deleteDraftFileOnly($token);
+			return null;
+		}
+		if ((int) ($state['created_by'] ?? 0) !== $userId) {
 			return null;
 		}
 
@@ -147,13 +153,8 @@ final class Workspace
 		}
 
 		delete_transient(self::transientKey($token));
-		if (!$deleteSource) {
-			return;
-		}
-
-		$path = self::draftPath($token);
-		if ($path !== null && is_file($path)) {
-			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort temporary-file cleanup.
+		if ($deleteSource) {
+			self::deleteDraftFileOnly($token);
 		}
 	}
 
@@ -262,6 +263,39 @@ final class Workspace
 	public static function maxRows(): int
 	{
 		return self::MAX_ROWS;
+	}
+
+	/**
+	 * Delete only abandoned draft files. Batch files are never deleted by age,
+	 * because paused or failed imports must remain resumable until an explicit
+	 * terminal action removes their source.
+	 */
+	private static function cleanupExpiredDraftFiles(): void
+	{
+		$pattern = self::tempRoot() . 'wla-inmo-import-draft-*.csv';
+		$files = glob($pattern);
+		if (!is_array($files)) {
+			return;
+		}
+
+		$cutoff = time() - (self::DRAFT_TTL * 2);
+		foreach ($files as $path) {
+			if (!is_string($path) || !is_file($path)) {
+				continue;
+			}
+			$modified = filemtime($path);
+			if ($modified !== false && $modified < $cutoff) {
+				@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of plugin-owned stale draft files only.
+			}
+		}
+	}
+
+	private static function deleteDraftFileOnly(string $token): void
+	{
+		$path = self::draftPath($token);
+		if ($path !== null && is_file($path)) {
+			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort plugin-owned draft cleanup.
+		}
 	}
 
 	/**
