@@ -310,7 +310,7 @@ final class Workspace
 		foreach ($reader->rows($path) as $row) {
 			++$totalRows;
 			if ($headers === array()) {
-				$headers = array_values(array_map('strval', array_keys($row['data'])));
+				$headers = array_map('strval', array_keys($row['data']));
 			}
 		}
 
