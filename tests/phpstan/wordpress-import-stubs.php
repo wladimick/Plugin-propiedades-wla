@@ -92,6 +92,42 @@ function sanitize_title(string $title): string
 	return strtolower(trim($title));
 }
 
+function sanitize_file_name(string $filename): string
+{
+	return $filename;
+}
+
+function sanitize_key(string $key): string
+{
+	return strtolower($key);
+}
+
+function absint(mixed $value): int
+{
+	return abs((int) $value);
+}
+
+/** @return mixed */
+function get_transient(string $transient)
+{
+	return false;
+}
+
+function set_transient(string $transient, mixed $value, int $expiration = 0): bool
+{
+	return true;
+}
+
+function delete_transient(string $transient): bool
+{
+	return true;
+}
+
+function trailingslashit(string $value): string
+{
+	return rtrim($value, '/\\') . '/';
+}
+
 /**
  * @param array<string,mixed> $args
  * @return mixed
