@@ -55,6 +55,7 @@ required_files=(
 	"src/Admin/Onboarding.php"
 	"src/Admin/SettingsPage.php"
 	"src/Admin/ActivityPage.php"
+	"src/Admin/ImportExportPage.php"
 	"src/Admin/PropertyActivity.php"
 	"src/Admin/PropertyList.php"
 	"src/Admin/PropertyQualityList.php"
@@ -67,6 +68,7 @@ required_files=(
 	"assets/admin/help-center.js"
 	"assets/admin/settings.css"
 	"assets/admin/activity.css"
+	"assets/admin/import-export.css"
 	"assets/admin/property-media.css"
 	"assets/admin/property-media.js"
 	"src/Localization/ChilePreset.php"
@@ -92,6 +94,14 @@ required_files=(
 	"src/Quality/Repository.php"
 	"src/Quality/Indexer.php"
 	"src/Quality/Rebuilder.php"
+	"src/Import/Workspace.php"
+	"src/Import/BatchHistoryRepository.php"
+	"src/Import/BatchRepository.php"
+	"src/Import/BatchRunner.php"
+	"src/Import/MappingProfile.php"
+	"src/Import/MappingProfileCodec.php"
+	"src/Import/TargetRegistry.php"
+	"src/Import/DryRunEngine.php"
 )
 
 for relative in "${required_files[@]}"; do
@@ -105,7 +115,7 @@ while IFS= read -r -d '' php_file; do
 	php -l "$php_file" >/dev/null
 done < <(find "$PLUGIN_DIR" -type f -name '*.php' -print0)
 
-php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Activity\\Schema','WLA\\Inmo\\Activity\\EventTypes','WLA\\Inmo\\Activity\\Repository','WLA\\Inmo\\Activity\\Recorder','WLA\\Inmo\\Activity\\Observer','WLA\\Inmo\\Activity\\Retention','WLA\\Inmo\\Dashboard\\Snapshot','WLA\\Inmo\\Admin\\Bootstrap','WLA\\Inmo\\Admin\\ScreenRegistry','WLA\\Inmo\\Admin\\Menu','WLA\\Inmo\\Admin\\PageRenderer','WLA\\Inmo\\Admin\\DashboardPage','WLA\\Inmo\\Admin\\Assets','WLA\\Inmo\\Admin\\ContextHelp','WLA\\Inmo\\Admin\\HelpCenter','WLA\\Inmo\\Admin\\Onboarding','WLA\\Inmo\\Admin\\SettingsPage','WLA\\Inmo\\Admin\\ActivityPage','WLA\\Inmo\\Admin\\PropertyActivity','WLA\\Inmo\\Admin\\PropertyList','WLA\\Inmo\\Admin\\PropertyQualityList','WLA\\Inmo\\Admin\\PropertyEditor','WLA\\Inmo\\Admin\\PropertyMedia','WLA\\Inmo\\Admin\\QualityPage','WLA\\Inmo\\Localization\\ChilePreset','WLA\\Inmo\\Settings\\Schema','WLA\\Inmo\\Settings\\Repository','WLA\\Inmo\\Settings\\Registry','WLA\\Inmo\\Settings\\RewriteManager','WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder','WLA\\Inmo\\Quality\\Schema','WLA\\Inmo\\Quality\\Evaluator','WLA\\Inmo\\Quality\\Repository','WLA\\Inmo\\Quality\\Indexer','WLA\\Inmo\\Quality\\Rebuilder'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
+php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Core\\Requirements','WLA\\Inmo\\Core\\Installer','WLA\\Inmo\\Access\\Capabilities','WLA\\Inmo\\Access\\RoleMatrix','WLA\\Inmo\\Access\\RoleManager','WLA\\Inmo\\Activity\\Schema','WLA\\Inmo\\Activity\\EventTypes','WLA\\Inmo\\Activity\\Repository','WLA\\Inmo\\Activity\\Recorder','WLA\\Inmo\\Activity\\Observer','WLA\\Inmo\\Activity\\Retention','WLA\\Inmo\\Dashboard\\Snapshot','WLA\\Inmo\\Admin\\Bootstrap','WLA\\Inmo\\Admin\\ScreenRegistry','WLA\\Inmo\\Admin\\Menu','WLA\\Inmo\\Admin\\PageRenderer','WLA\\Inmo\\Admin\\DashboardPage','WLA\\Inmo\\Admin\\Assets','WLA\\Inmo\\Admin\\ContextHelp','WLA\\Inmo\\Admin\\HelpCenter','WLA\\Inmo\\Admin\\Onboarding','WLA\\Inmo\\Admin\\SettingsPage','WLA\\Inmo\\Admin\\ActivityPage','WLA\\Inmo\\Admin\\ImportExportPage','WLA\\Inmo\\Admin\\PropertyActivity','WLA\\Inmo\\Admin\\PropertyList','WLA\\Inmo\\Admin\\PropertyQualityList','WLA\\Inmo\\Admin\\PropertyEditor','WLA\\Inmo\\Admin\\PropertyMedia','WLA\\Inmo\\Admin\\QualityPage','WLA\\Inmo\\Localization\\ChilePreset','WLA\\Inmo\\Settings\\Schema','WLA\\Inmo\\Settings\\Repository','WLA\\Inmo\\Settings\\Registry','WLA\\Inmo\\Settings\\RewriteManager','WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Properties\\PostType','WLA\\Inmo\\Properties\\Capabilities','WLA\\Inmo\\Properties\\MetaSchema','WLA\\Inmo\\Properties\\Sanitizer','WLA\\Inmo\\Properties\\Validator','WLA\\Inmo\\Taxonomies\\Registry','WLA\\Inmo\\Taxonomies\\Capabilities','WLA\\Inmo\\Search\\IndexSchema','WLA\\Inmo\\Search\\Projection','WLA\\Inmo\\Search\\IndexRepository','WLA\\Inmo\\Search\\Indexer','WLA\\Inmo\\Search\\Rebuilder','WLA\\Inmo\\Quality\\Schema','WLA\\Inmo\\Quality\\Evaluator','WLA\\Inmo\\Quality\\Repository','WLA\\Inmo\\Quality\\Indexer','WLA\\Inmo\\Quality\\Rebuilder','WLA\\Inmo\\Import\\Workspace','WLA\\Inmo\\Import\\BatchHistoryRepository','WLA\\Inmo\\Import\\BatchRepository','WLA\\Inmo\\Import\\BatchRunner','WLA\\Inmo\\Import\\MappingProfile','WLA\\Inmo\\Import\\MappingProfileCodec','WLA\\Inmo\\Import\\TargetRegistry','WLA\\Inmo\\Import\\DryRunEngine'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
 if grep -RIEq 'wc_get_|WooCommerce|Elementor|WPCode|get_field[[:space:]]*\(|product_cat' "$PLUGIN_DIR/src" "$PLUGIN_DIR/wla-inmo.php"; then
 	echo "Forbidden legacy runtime dependency reference found in WLA Inmo core." >&2
@@ -184,6 +194,26 @@ fi
 
 if grep -RIEq 'Chart\.js|chartjs|<script' "$PLUGIN_DIR/src/Admin/DashboardPage.php"; then
 	echo "Operational dashboard must not add a charting runtime or inline scripts." >&2
+	exit 1
+fi
+
+if grep -RIEq 'wp_remote_|curl_|XMLHttpRequest|axios|\.ajax[[:space:]]*\(' "$PLUGIN_DIR/src/Admin/ImportExportPage.php" "$PLUGIN_DIR/src/Import/Workspace.php"; then
+	echo "CSV import UI must not make remote requests or sideload media." >&2
+	exit 1
+fi
+
+if grep -RIEq 'profile_json|source_hash' "$PLUGIN_DIR/src/Import/BatchHistoryRepository.php"; then
+	echo "Import history must not expose profile snapshots or source hashes." >&2
+	exit 1
+fi
+
+if ! grep -q 'AccessCapabilities::IMPORT_PROPERTIES' "$PLUGIN_DIR/src/Admin/ImportExportPage.php"; then
+	echo "Import UI must enforce the dedicated import capability." >&2
+	exit 1
+fi
+
+if ! grep -q 'DryRunEngine' "$PLUGIN_DIR/src/Admin/ImportExportPage.php" || ! grep -q 'BatchRunner' "$PLUGIN_DIR/src/Admin/ImportExportPage.php"; then
+	echo "Import UI must use the canonical dry-run and resumable batch runner." >&2
 	exit 1
 fi
 
