@@ -81,7 +81,7 @@ final class ImportExportPage
 		self::authorize();
 		check_admin_referer(self::NONCE_UPLOAD);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified immediately above; file content is validated by Workspace.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified immediately above; upload metadata/content is validated by Workspace before use.
 		$file = isset($_FILES['wla_import_file']) && is_array($_FILES['wla_import_file']) ? $_FILES['wla_import_file'] : array();
 		$result = Workspace::storeUploadedCsv($file, get_current_user_id());
 		if (empty($result['ok'])) {
@@ -118,9 +118,9 @@ final class ImportExportPage
 			self::redirect(array('draft' => $token, 'wla_import_error' => 'missing_header'));
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above; each scalar is sanitized and mapped only against stored headers/allowlisted targets.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; every scalar target is sanitized and checked against TargetRegistry below.
 		$rawMapping = isset($_POST['wla_mapping']) && is_array($_POST['wla_mapping']) ? wp_unslash($_POST['wla_mapping']) : array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above; separators are bounded and applied only to multi-value targets.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; separators are sanitized, bounded and only applied to allowlisted multi-value targets.
 		$rawSeparators = isset($_POST['wla_separator']) && is_array($_POST['wla_separator']) ? wp_unslash($_POST['wla_separator']) : array();
 		$mapping = array();
 		$separators = array();
@@ -385,7 +385,7 @@ final class ImportExportPage
 		foreach ($steps as $index => $label) {
 			$number = $index + 1;
 			$class = $number < $active ? ' is-complete' : ($number === $active ? ' is-current' : '');
-			echo '<li class="wla-inmo-import__step' . esc_attr($class) . '"><span>' . esc_html((string) $number) . '</span>' . esc_html__($label, 'wla-inmo') . '</li>';
+			echo '<li class="wla-inmo-import__step' . esc_attr($class) . '"><span>' . esc_html((string) $number) . '</span>' . esc_html($label) . '</li>';
 		}
 		echo '</ol>';
 	}
@@ -694,7 +694,7 @@ final class ImportExportPage
 
 	private static function queryArg(string $key): string
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation/filter state, sanitized immediately.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only navigation/filter state; dynamic key is immediately converted to a sanitized scalar.
 		$value = isset($_GET[$key]) && is_scalar($_GET[$key]) ? wp_unslash((string) $_GET[$key]) : '';
 
 		return sanitize_text_field($value);
@@ -702,7 +702,7 @@ final class ImportExportPage
 
 	private static function postScalar(string $key): string
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Callers verify the action nonce before reading request fields.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Callers verify the action nonce first; dynamic scalar is sanitized before use.
 		$value = isset($_POST[$key]) && is_scalar($_POST[$key]) ? wp_unslash((string) $_POST[$key]) : '';
 
 		return sanitize_text_field($value);
