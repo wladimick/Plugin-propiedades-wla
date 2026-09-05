@@ -52,7 +52,7 @@ final class ScreenRegistry
 				__('Importar / Exportar', 'wla-inmo'),
 				__('Importar / Exportar', 'wla-inmo'),
 				AccessCapabilities::IMPORT_PROPERTIES,
-				__('Carga y exportación masiva. El módulo completo se implementará en Fase 3.', 'wla-inmo')
+				__('Importación CSV guiada con simulación obligatoria, procesamiento reanudable e historial de batches.', 'wla-inmo')
 			),
 			'leads' => self::page(
 				'wla-inmo-leads',
