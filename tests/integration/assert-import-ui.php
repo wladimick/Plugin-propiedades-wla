@@ -1,6 +1,7 @@
 <?php
 
 use WLA\Inmo\Access\Capabilities;
+use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Admin\ImportExportPage;
 use WLA\Inmo\Admin\ScreenRegistry;
 use WLA\Inmo\Import\BatchHistoryRepository;
@@ -27,6 +28,11 @@ function wlaImportUiIntegrationAssert(bool $condition, string $message): void
 $admin = get_user_by('login', 'admin');
 wlaImportUiIntegrationAssert($admin instanceof WP_User, 'CI administrator is missing.');
 wp_set_current_user((int) $admin->ID);
+
+// WP-CLI does not report is_admin(), so register the admin layer explicitly
+// before asserting admin-post hooks. Runtime web requests still use Core\Plugin.
+AdminBootstrap::resetForTests();
+AdminBootstrap::register();
 
 wlaImportUiIntegrationAssert(current_user_can(Capabilities::IMPORT_PROPERTIES), 'Administrator lacks import_wla_properties.');
 
