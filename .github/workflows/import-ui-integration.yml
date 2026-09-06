@@ -4,15 +4,20 @@ on:
   pull_request:
     paths:
       - 'plugin/wla-inmo/src/Admin/ImportExportPage.php'
+      - 'plugin/wla-inmo/src/Admin/ImportRequest.php'
       - 'plugin/wla-inmo/src/Admin/ScreenRegistry.php'
       - 'plugin/wla-inmo/src/Admin/Bootstrap.php'
+      - 'plugin/wla-inmo/src/Core/Plugin.php'
+      - 'plugin/wla-inmo/src/Core/Deactivator.php'
       - 'plugin/wla-inmo/src/Import/Workspace.php'
+      - 'plugin/wla-inmo/src/Import/WorkspaceJanitor.php'
       - 'plugin/wla-inmo/src/Import/BatchHistoryRepository.php'
       - 'plugin/wla-inmo/src/Import/BatchRepository.php'
       - 'plugin/wla-inmo/src/Import/BatchStatus.php'
       - 'plugin/wla-inmo/src/Import/MappingProfile.php'
       - 'plugin/wla-inmo/src/Import/MappingProfileCodec.php'
       - 'tests/integration/assert-import-ui.php'
+      - 'tests/smoke/import-ui.php'
       - '.github/workflows/import-ui-integration.yml'
   workflow_dispatch:
 
