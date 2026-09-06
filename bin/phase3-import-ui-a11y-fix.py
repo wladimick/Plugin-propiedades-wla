@@ -18,16 +18,6 @@ if needle not in text:
     raise SystemExit('Import UI smoke insertion point not found')
 smoke.write_text(text.replace(needle, addition, 1))
 
-workflow = ROOT / '.github/workflows/import-ui-integration.yml'
-text = workflow.read_text()
-anchor = "      - 'plugin/wla-inmo/src/Admin/ImportExportPage.php'\n"
-extra = anchor + "      - 'plugin/wla-inmo/src/Admin/ImportRequest.php'\n      - 'plugin/wla-inmo/src/Import/WorkspaceJanitor.php'\n      - 'plugin/wla-inmo/src/Core/Plugin.php'\n      - 'plugin/wla-inmo/src/Core/Deactivator.php'\n"
-if "src/Admin/ImportRequest.php" not in text:
-    if anchor not in text:
-        raise SystemExit('Import UI workflow insertion point not found')
-    text = text.replace(anchor, extra, 1)
-workflow.write_text(text)
-
 fix_workflow = ROOT / '.github/workflows/phase3-import-ui-a11y-fix.yml'
 if fix_workflow.exists():
     fix_workflow.unlink()
