@@ -183,3 +183,22 @@ function wp_get_object_terms(int|array $object_ids, string|array $taxonomies, ar
 {
 	return array();
 }
+
+/** @param array<int,mixed> $args */
+function wp_next_scheduled(string $hook, array $args = array()): int|false
+{
+	return false;
+}
+
+/** @param array<int,mixed> $args */
+function wp_schedule_event(int $timestamp, string $recurrence, string $hook, array $args = array(), bool $wp_error = false): bool
+{
+	return true;
+}
+
+/** @param array<int,mixed> $args */
+function wp_clear_scheduled_hook(string $hook, array $args = array(), bool $wp_error = false): int|false
+{
+	return 0;
+}
+

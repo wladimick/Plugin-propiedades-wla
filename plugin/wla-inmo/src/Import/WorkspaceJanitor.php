@@ -42,7 +42,7 @@ final class WorkspaceJanitor
 			}
 			++$processed;
 
-			if (!is_string($path) || !is_file($path)) {
+			if (!is_file($path)) {
 				continue;
 			}
 

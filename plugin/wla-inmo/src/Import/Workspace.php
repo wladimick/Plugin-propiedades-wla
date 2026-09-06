@@ -280,7 +280,7 @@ final class Workspace
 
 		$cutoff = time() - (self::DRAFT_TTL * 2);
 		foreach ($files as $path) {
-			if (!is_string($path) || !is_file($path)) {
+			if (!is_file($path)) {
 				continue;
 			}
 			$modified = filemtime($path);
