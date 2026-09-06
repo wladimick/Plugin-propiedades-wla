@@ -3,6 +3,7 @@
 namespace WLA\Inmo\Core;
 
 use WLA\Inmo\Activity\Retention as ActivityRetention;
+use WLA\Inmo\Import\WorkspaceJanitor;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
@@ -11,6 +12,7 @@ final class Deactivator
 	public static function deactivate(): void
 	{
 		ActivityRetention::unschedule();
+		WorkspaceJanitor::unschedule();
 
 		foreach (TaxonomyRegistry::keys() as $taxonomy) {
 			if (taxonomy_exists($taxonomy)) {

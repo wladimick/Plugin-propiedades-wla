@@ -81,8 +81,7 @@ final class ImportExportPage
 		self::authorize();
 		check_admin_referer(self::NONCE_UPLOAD);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified immediately above; upload metadata/content is validated by Workspace before use.
-		$file = isset($_FILES['wla_import_file']) && is_array($_FILES['wla_import_file']) ? $_FILES['wla_import_file'] : array();
+		$file = ImportRequest::uploadedFile('wla_import_file');
 		$result = Workspace::storeUploadedCsv($file, get_current_user_id());
 		if (empty($result['ok'])) {
 			self::redirect(array('wla_import_error' => (string) $result['code']));
@@ -118,10 +117,8 @@ final class ImportExportPage
 			self::redirect(array('draft' => $token, 'wla_import_error' => 'missing_header'));
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; every scalar target is sanitized and checked against TargetRegistry below.
-		$rawMapping = isset($_POST['wla_mapping']) && is_array($_POST['wla_mapping']) ? wp_unslash($_POST['wla_mapping']) : array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified above; separators are sanitized, bounded and only applied to allowlisted multi-value targets.
-		$rawSeparators = isset($_POST['wla_separator']) && is_array($_POST['wla_separator']) ? wp_unslash($_POST['wla_separator']) : array();
+		$rawMapping = ImportRequest::postTextArray('wla_mapping');
+		$rawSeparators = ImportRequest::postTextArray('wla_separator');
 		$mapping = array();
 		$separators = array();
 
@@ -171,6 +168,7 @@ final class ImportExportPage
 
 		$counts = array('new' => 0, 'update' => 0, 'error' => 0, 'warnings' => 0);
 		$issues = array();
+		$issueCount = 0;
 		$processed = 0;
 		$rowFactory = static function () use ($path): iterable {
 			return (new CsvReader(Workspace::maxRows()))->rows($path);
@@ -191,8 +189,8 @@ final class ImportExportPage
 				}
 
 				$counts['warnings'] += count($result->warnings());
-				self::collectIssues($issues, $result, 'warning', $result->warnings());
-				self::collectIssues($issues, $result, 'error', $result->errors());
+				self::collectIssues($issues, $issueCount, $result, 'warning', $result->warnings());
+				self::collectIssues($issues, $issueCount, $result, 'error', $result->errors());
 			}
 		} catch (CsvException $exception) {
 			self::redirect(array('draft' => $token, 'wla_import_error' => $exception->reason()));
@@ -211,8 +209,8 @@ final class ImportExportPage
 			'source_hash'  => $sourceHash,
 			'profile_hash' => hash('sha256', $profileJson),
 			'counts'       => $counts,
-			'issues'       => array_slice($issues, 0, self::ISSUE_LIMIT),
-			'issue_count'  => count($issues),
+			'issues'       => $issues,
+			'issue_count'  => $issueCount,
 		);
 
 		if (!Workspace::saveDraft($token, $state)) {
@@ -654,9 +652,14 @@ final class ImportExportPage
 	}
 
 	/** @param array<int,array<string,mixed>> $issues @param array<int,array{code:string,target:string}> $messages */
-	private static function collectIssues(array &$issues, DryRunResult $result, string $kind, array $messages): void
+	private static function collectIssues(array &$issues, int &$issueCount, DryRunResult $result, string $kind, array $messages): void
 	{
 		foreach ($messages as $message) {
+			++$issueCount;
+			if (count($issues) >= self::ISSUE_LIMIT) {
+				continue;
+			}
+
 			$issues[] = array(
 				'row'    => $result->rowNumber(),
 				'kind'   => sanitize_key($kind),
@@ -694,18 +697,12 @@ final class ImportExportPage
 
 	private static function queryArg(string $key): string
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only navigation/filter state; dynamic key is immediately converted to a sanitized scalar.
-		$value = isset($_GET[$key]) && is_scalar($_GET[$key]) ? wp_unslash((string) $_GET[$key]) : '';
-
-		return sanitize_text_field($value);
+		return ImportRequest::queryScalar($key);
 	}
 
 	private static function postScalar(string $key): string
 	{
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Callers verify the action nonce first; dynamic scalar is sanitized before use.
-		$value = isset($_POST[$key]) && is_scalar($_POST[$key]) ? wp_unslash((string) $_POST[$key]) : '';
-
-		return sanitize_text_field($value);
+		return ImportRequest::postScalar($key);
 	}
 
 	/** @param array<string,mixed> $state @return array<int,string> */
