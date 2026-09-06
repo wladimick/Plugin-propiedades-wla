@@ -47,6 +47,7 @@ wlaImportUiSmokeExpect(str_contains($page, 'Workspace::batchSourcePath'), 'Batch
 wlaImportUiSmokeExpect(str_contains($page, 'BatchStatus::CONFIRMED'), 'Import UI does not use the batch state machine.');
 wlaImportUiSmokeExpect(str_contains($page, 'dry_run_has_errors'), 'Dry-run errors do not block confirmation.');
 wlaImportUiSmokeExpect(str_contains($page, 'unsafe_cancel_state'), 'Cancellation is not restricted to safe checkpoints.');
+wlaImportUiSmokeExpect(str_contains($page, "aria-label=\"' . esc_attr(sprintf(__('Campo WLA Inmo para %s'"), 'Mapping selects do not expose an accessible name.');
 wlaImportUiSmokeExpect(str_contains($page, 'count($issues) >= self::ISSUE_LIMIT'), 'Dry-run issue retention is not bounded in memory.');
 wlaImportUiSmokeExpect(str_contains($page, "'issue_count'  => \$issueCount"), 'Dry-run total issue count is not tracked separately from retained samples.');
 wlaImportUiSmokeExpect(!preg_match('/\$_(?:GET|POST|REQUEST)\[[^\]]*(?:path|source_path|file_path)/i', $page), 'Import UI accepts a filesystem path from the request.');

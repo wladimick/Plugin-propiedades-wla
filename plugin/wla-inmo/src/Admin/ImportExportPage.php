@@ -489,7 +489,7 @@ final class ImportExportPage
 		echo '<div class="table-responsive"><table class="widefat striped wla-inmo-import__mapping"><thead><tr><th>' . esc_html__('Columna CSV', 'wla-inmo') . '</th><th>' . esc_html__('Campo WLA Inmo', 'wla-inmo') . '</th><th>' . esc_html__('Separador múltiple', 'wla-inmo') . '</th></tr></thead><tbody>';
 		foreach ($headers as $index => $header) {
 			$current = $currentMapping[$header] ?? self::suggestTarget($header);
-			echo '<tr><th scope="row">' . esc_html($header) . '</th><td><select name="wla_mapping[' . esc_attr((string) $index) . ']">';
+			echo '<tr><th scope="row">' . esc_html($header) . '</th><td><select name="wla_mapping[' . esc_attr((string) $index) . ']" aria-label="' . esc_attr(sprintf(__('Campo WLA Inmo para %s', 'wla-inmo'), $header)) . '">';
 			echo '<option value="">' . esc_html__('Ignorar columna', 'wla-inmo') . '</option>';
 			foreach ($targets as $target => $definition) {
 				$label = self::targetLabel($target);
