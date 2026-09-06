@@ -1,0 +1,32 @@
+name: Phase 3 Import UI A11y Fix
+
+on:
+  push:
+    branches:
+      - feat/phase3-import-ui
+    paths:
+      - '.github/workflows/phase3-import-ui-a11y-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/phase3-import-ui
+          fetch-depth: 0
+
+      - name: Apply accessibility fixes
+        run: python3 bin/phase3-import-ui-a11y-fix.py
+
+      - name: Commit fixes
+        run: |
+          git config user.name "WLA Inmo CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(import): label mapping controls for accessibility"
+          git push origin HEAD:feat/phase3-import-ui
