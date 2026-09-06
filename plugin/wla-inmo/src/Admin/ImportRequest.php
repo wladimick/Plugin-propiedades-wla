@@ -8,11 +8,12 @@ final class ImportRequest
 	public static function uploadedFile(string $key): array
 	{
 		// PHP's upload transport cannot be sanitized like ordinary text before
-		// `is_uploaded_file()` validates tmp_name. We copy only known keys and
-		// sanitize every user-controlled scalar before handing it to Workspace.
-		// phpcs:disable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// `is_uploaded_file()` validates tmp_name. The caller has already checked
+		// the action nonce; this boundary copies only known keys and sanitizes
+		// every user-controlled scalar before handing it to Workspace.
+		// phpcs:disable WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		$entry = isset($_FILES[$key]) && is_array($_FILES[$key]) ? $_FILES[$key] : array();
-		// phpcs:enable WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		// phpcs:enable WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		return array(
 			'name'     => isset($entry['name']) && is_scalar($entry['name']) ? sanitize_file_name(wp_unslash((string) $entry['name'])) : '',
