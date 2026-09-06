@@ -8,6 +8,7 @@ use WLA\Inmo\Activity\Retention as ActivityRetention;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Import\IdentityIndexer;
 use WLA\Inmo\Import\IdentityMeta;
+use WLA\Inmo\Import\WorkspaceJanitor;
 use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Quality\Indexer as QualityIndexer;
@@ -55,6 +56,7 @@ final class Plugin
 		RewriteManager::register();
 		ActivityObserver::register();
 		ActivityRetention::register();
+		WorkspaceJanitor::register();
 		Indexer::register();
 		IdentityIndexer::register();
 		QualityIndexer::register();
