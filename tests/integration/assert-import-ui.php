@@ -8,6 +8,7 @@ use WLA\Inmo\Import\BatchRepository;
 use WLA\Inmo\Import\BatchStatus;
 use WLA\Inmo\Import\MappingProfile;
 use WLA\Inmo\Import\MappingProfileCodec;
+use WLA\Inmo\Import\WorkspaceJanitor;
 
 if (!defined('ABSPATH')) {
 	exit(1);
@@ -54,6 +55,30 @@ wlaImportUiIntegrationAssert(
 	has_action('admin_post_wla_inmo_import_cancel', array(ImportExportPage::class, 'handleCancel')) !== false,
 	'Cancel admin-post handler is not registered.'
 );
+wlaImportUiIntegrationAssert(
+	has_action('wla_inmo_import_workspace_cleanup', array(WorkspaceJanitor::class, 'cleanup')) !== false,
+	'Workspace cleanup hook is not registered.'
+);
+
+WorkspaceJanitor::unschedule();
+wlaImportUiIntegrationAssert(wp_next_scheduled('wla_inmo_import_workspace_cleanup') === false, 'Workspace cron could not be cleared for the test.');
+WorkspaceJanitor::schedule();
+wlaImportUiIntegrationAssert(wp_next_scheduled('wla_inmo_import_workspace_cleanup') !== false, 'Workspace cleanup cron was not scheduled.');
+
+$draftUuid = strtolower((string) wp_generate_uuid4());
+$batchFileUuid = strtolower((string) wp_generate_uuid4());
+$tempRoot = trailingslashit(get_temp_dir());
+$staleDraftPath = $tempRoot . 'wla-inmo-import-draft-' . $draftUuid . '.csv';
+$staleBatchPath = $tempRoot . 'wla-inmo-import-batch-' . $batchFileUuid . '.csv';
+file_put_contents($staleDraftPath, "codigo,titulo\nDRAFT-1,Temporal\n");
+file_put_contents($staleBatchPath, "codigo,titulo\nBATCH-1,Reanudable\n");
+touch($staleDraftPath, time() - 8000);
+touch($staleBatchPath, time() - 8000);
+WorkspaceJanitor::cleanup();
+wlaImportUiIntegrationAssert(!file_exists($staleDraftPath), 'Stale draft source was not removed by the janitor.');
+wlaImportUiIntegrationAssert(file_exists($staleBatchPath), 'Janitor age-deleted a resumable batch source.');
+unlink($staleBatchPath);
+WorkspaceJanitor::unschedule();
 
 $profile = new MappingProfile(
 	'integration_ui',
@@ -78,7 +103,7 @@ for ($index = 1; $index <= 5; ++$index) {
 		(int) $admin->ID,
 		$uuid
 	);
-	wlaImportUiIntegrationAssert(is_array($batch), 'Could not create batch ' . $index . '.');
+	wlaImportUiIntegrationAssert($batch === $uuid, 'Could not create batch ' . $index . '.');
 
 	if ($index <= 3) {
 		wlaImportUiIntegrationAssert($repository->transition($uuid, BatchStatus::MAPPED, 0), 'Could not move batch to mapped.');
