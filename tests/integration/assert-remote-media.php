@@ -73,8 +73,8 @@ $allAttachmentMeta = serialize(get_post_meta($attachmentId));
 $assert(strpos($allAttachmentMeta, $sourceUrl) === false, 'Raw remote source URL leaked into attachment metadata.');
 
 $propertyStore = new WordPressRemoteMediaPropertyStore();
-$propertyStore->setGallery($propertyId, array($attachmentId, $attachmentId));
-$propertyStore->setFeaturedImage($propertyId, $attachmentId);
+$propertyStore->setGalleryIds($propertyId, array($attachmentId, $attachmentId));
+$propertyStore->setFeaturedImageId($propertyId, $attachmentId);
 
 $definitions = MetaSchema::definitions();
 $galleryKey = (string) $definitions['gallery_ids']['meta_key'];
@@ -95,7 +95,8 @@ foreach ($exported as $property) {
 $assert(is_array($match), 'Property was not present in WLA JSON export source.');
 $assert(($match['media']['gallery_urls'] ?? array()) === array($attachmentUrl), 'JSON export did not emit canonical gallery URL.');
 $assert(($match['media']['featured_image_url'] ?? '') === $attachmentUrl, 'JSON export did not emit canonical featured image URL.');
-$assert(strpos(json_encode($match), $sourceUrl) === false, 'JSON export leaked original remote source URL.');
+$encodedMatch = json_encode($match);
+$assert(is_string($encodedMatch) && strpos($encodedMatch, $sourceUrl) === false, 'JSON export leaked original remote source URL.');
 
 wp_delete_post($propertyId, true);
 wp_delete_attachment($attachmentId, true);
