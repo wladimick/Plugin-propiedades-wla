@@ -25,7 +25,8 @@ final class BatchRepository
 		string $profileJson,
 		int $totalRows,
 		int $createdBy = 0,
-		?string $batchUuid = null
+		?string $batchUuid = null,
+		string $sourceFormat = 'csv'
 	): ?string {
 		if ($this->wpdb === null || $totalRows < 0 || $createdBy < 0) {
 			return null;
@@ -33,7 +34,12 @@ final class BatchRepository
 
 		$sourceKey = SourceKey::normalize($sourceKey);
 		$sourceHash = strtolower(trim($sourceHash));
-		if (!SourceKey::isValid($sourceKey) || preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1) {
+		$sourceFormat = strtolower(trim($sourceFormat));
+		if (
+			!SourceKey::isValid($sourceKey)
+			|| preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1
+			|| !in_array($sourceFormat, array('csv', 'json'), true)
+		) {
 			return null;
 		}
 
@@ -52,6 +58,7 @@ final class BatchRepository
 			'batch_uuid'     => $batchUuid,
 			'source_key'     => $sourceKey,
 			'source_hash'    => $sourceHash,
+			'source_format'  => $sourceFormat,
 			'status'         => BatchStatus::UPLOADED,
 			'profile_json'   => $profileJson,
 			'created_by'     => $createdBy,
@@ -71,7 +78,7 @@ final class BatchRepository
 			'completed_at'   => null,
 		);
 
-		$formats = array('%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s');
+		$formats = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s');
 		$inserted = $this->wpdb->insert(BatchSchema::tableName($this->wpdb), $row, $formats);
 
 		return $inserted === false ? null : $batchUuid;
@@ -253,6 +260,9 @@ final class BatchRepository
 		if (!array_key_exists('cursor_offset', $row)) {
 			$row['cursor_offset'] = 0;
 		}
+
+		$sourceFormat = strtolower(trim((string) ($row['source_format'] ?? 'csv')));
+		$row['source_format'] = in_array($sourceFormat, array('csv', 'json'), true) ? $sourceFormat : 'csv';
 
 		return $row;
 	}
