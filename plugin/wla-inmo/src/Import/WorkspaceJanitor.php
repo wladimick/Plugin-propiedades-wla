@@ -29,8 +29,21 @@ final class WorkspaceJanitor
 	public static function cleanup(): void
 	{
 		$root = function_exists('get_temp_dir') ? get_temp_dir() : sys_get_temp_dir();
-		$files = glob(trailingslashit($root) . 'wla-inmo-import-draft-*.csv');
-		if (!is_array($files)) {
+		$root = trailingslashit($root);
+		$patterns = array(
+			$root . 'wla-inmo-import-draft-*.csv',
+			$root . 'wla-inmo-import-draft-*.ndjson',
+			$root . 'wla-inmo-import-upload-*.json',
+		);
+		$files = array();
+		foreach ($patterns as $pattern) {
+			$matches = glob($pattern);
+			if (is_array($matches)) {
+				$files = array_merge($files, $matches);
+			}
+		}
+		$files = array_values(array_unique($files));
+		if ($files === array()) {
 			return;
 		}
 
