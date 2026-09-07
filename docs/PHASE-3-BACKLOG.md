@@ -1,6 +1,6 @@
 # Fase 3 — Import/Export
 
-Estado: `PLANNING / ENTRY APPROVED`  
+Estado: `IN_PROGRESS`  
 Dependencias: Fase 1 `DONE`, Fase 2 `DONE`  
 Issue de entrada: #43  
 Versión de entrada: `0.1.0-alpha`
@@ -9,30 +9,49 @@ Versión de entrada: `0.1.0-alpha`
 
 Construir un sistema de importación y exportación seguro, repetible y usable para cientos o miles de propiedades, sin convertir un archivo externo en una vía paralela que evite las reglas canónicas de WLA Inmo.
 
-La Fase 3 debe reutilizar `MetaSchema`, `Sanitizer`, `Validator`, taxonomías, capacidades, Search, Quality y Activity. Importar no significa escribir postmeta directamente sin pasar por contratos de dominio.
+La Fase 3 reutiliza `MetaSchema`, `Sanitizer`, `Validator`, taxonomías, capabilities, Search, Quality y Activity. Importar no significa escribir postmeta directamente sin pasar por contratos de dominio.
 
 Fuente funcional: `docs/IMPORT-EXPORT.md`.
+
+## Estado actual
+
+La planificación original PR 3.1–3.10 fue refinada durante implementación. El alcance de persistencia/ejecución se dividió en tres PR auditables antes de exponer la UI. Por decisión registrada en Issue #56, la UI pasó a PR 3.6 y los hitos restantes se renumeran sin cambiar su alcance funcional.
+
+Orden canónico desde este documento:
+
+| PR | Alcance | GitHub | Estado |
+|---|---|---|---|
+| 3.1 | Dominio de importación + CSV foundation | #46 | DONE |
+| 3.2 | Mapping + validación + dry-run | #49 | DONE |
+| 3.3 | Persistencia de identidad y batches reanudables | #51 | DONE |
+| 3.4 | Executor idempotente de filas | #53 | DONE |
+| 3.5 | Runner reanudable de batches | #55 | DONE |
+| 3.6 | UI Importar + historial de batches | #57 | QA_PASSED / READY_TO_MERGE |
+| 3.7 | JSON WLA versionado | pendiente | NEXT |
+| 3.8 | XLSX streaming + ADR/benchmark | pendiente | PLANNED |
+| 3.9 | Media remota segura | pendiente | PLANNED |
+| 3.10 | Exportación CSV/XLSX | pendiente | PLANNED |
+| 3.11 | Rollback seguro de importación | pendiente | PLANNED |
+| 3.12 | Quality Gate Fase 3 | pendiente | PLANNED |
 
 ## Principios no negociables
 
 1. **Dry-run antes de confirmar.** Una simulación no crea posts, attachments, términos ni descarga archivos remotos.
-2. **Identidad explícita.** `external_id` definido por una fuente/perfil tiene prioridad; luego `property_code`; nunca título o dirección por sí solos.
-3. **Origen aislado.** Un `external_id` debe interpretarse en el contexto de un `source_key` para evitar colisiones entre proveedores distintos.
-4. **Vacíos seguros.** Por defecto, una celda/campo vacío conserva el dato existente. Borrar exige una política explícita.
-5. **Batches.** Nunca procesar un archivo grande en un request único.
-6. **Resume seguro.** Un batch interrumpido solo puede reanudarse desde un checkpoint consistente.
-7. **Idempotencia donde corresponda.** Repetir una operación confirmada no debe crear duplicados silenciosos.
-8. **Sin side effects ocultos.** Search, Quality y Activity se sincronizan de forma incremental y observable.
-9. **Media remota separada.** La descarga de imágenes no forma parte del dry-run y debe tener controles SSRF/MIME/tamaño/timeout/redirect.
-10. **Errores por fila.** Un dato recuperable inválido no debe corromper todo el batch.
-11. **Sin fórmulas ejecutables.** CSV/XLSX exportado debe neutralizar spreadsheet/formula injection.
-12. **Permisos reales.** Capability + nonce + autorización de operación; ocultar botones no basta.
-13. **Sin dependencia de producción.** Toda la fase se valida con fixtures sintéticos y WordPress limpio.
-14. **No adelantar Fase 9.** El migrador específico de Woo/ACF/Propiedades Martínez sigue siendo una fase separada.
+2. **Identidad explícita.** `(source_key, external_id)` tiene prioridad; luego `property_code`; nunca título o dirección por sí solos.
+3. **Origen aislado.** Un `external_id` siempre se interpreta dentro de un `source_key`.
+4. **Vacíos seguros.** Por defecto, vacío conserva valor existente. Borrar exige política explícita.
+5. **Batches.** Nunca procesar un archivo grande en un único request.
+6. **Resume seguro.** Solo desde un checkpoint consistente.
+7. **Idempotencia.** Reintentos no deben crear duplicados silenciosos.
+8. **Sin side effects ocultos.** Search, Quality y Activity se sincronizan de forma observable.
+9. **Media remota separada.** No forma parte del dry-run.
+10. **Errores por fila.** Un dato inválido no corrompe el batch completo.
+11. **Sin fórmulas ejecutables.** Exportaciones neutralizan spreadsheet/formula injection.
+12. **Permisos reales.** Capability + nonce + autorización por objeto/operación.
+13. **Sin dependencia de producción.** Fixtures sintéticos y WordPress limpio.
+14. **No adelantar Fase 9.** El migrador Woo/ACF/Propiedades Martínez permanece separado.
 
 ## Estados de un batch
-
-Contrato inicial propuesto; el esquema físico se congela en PR 3.1:
 
 ```text
 uploaded
@@ -51,15 +70,13 @@ processing
   └──> completed
 ```
 
-Estados terminales adicionales solo si tienen semántica clara: `cancelled`, `rolled_back`, `rollback_blocked`.
-
-No usar un estado genérico como `done_with_errors` si los contadores y errores por fila permiten expresar el resultado con precisión.
+Estados terminales adicionales solo cuando tienen semántica demostrable: `cancelled`, `rolled_back`, `rollback_blocked`.
 
 ## Identidad y upsert
 
 ### Fuente externa
 
-Un perfil de origen debe tener un `source_key` estable, por ejemplo:
+Ejemplos de `source_key`:
 
 ```text
 portal_proveedor_a
@@ -67,25 +84,23 @@ crm_inmobiliaria
 carga_manual_2026
 ```
 
-Cuando exista `external_id`, la identidad externa recomendada es:
+Identidad primaria:
 
 ```text
 (source_key, external_id)
 ```
 
-Si no existe `external_id`, se usa `property_code` cuando esté informado.
+Fallback permitido:
 
-No se deduce identidad desde:
+```text
+property_code
+```
 
-- título;
-- dirección;
-- comuna + precio;
-- slug;
-- posición de la fila.
+No se deduce identidad desde título, dirección, comuna + precio, slug ni posición de fila.
 
 ### Conflictos
 
-Un dry-run debe marcar explícitamente, como mínimo:
+El dry-run debe poder expresar:
 
 - `new`;
 - `update`;
@@ -94,7 +109,7 @@ Un dry-run debe marcar explícitamente, como mínimo:
 - `invalid`;
 - `warning`.
 
-Un conflicto de identidad no se resuelve silenciosamente eligiendo el primer resultado.
+Nunca se resuelve un conflicto eligiendo silenciosamente el primer resultado.
 
 ## Semántica de vacíos
 
@@ -104,186 +119,202 @@ Default:
 vacío → conservar valor actual
 ```
 
-La UI podrá ofrecer más adelante una política explícita:
+Una futura política:
 
 ```text
 vacío → borrar valor actual
 ```
 
-La política debe quedar registrada en el batch y ser visible en el dry-run.
+solo se habilita de forma explícita y queda registrada en el batch/dry-run.
 
 ## Taxonomías desconocidas
 
-Default seguro de Fase 3:
+Default seguro:
 
-- no crear términos desconocidos automáticamente durante un import confirmado;
-- mostrar error/advertencia de mapping según el campo;
-- permitir mapping explícito hacia un término existente;
-- una opción futura de creación automática requerirá capability y decisión documentada adicional.
+- no crear términos automáticamente durante importación;
+- reportar error/advertencia según campo;
+- permitir mapping explícito a un término existente;
+- creación automática futura requiere capability y decisión documentada.
 
-Esto evita contaminar Región/Comuna/Tipo/Operación por errores ortográficos del archivo.
+## PR 3.1 — Dominio de importación + CSV foundation
 
-## Orden de PR
-
-### PR 3.1 — Dominio de importación, batch model y CSV foundation
-
-Objetivo: crear contratos puros y una base CSV segura, todavía sin wizard completo ni escritura masiva.
+Estado: `DONE`. PR #46.
 
 Incluye:
 
 - namespace `WLA\Inmo\Import`;
-- entidades/value objects para batch/source/mapping/row result cuando aporte claridad;
-- estados y transiciones válidas;
-- `source_key`;
-- parser CSV UTF-8 incremental;
-- normalización de BOM/headers;
-- límite de columnas y filas configurable/interno;
-- detección de separador acotada o configuración explícita;
-- rechazo controlado de archivos ilegibles;
-- resolver de identidad **read-only**;
-- ningún upsert todavía;
-- tests unit/smoke;
-- ADR/esquema físico para batches e historial si se necesita persistencia desde este PR.
+- estados/transiciones de batch;
+- `SourceKey` normalizado;
+- resolución read-only de identidad;
+- parser CSV UTF-8 incremental con `SplFileObject` + `Generator`;
+- BOM, coma, punto y coma y tab;
+- headers normalizados y duplicados rechazados;
+- límites de filas/columnas/celda;
+- strings tipo fórmula tratados como datos;
+- unit/smoke/integration y evidencia.
 
-Criterios:
+## PR 3.2 — Mapping + validación + dry-run
 
-- archivo CSV no se carga entero en memoria por diseño;
-- parser no evalúa fórmulas ni contenido;
-- filas y columnas tienen límites;
-- errores incluyen número de fila sin registrar datos privados innecesarios;
-- ninguna prueba crea propiedades como side effect del parser.
-
-### PR 3.2 — Mapping, validación y dry-run
-
-Objetivo: convertir filas externas a una intención de cambio WLA sin escribir.
+Estado: `DONE`. PR #49.
 
 Incluye:
 
-- detección/preview de columnas;
-- mapping a título/contenido, MetaSchema y taxonomías soportadas;
-- perfiles de mapping persistibles;
-- normalización de valores;
-- validación por fila;
-- duplicados dentro del archivo;
-- coincidencias con catálogo existente;
-- conteos `new/update/warning/error`;
-- diferencias relevantes para updates;
-- dry-run firmado/identificado para la posterior confirmación;
-- límite temporal/versión del dry-run para evitar confirmar una simulación obsoleta.
+- `TargetRegistry` allowlisted;
+- perfiles de mapping versionados;
+- normalización y validación tipada;
+- duplicados intra-file;
+- resolución de coincidencias existentes;
+- clasificación `new/update/error/warning`;
+- dry-run read-only;
+- taxonomías desconocidas sin creación automática;
+- serialización pública sin meta privada.
 
-Prohibido:
+Prohibido en dry-run:
 
 - `wp_insert_post()`;
 - `update_post_meta()`;
 - `wp_set_object_terms()`;
-- sideload/download remoto;
+- descargas remotas;
 - creación automática de términos.
 
-### PR 3.3 — Persistencia por lotes, resume e idempotencia
+## PR 3.3 — Persistencia de identidad y batches reanudables
 
-Objetivo: ejecutar exactamente el plan confirmado sin procesar todo en una sola solicitud.
+Estado: `DONE`. PR #51.
 
 Incluye:
 
-- confirmación protegida;
-- chunks pequeños configurables;
-- checkpoint por batch;
-- reanudación desde estado consistente;
-- upsert por identidad resuelta;
-- protección de doble ejecución;
-- sincronización incremental Search/Quality;
-- Activity con contexto allowlisted de importación;
-- contadores y errores por fila;
-- recovery de errores recuperables;
-- no hacer rebuild completo por fila.
+- `IdentityMeta`;
+- proyección `wla_import_identity` con constraints UNIQUE;
+- `IdentityRepository` / `IdentityIndexer`;
+- tabla `wla_import_batches`;
+- UUID, hash, snapshot de mapping, estado, cursor, contadores y timestamps;
+- `revision` con optimistic locking;
+- progreso monotónico y transiciones seguras.
 
-Tests mínimos:
+WordPress post/meta sigue siendo fuente canónica; las tablas de importación son proyecciones/estado operativo.
 
-- 100, 1.000 y 5.000 filas sintéticas;
-- batch interrumpido y retomado;
-- reejecución de chunk;
-- dos filas que apuntan a la misma identidad;
-- propiedad modificada entre dry-run y confirmación;
-- rollback lógico del chunk cuando una escritura atómica local falla, cuando sea técnicamente posible.
+## PR 3.4 — Executor idempotente de filas
 
-### PR 3.4 — UI Importar e historial de batches
+Estado: `DONE`. PR #53.
 
-Objetivo: exponer el pipeline a una persona no técnica.
+Incluye:
+
+- `RowExecutor`;
+- re-resolución de identidad inmediatamente antes de escribir;
+- create como draft / update del objeto inequívoco;
+- retry NEW → MATCH → UPDATE después de crash;
+- sanitización mediante `MetaSchema`;
+- términos solo previamente resueltos;
+- rollback local ante fallas parciales;
+- checkpoint solo después de ejecución exitosa;
+- errores no avanzan cursor.
+
+## PR 3.5 — Runner reanudable de batches
+
+Estado: `DONE`. PR #55.
+
+Incluye:
+
+- `MappingProfileCodec`;
+- `BatchRunner` por slices;
+- hash SHA-256 y lectura sobre el mismo handle bloqueado;
+- resume mediante `cursor_row`, `cursor_offset` y `revision`;
+- optimistic locking por checkpoint;
+- pausa limpia por presupuesto de filas/tiempo;
+- reintentos idempotentes;
+- WordPress/MySQL integration.
+
+## PR 3.6 — UI Importar + historial de batches
+
+Estado: `QA_PASSED / READY_TO_MERGE`. PR #57 / Issue #56.
 
 Wizard:
 
 ```text
 1. Subir
-2. Detectar
-3. Mapear
-4. Validar
-5. Simular
-6. Confirmar
-7. Procesar
-8. Informe
+2. Mapear
+3. Validar
+4. Simular
+5. Confirmar
+6. Procesar
+7. Informe
 ```
 
 Incluye:
 
 - `WLA Inmo → Importar / Exportar` deja de ser placeholder;
-- capability exacta de importación;
-- progress accesible;
-- no depender de mantener una pestaña abierta si el mecanismo de procesamiento elegido puede continuar de forma segura;
-- historial de batches;
-- filtros por fecha/usuario/origen/estado;
-- reporte descargable de errores sin secretos;
+- capability `import_wla_properties`;
+- nonces por mutación;
+- CSV únicamente;
+- workspace temporal con rutas derivadas de UUID de servidor;
+- límite 10 MiB / 10.000 filas;
+- preview bounded;
+- dry-run obligatorio;
+- mapping snapshot + SHA-256 antes de confirmar;
+- procesamiento por `BatchRunner`;
 - cancelación solo en checkpoints seguros;
-- ayuda contextual.
+- historial bounded/paginado;
+- ayuda contextual y CSS responsive;
+- `WorkspaceJanitor` para drafts temporales vencidos;
+- findings P2 de memoria y limpieza de temporales corregidos;
+- review threads abiertos: 0;
+- CI, integración y Administration Quality Gate verdes.
 
-### PR 3.5 — JSON WLA versionado
+Evidencia: `docs/evidence/phase-3/PR-3.6-IMPORT-UI.md`.
 
-Objetivo: formato interoperable y de respaldo lógico.
+## PR 3.7 — JSON WLA versionado
+
+Estado: `NEXT`.
+
+Objetivo: formato interoperable y de respaldo lógico que use el mismo pipeline canónico.
 
 Incluye:
 
 - `format_version`;
-- metadatos mínimos del export;
-- propiedades en contrato documentado;
-- importación por el mismo pipeline canónico de mapping/validación;
+- schema/shape allowlisted;
+- límites de tamaño y profundidad;
+- importación por el mismo mapping/validation/dry-run;
 - exportación filtrada;
-- campos privados solo con capability explícita y opción consciente;
+- campos privados excluidos por defecto y protegidos por capability explícita;
 - compatibilidad entre versiones documentada;
-- tests round-trip.
+- tests round-trip;
+- JSON inválido o claves desconocidas se reportan de forma controlada;
+- ninguna meta key se construye dinámicamente desde input.
 
-### PR 3.6 — XLSX streaming y ADR de dependencia
+## PR 3.8 — XLSX streaming + ADR de dependencia
 
-Objetivo: añadir XLSX sin degradar memoria, tamaño de ZIP o seguridad.
+Objetivo: añadir XLSX sin degradar memoria, tamaño de ZIP ni seguridad.
 
 Antes de mergear:
 
-- comparar al menos la opción ya propuesta en decisiones con una alternativa de lectura streaming más liviana;
-- medir memoria con 1k/5k/archivo mayor razonable;
+- comparar al menos dos alternativas razonables;
+- medir memoria con 1k/5k/dataset mayor razonable;
 - medir peso agregado al ZIP;
 - revisar mantenimiento/licencia/superficie de dependencias;
-- documentar ADR final.
+- documentar ADR final;
+- proteger contra archive bombs/descompresión no acotada.
 
-La librería solo transforma XLSX → filas normalizadas. La lógica de mapping/upsert no se duplica.
+La librería solo transforma XLSX → filas normalizadas. Mapping/upsert no se duplica.
 
-### PR 3.7 — Media remota segura
+## PR 3.9 — Media remota segura
 
-Objetivo: importar imágenes después de que la propiedad esté resuelta, sin convertir el plugin en un SSRF proxy.
+Objetivo: importar imágenes después de resolver la propiedad sin convertir el plugin en un SSRF proxy.
 
 Incluye:
 
-- solo `https`/`http` según política final; bloquear otros esquemas;
+- allowlist de esquemas;
 - resolución DNS/IP y bloqueo de rangos locales/privados/reservados;
-- revalidar redirects;
-- timeout;
-- límite de bytes;
+- revalidación de redirects;
+- timeout y límite de bytes;
 - MIME real y extensiones permitidas;
 - máximo de imágenes por propiedad/batch;
-- deduplicación por fuente/hash cuando sea confiable;
+- deduplicación cuando sea confiable;
 - retries limitados;
 - attachment IDs canónicos;
-- errors de media separados de errores de datos;
-- media nunca se descarga durante dry-run.
+- errores de media separados de errores de datos;
+- ninguna descarga durante dry-run.
 
-### PR 3.8 — Exportación CSV/XLSX
+## PR 3.10 — Exportación CSV/XLSX
 
 Objetivo: exportaciones filtradas, bounded y seguras.
 
@@ -291,66 +322,64 @@ Incluye:
 
 - todas/disponibles/operación/tipo/ubicación/fecha/selección;
 - CSV UTF-8 documentado;
-- XLSX usando la dependencia aprobada de PR 3.6;
+- XLSX mediante dependencia aprobada en 3.8;
 - streaming/chunks;
-- formula injection neutralizada en celdas que comienzan con `=`, `+`, `-`, `@` u otros vectores definidos por el contrato;
+- neutralización de formula injection para `=`, `+`, `-`, `@` y vectores definidos por contrato;
 - campos privados excluidos por defecto;
 - pruebas con caracteres internacionales, saltos de línea y delimitadores.
 
-### PR 3.9 — Rollback seguro de importación
+## PR 3.11 — Rollback seguro de importación
 
 Objetivo: revertir únicamente cuando WLA puede demostrar que no pisará trabajo posterior.
 
 Incluye:
 
-- propiedades creadas por el batch;
-- snapshot mínimo de campos modificados donde el coste sea razonable;
-- detectar `post_modified`/versiones o marcador equivalente posterior al batch;
-- bloquear rollback destructivo si existen cambios posteriores no atribuibles al batch;
+- propiedades creadas por batch;
+- snapshot mínimo de campos modificados cuando sea razonable;
+- detección de cambios posteriores al batch;
+- bloqueo de rollback destructivo si existe trabajo posterior no atribuible al batch;
 - media exclusiva identificable;
 - preview de rollback;
-- capability y confirmación avanzada;
+- capability + confirmación avanzada;
 - Activity del rollback.
 
 No prometer rollback total cuando no pueda demostrarse seguridad.
 
-### PR 3.10 — Quality Gate Fase 3
+## PR 3.12 — Quality Gate Fase 3
 
 Incluye:
 
 - regresión Fase 1/2;
-- unit/integration/E2E del wizard;
-- archivos CSV/JSON/XLSX malformados;
+- unit/integration/E2E del wizard y formatos;
+- CSV/JSON/XLSX malformados;
 - BOM/encoding/delimitadores;
-- archivo vacío;
-- headers duplicados;
-- columnas desconocidas;
-- duplicados dentro del archivo;
-- identity conflicts;
+- archivo vacío y headers duplicados;
+- columnas/claves desconocidas;
+- duplicados e identity conflicts;
 - stale dry-run;
 - resume/idempotencia;
-- 100/1k/5k y dataset mayor razonable;
-- memoria peak cuando sea medible;
-- archivos que exceden límites;
+- datasets 100/1k/5k y mayor razonable;
+- peak memory cuando sea medible;
+- archivos sobre límites;
 - formula injection;
 - SSRF/redirections/MIME spoofing;
 - capability/nonce/IDOR;
 - round-trip import/export;
 - rollback permitido/bloqueado;
-- accesibilidad/responsive del wizard;
+- accesibilidad/responsive;
 - artifact/checksum/evidencia.
 
-## Persistencia de batches — requisitos antes del esquema físico
+## Persistencia de batches
 
-El modelo de almacenamiento de PR 3.1 debe poder representar como mínimo:
+El modelo debe representar como mínimo:
 
-- batch UUID/ID interno;
-- tipo `import`/`export` cuando corresponda;
+- UUID/ID interno;
+- tipo import/export cuando corresponda;
 - `source_key`;
 - usuario creador;
 - estado;
 - formato;
-- nombre seguro/referencia/hash del archivo, sin confiar en el nombre original como path;
+- referencia/hash segura del archivo;
 - mapping profile/version;
 - política de vacíos;
 - total/processed/created/updated/skipped/warnings/errors;
@@ -358,66 +387,64 @@ El modelo de almacenamiento de PR 3.1 debe poder representar como mínimo:
 - timestamps;
 - versión del contrato;
 - referencia a dry-run confirmado;
-- mensaje resumido de error, sin payload completo.
-
-Errores por fila pueden requerir una tabla separada para evitar options/transients gigantes. La decisión se documentará con índices y política de retención.
+- mensaje resumido de error sin payload completo.
 
 ## Seguridad específica
 
 ### Archivos
 
-- comprobar extensión y MIME donde corresponda;
+- extensión/MIME cuando corresponda;
 - nombre generado por servidor;
-- no usar paths entregados por el usuario;
-- evitar path traversal;
+- sin paths entregados por usuario;
+- path traversal bloqueado;
 - tamaño máximo antes de parsear;
 - límites de filas/columnas/celda;
-- no descomprimir XLSX/ZIP sin protección contra archive bombs.
+- protección contra archive bombs en XLSX/ZIP.
 
 ### CSV / spreadsheet
 
 - nunca ejecutar contenido;
-- fórmulas de entrada se consideran strings salvo una regla futura explícita;
+- fórmulas de entrada son strings;
 - export neutraliza formula injection;
-- encoding invalid se reporta, no se interpreta de forma silenciosa.
+- encoding inválido se reporta.
 
 ### JSON
 
 - tamaño y profundidad máximos;
 - schema/shape allowlisted;
-- claves desconocidas se ignoran o reportan según versión, nunca se mapean dinámicamente a meta arbitrario.
+- claves desconocidas nunca se convierten dinámicamente en meta arbitrario.
 
 ### Media remota
 
 - SSRF protection antes y después de redirects;
-- no localhost/private/link-local/cloud metadata;
+- bloqueo localhost/private/link-local/cloud metadata;
 - límite de redirects;
 - MIME y bytes reales;
-- sin SVG remoto en la primera implementación salvo decisión específica posterior.
+- sin SVG remoto en primera implementación salvo decisión posterior.
 
 ## Performance budgets iniciales
 
-No son SLA productivos. Son guards de CI.
+No son SLA productivos; son guards de CI.
 
-- parser CSV: memoria aproximadamente bounded respecto del número total de filas;
-- dry-run 5k: sin N+1 por fila para búsquedas de identidad cuando pueda resolverse por lotes;
-- batch: tamaño pequeño configurable y sin timeout intencionalmente largo;
-- no `get_posts(-1)` ni cargas completas de catálogo;
+- parser CSV/JSON/XLSX con memoria bounded respecto del dataset cuando sea técnicamente razonable;
+- dry-run 5k sin N+1 evitable;
+- batches pequeños configurables;
+- no `get_posts(-1)` ni cargas completas del catálogo;
 - Search/Quality incremental;
 - historial paginado;
-- UI nunca renderiza miles de errores simultáneamente: paginar/resumir.
+- UI nunca renderiza miles de errores simultáneamente.
 
 ## Observabilidad y evidencia
 
-Cada PR funcional de Fase 3 debe registrar:
+Cada PR funcional registra:
 
 - requirement/issue/PR;
 - fixtures usados;
-- formatos y tamaños probados;
+- formatos/tamaños probados;
 - mutaciones esperadas;
 - conteos antes/después;
 - errores/warnings esperados;
-- memory/query/time cuando sea relevante;
+- memory/query/time cuando aplique;
 - security negative cases;
 - artifact/checksum cuando aplique.
 
@@ -438,8 +465,8 @@ Fase 3 no implementa:
 
 Fase 3 solo pasa a `DONE` cuando:
 
-1. PR 3.1–3.10 aplicables están mergeadas con evidencia;
-2. importación CSV/JSON/XLSX usa un pipeline canónico común;
+1. PR 3.1–3.12 aplicables están mergeadas con evidencia;
+2. importación CSV/JSON/XLSX usa pipeline canónico común;
 3. dry-run demuestra cero mutaciones;
 4. resume/idempotencia están probados;
 5. no hay findings críticos/altos abiertos;
