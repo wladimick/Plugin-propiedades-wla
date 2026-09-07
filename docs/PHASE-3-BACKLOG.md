@@ -15,7 +15,7 @@ Fuente funcional: `docs/IMPORT-EXPORT.md`.
 
 ## Estado actual
 
-La planificación original PR 3.1–3.10 fue refinada durante implementación. El alcance de persistencia/ejecución se dividió en tres PR auditables antes de exponer la UI. Por decisión registrada en Issue #56, la UI pasó a PR 3.6 y los hitos restantes se renumeran sin cambiar su alcance funcional.
+La planificación original PR 3.1–3.10 fue refinada durante implementación. El alcance de persistencia/ejecución se dividió en tres PR auditables antes de exponer la UI. Por decisión registrada en Issue #56, la UI pasó a PR 3.6 y los hitos restantes se renumeraron sin cambiar su alcance funcional.
 
 Orden canónico desde este documento:
 
@@ -26,8 +26,8 @@ Orden canónico desde este documento:
 | 3.3 | Persistencia de identidad y batches reanudables | #51 | DONE |
 | 3.4 | Executor idempotente de filas | #53 | DONE |
 | 3.5 | Runner reanudable de batches | #55 | DONE |
-| 3.6 | UI Importar + historial de batches | #57 | QA_PASSED / READY_TO_MERGE |
-| 3.7 | JSON WLA versionado | pendiente | NEXT |
+| 3.6 | UI Importar + historial de batches | #57 | DONE |
+| 3.7 | JSON WLA versionado | Issue #58 | NEXT |
 | 3.8 | XLSX streaming + ADR/benchmark | pendiente | PLANNED |
 | 3.9 | Media remota segura | pendiente | PLANNED |
 | 3.10 | Exportación CSV/XLSX | pendiente | PLANNED |
@@ -226,7 +226,9 @@ Incluye:
 
 ## PR 3.6 — UI Importar + historial de batches
 
-Estado: `QA_PASSED / READY_TO_MERGE`. PR #57 / Issue #56.
+Estado: `DONE`. PR #57 / Issue #56.
+
+Squash en `main`: `d983034bb40a369eaf9bebaeef977548ca752e54`.
 
 Wizard:
 
@@ -257,14 +259,14 @@ Incluye:
 - ayuda contextual y CSS responsive;
 - `WorkspaceJanitor` para drafts temporales vencidos;
 - findings P2 de memoria y limpieza de temporales corregidos;
-- review threads abiertos: 0;
+- review threads abiertos al merge: 0;
 - CI, integración y Administration Quality Gate verdes.
 
 Evidencia: `docs/evidence/phase-3/PR-3.6-IMPORT-UI.md`.
 
 ## PR 3.7 — JSON WLA versionado
 
-Estado: `NEXT`.
+Estado: `NEXT`. Issue #58.
 
 Objetivo: formato interoperable y de respaldo lógico que use el mismo pipeline canónico.
 
@@ -280,6 +282,10 @@ Incluye:
 - tests round-trip;
 - JSON inválido o claves desconocidas se reportan de forma controlada;
 - ninguna meta key se construye dinámicamente desde input.
+
+### Decisión arquitectónica de entrada
+
+`BatchRunner` permanece como única vía de ejecución y escritura. JSON no debe introducir un runner paralelo. La implementación de 3.7 debe normalizar el formato externo a una fuente interna reanudable o introducir una abstracción mínima de source reader sin debilitar los checkpoints/hash/idempotencia ya demostrados por CSV. La decisión final debe quedar documentada en la evidencia/ADR del PR antes del merge.
 
 ## PR 3.8 — XLSX streaming + ADR de dependencia
 

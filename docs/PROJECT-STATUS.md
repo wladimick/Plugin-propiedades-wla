@@ -17,9 +17,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
-- PR 3.1–3.5: `DONE`
-- PR 3.6: `QA_PASSED / READY_TO_MERGE`
-- Próximo hito: PR 3.7 — JSON WLA versionado
+- PR 3.1–3.6: `DONE`
+- Próximo hito: PR 3.7 — JSON WLA versionado (Issue #58)
 
 ## Fases
 
@@ -28,7 +27,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | IN_PROGRESS | PR #44/#46/#49/#51/#53/#55/#57, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
+| 3 | Import/Export | IN_PROGRESS | PR #44/#46/#49/#51/#53/#55/#57, Issue #58, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -101,7 +100,7 @@ Backlog canónico: `docs/PHASE-3-BACKLOG.md`.
 Contrato funcional: `docs/IMPORT-EXPORT.md`.  
 Evidencia: `docs/evidence/phase-3/`.
 
-La numeración original de Fase 3 fue refinada durante implementación. Persistencia/ejecución se separó en PR 3.3–3.5 antes de exponer la UI. Issue #56 formaliza que la UI pasa a PR 3.6 y que los hitos restantes se renumeran sin cambiar su alcance funcional.
+La numeración original de Fase 3 fue refinada durante implementación. Persistencia/ejecución se separó en PR 3.3–3.5 antes de exponer la UI. Issue #56 formalizó que la UI pasara a PR 3.6 y que los hitos restantes se renumeraran sin cambiar su alcance funcional.
 
 | PR | Alcance | GitHub | Estado | Evidencia |
 |---|---|---|---|---|
@@ -110,8 +109,8 @@ La numeración original de Fase 3 fue refinada durante implementación. Persiste
 | 3.3 | Persistencia de identidad y batches | #51 | DONE | evidencia phase-3 |
 | 3.4 | Executor idempotente de filas | #53 | DONE | `PR-3.4-ROW-EXECUTOR.md` |
 | 3.5 | Runner reanudable de batches | #55 | DONE | `PR-3.5-BATCH-RUNNER.md` |
-| 3.6 | UI Importar + historial | #57 | QA_PASSED / READY_TO_MERGE | `PR-3.6-IMPORT-UI.md` |
-| 3.7 | JSON WLA versionado | pendiente | NEXT | pendiente |
+| 3.6 | UI Importar + historial | #57 | DONE | `PR-3.6-IMPORT-UI.md` |
+| 3.7 | JSON WLA versionado | Issue #58 | NEXT | pendiente |
 | 3.8 | XLSX streaming + ADR/benchmark | pendiente | PLANNED | pendiente |
 | 3.9 | Media remota segura | pendiente | PLANNED | pendiente |
 | 3.10 | Exportación CSV/XLSX | pendiente | PLANNED | pendiente |
@@ -188,7 +187,9 @@ Estado: `DONE`. PR #55.
 
 ### PR 3.6 — UI Importar + historial
 
-Estado: `QA_PASSED / READY_TO_MERGE`. PR #57 / Issue #56.
+Estado: `DONE`. PR #57 / Issue #56.
+
+Squash en `main`: `d983034bb40a369eaf9bebaeef977548ca752e54`.
 
 - `WLA Inmo → Importar / Exportar` deja de ser placeholder;
 - wizard server-rendered Subir → Mapear → Validar → Simular → Confirmar → Procesar → Informe;
@@ -205,23 +206,16 @@ Estado: `QA_PASSED / READY_TO_MERGE`. PR #57 / Issue #56.
 - cancelación solo en checkpoints seguros;
 - `WorkspaceJanitor` elimina drafts vencidos sin afectar batches reanudables;
 - dos findings P2 de review corregidos;
-- review threads abiertos: 0;
+- review threads abiertos al merge: 0;
 - P0/P1 abiertos conocidos: 0.
 
-QA sobre head funcional `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9` antes del cierre documental:
+QA funcional y rerun final quedaron completamente verdes, incluyendo Phase 1 CI, Import UI, Import Batch Runner, Import Persistence, Import Row Executor, Administration Quality Gate, Bootstrap, Calidad, Actividad, Dashboard, Settings y Ayuda.
 
-- Phase 1 CI `34046249484`: SUCCESS;
-- Import UI Integration `34046249476`: SUCCESS;
-- Import Batch Runner Integration `34046249469`: SUCCESS;
-- Import Persistence Integration `34046249467`: SUCCESS;
-- Import Row Executor Integration `34046249516`: SUCCESS;
-- Administration Quality Gate `34046249499`: SUCCESS;
-- WordPress 6.6.2/PHP 8.1: SUCCESS;
-- WordPress latest/PHP 8.3: SUCCESS.
-
-Artifacts registrados en `docs/evidence/phase-3/PR-3.6-IMPORT-UI.md`.
+Evidencia y artifacts: `docs/evidence/phase-3/PR-3.6-IMPORT-UI.md`.
 
 ### Próximo hito — PR 3.7 JSON WLA versionado
+
+Issue: #58.
 
 Objetivo: crear un formato JSON interoperable y versionado que use el mismo pipeline canónico, sin introducir un segundo mecanismo de importación.
 
@@ -239,7 +233,7 @@ Debe incluir como mínimo:
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.6 cerrados o listos para merge.
+No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.6 cerrados.
 
 Deuda de prioridad baja heredada:
 
