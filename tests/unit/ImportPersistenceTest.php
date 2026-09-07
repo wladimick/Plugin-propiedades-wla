@@ -80,6 +80,7 @@ final class ImportPersistenceTest extends TestCase
 		$batch = $repository->find($uuid);
 		self::assertNotNull($batch);
 		self::assertSame(BatchStatus::UPLOADED, $batch['status']);
+		self::assertSame('csv', $batch['source_format']);
 		self::assertSame(0, $batch['revision']);
 		self::assertSame(0, $batch['cursor_offset']);
 
@@ -152,7 +153,9 @@ final class ImportPersistenceTest extends TestCase
 		$database = new PersistenceFakeDatabase();
 		$sql = BatchSchema::sql($database);
 
-		self::assertSame('2', BatchSchema::DB_VERSION);
+		self::assertSame('3', BatchSchema::DB_VERSION);
+		self::assertStringContainsString("source_format varchar(16) NOT NULL DEFAULT 'csv'", $sql);
+		self::assertStringContainsString('KEY source_format (source_format)', $sql);
 		self::assertStringContainsString('cursor_row int(10) unsigned', $sql);
 		self::assertStringContainsString('cursor_offset bigint(20) unsigned', $sql);
 		self::assertStringContainsString('processed_rows int(10) unsigned', $sql);
