@@ -18,16 +18,17 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
 - PR 3.1–3.7: `DONE`
-- Próximo hito: **PR 3.8 — XLSX streaming + ADR/benchmark**
+- PR 3.8: `QA_PENDING` — PR #62 / Issue #61
+- Próximo alcance después de 3.8: **PR 3.9 — Media remota segura**
 
 ## Fases
 
 | Fase | Nombre | Estado | Evidencia principal |
 |---|---|---|---|
-| 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
+| 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-014 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | IN_PROGRESS | PR #46/#49/#51/#53/#55/#57/#60, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
+| 3 | Import/Export | IN_PROGRESS | PR #46/#49/#51/#53/#55/#57/#60/#62, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -41,6 +42,8 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 Estado: `DONE`.
 
 Arquitectura, requisitos, modelo, stack, metodología, testing, quality gates, administración, seguridad, SEO/GEO/AEO, migración, ADR y decisiones D01–D75 están documentados.
+
+ADR-014 concreta D31 para XLSX sin reemplazarla: PhpSpreadsheet 3.10.7 exacta, encapsulada en Import/Export y lectura bounded.
 
 ## Fase 1 — Core del plugin
 
@@ -109,8 +112,8 @@ La numeración original fue refinada durante implementación. Persistencia, exec
 | 3.5 | Runner reanudable de batches | #55 | DONE | `PR-3.5-BATCH-RUNNER.md` |
 | 3.6 | UI Importar + historial | #57 | DONE | `PR-3.6-IMPORT-UI.md` |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE | `PR-3.7-JSON-WLA.md` |
-| 3.8 | XLSX streaming + ADR/benchmark | pendiente | NEXT | pendiente |
-| 3.9 | Media remota segura | pendiente | PLANNED | pendiente |
+| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | QA_PENDING | `PR-3.8-XLSX.md` |
+| 3.9 | Media remota segura | pendiente | NEXT | pendiente |
 | 3.10 | Exportación CSV/XLSX | pendiente | PLANNED | pendiente |
 | 3.11 | Rollback seguro | pendiente | PLANNED | pendiente |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
@@ -215,52 +218,41 @@ Head funcional validado: `0eaeda0f02da44ae25018b6ba167b8b1dddda5a4`.
 
 Evidencia: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
 
-### Próximo hito — PR 3.8 XLSX streaming + ADR/benchmark
+### PR 3.8 — XLSX streaming + ADR/benchmark
 
-Objetivo: añadir XLSX sin duplicar pipeline y sin degradar seguridad/memoria.
+Estado: `QA_PENDING`. PR #62 / Issue #61.
 
-Antes de elegir dependencia:
+- ADR-014 `ACCEPTED / IMPLEMENTS D31`;
+- PhpSpreadsheet 3.10.7 exacta y `composer.lock` versionado;
+- benchmark reproducible OpenSpout 4.24.5 vs PhpSpreadsheet 3.10.7/5.8.1;
+- preflight ZIP/OOXML bounded;
+- protección Zip Slip/path traversal, archive expansion, macros/binarios y relationships externos;
+- límites de archivo, entries, sheets, rows, columns y cell bytes;
+- selección explícita de hoja antes de normalizar;
+- XLSX → NDJSON privado con permisos fail-closed;
+- janitor de uploads XLSX abandonados;
+- `source_format=xlsx` en batch e historial;
+- pipeline compartido con CSV/JSON para mapping, dry-run, identidad, runner y executor;
+- UI XLSX integrada y historial filtrado por formato;
+- PHPUnit XLSX, PHPStan, build/smoke y CI PHP 8.1/8.3;
+- integración WordPress para handler de hoja, cleanup e historial.
 
-- comparar al menos dos alternativas razonables;
-- medir memoria con 1k/5k y dataset mayor razonable;
-- medir peso agregado al ZIP;
-- revisar mantenimiento/licencia/superficie de dependencias;
-- documentar ADR final;
-- proteger contra archive bombs/descompresión no acotada.
+Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
-La librería seleccionada solo podrá transformar XLSX → filas normalizadas. Mapping, dry-run, identidad, executor y runner siguen siendo canónicos y compartidos.
+Al obtener CI final verde, este hito pasa a `READY_TO_MERGE`, se registra artifact/checksum final y PR #62 se mergea por squash.
 
 ## Findings / deuda no bloqueante conocida
 
 No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.7 cerrados.
 
+Para 3.8 no hay review threads abiertos conocidos; el estado final depende del último head de QA.
+
 Deuda de prioridad baja heredada:
 
-- `composer.lock` de tooling PHP aún no está versionado; resolver antes de Beta;
-- PHPStan debe expandir cobertura progresivamente;
-- warnings Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
+- PHPStan debe expandir cobertura progresivamente fuera de los dominios actualmente gated;
+- PHP 8.1 deberá reevaluarse antes de Beta/1.0 por la ventana de soporte de dependencias;
+- performance sintético de CI no constituye SLA productivo.
 
-## Riesgos trasladados
+## Regla de producción
 
-1. Índices SQL se ajustarán con benchmarks reales.
-2. La librería XLSX de PR 3.8 requiere ADR y benchmark antes de merge.
-3. Proveedor OSM de tiles/geocoding se definirá para alto tráfico.
-4. Adaptadores SEO se validarán en Fase 6.
-5. Multisite se valida progresivamente.
-6. Lighthouse ≥95 es budget de referencia; CWV reales requieren datos productivos.
-7. Migraciones futuras que cambien slugs existentes deberán conservar URLs o definir 301 explícitas.
-8. Búsqueda indexada de borradores debe seguir separada del índice público.
-9. Optimización final de imágenes, lightbox y prioridades frontend corresponde a Fase 4/5.
-10. XLSX/media deben reutilizar identidad, mapping, dry-run, executor y runner existentes; no crear pipelines paralelos.
-
-## Producción
-
-`propiedadesmartinez.cl` no ha sido modificado. Cualquier despliegue o migración productiva requiere una solicitud explícita posterior y su propia evidencia.
-
-## Regla de actualización
-
-Un ítem solo pasa a `DONE` con PR, tests/evidencia o documento que lo sustente. Una decisión aceptada no cambia silenciosamente: requiere ADR/PR.
-
-## Auditoría
-
-Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar aquí y continuar por Decision Register, backlog de fase, catálogo de tests y evidencias.
+`propiedadesmartinez.cl` permanece sin cambios hasta la Fase 9 o una solicitud explícita posterior.
