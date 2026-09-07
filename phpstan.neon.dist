@@ -17,12 +17,4 @@ parameters:
             message: '#Strict comparison using === between non-empty-array<mixed, mixed> and array\{\} will always evaluate to false\.#'
             path: plugin/wla-inmo/src/Import/WordPressPropertyWriter.php
             count: 1
-        -
-            message: '#Call to function is_string\(\) with non-empty-string will always evaluate to true\.#'
-            path: plugin/wla-inmo/src/Import/JsonDocumentReader.php
-            count: 1
-        -
-            message: '#Strict comparison using === between non-empty-array<mixed, mixed> and array\{\} will always evaluate to false\.#'
-            path: plugin/wla-inmo/src/Import/JsonLinesReader.php
-            count: 1
     reportUnmatchedIgnoredErrors: true
