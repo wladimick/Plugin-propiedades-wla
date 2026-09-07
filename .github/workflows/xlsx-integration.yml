@@ -14,15 +14,14 @@ on:
       - 'tests/unit/ImportXlsx*.php'
       - 'bin/build-plugin.sh'
       - '.github/workflows/xlsx-integration.yml'
-      - '.github/workflows/phase3-xlsx-wire.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  wire:
-    name: One-shot XLSX wizard wiring
+  phpstan-fix:
+    name: One-shot XLSX PHPStan cleanup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR head
@@ -31,38 +30,62 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
 
-      - name: Apply deterministic wiring if pending
+      - name: Apply deterministic typing cleanup
+        shell: python
         run: |
-          if grep -Fq "FORMAT_XLSX = 'xlsx'" plugin/wla-inmo/src/Import/Workspace.php; then
-            echo 'XLSX wizard already wired.'
-            exit 0
-          fi
-          python - <<'PY'
           from pathlib import Path
-          source = Path('.github/workflows/phase3-xlsx-wire.yml').read_text().splitlines()
-          start = source.index('      - name: Apply deterministic XLSX wiring')
-          run_line = next(i for i in range(start + 1, len(source)) if source[i] == '        run: |')
-          end = next(i for i in range(run_line + 1, len(source)) if source[i].startswith('      - name: '))
-          code = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[run_line + 1:end])
-          exec(compile(code, 'phase3-xlsx-wire.yml', 'exec'), {'__name__': '__main__'})
-          PY
 
-      - name: Commit wiring if changed
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected 1 occurrence, found {count}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          path = 'plugin/wla-inmo/src/Import/Workspace.php'
+          replace_once(
+              path,
+              "$sheets = isset($inspection['sheets']) && is_array($inspection['sheets']) ? $inspection['sheets'] : array();",
+              "$sheets = $inspection['sheets'];"
+          )
+
+          path = 'plugin/wla-inmo/src/Import/XlsxArchiveInspector.php'
+          replace_once(path, "$sourceBytes = isset($before['size']) ? (int) $before['size'] : 0;", "$sourceBytes = (int) $before['size'];")
+          replace_once(path, "if (!is_array($stat) || !isset($stat['name'])) {", "if ($stat === false) {")
+          replace_once(path, "$uncompressed = isset($stat['size']) ? (int) $stat['size'] : 0;", "$uncompressed = (int) $stat['size'];")
+          replace_once(path, "$compressed = isset($stat['comp_size']) ? (int) $stat['comp_size'] : 0;", "$compressed = (int) $stat['comp_size'];")
+          replace_once(path, "if (isset($stat['encryption_method']) && (int) $stat['encryption_method'] !== 0) {", "if ((int) $stat['encryption_method'] !== 0) {")
+          replace_once(path, "if (!is_array($stat)) {\n\t\t\tthrow new XlsxException('entry_stat_failed', 'XLSX metadata part could not be inspected.');\n\t\t}", "if ($stat === false) {\n\t\t\tthrow new XlsxException('entry_stat_failed', 'XLSX metadata part could not be inspected.');\n\t\t}")
+          replace_once(path, "$size = isset($stat['size']) ? (int) $stat['size'] : 0;", "$size = (int) $stat['size'];")
+          replace_once(path, "\tprivate function hashLockedHandle($handle): string", "\t/** @param resource $handle */\n\tprivate function hashLockedHandle($handle): string")
+          replace_once(path, "/** @param array<string|int,mixed> $before @param array<string|int,mixed> $after */", "/**\n\t * @param array<int|string,int> $before\n\t * @param array<int|string,int> $after\n\t */")
+
+          path = 'plugin/wla-inmo/src/Import/XlsxDocumentReader.php'
+          replace_once(path, "use PhpOffice\\PhpSpreadsheet\\Reader\\Xlsx;", "use PhpOffice\\PhpSpreadsheet\\Reader\\Xlsx;\nuse PhpOffice\\PhpSpreadsheet\\Worksheet\\Worksheet;")
+          replace_once(path, "$name = (string) ($worksheet['worksheetName'] ?? '');", "$name = (string) $worksheet['worksheetName'];")
+          replace_once(path, "$totalRows = max(0, (int) ($worksheet['totalRows'] ?? 0));", "$totalRows = max(0, (int) $worksheet['totalRows']);")
+          replace_once(path, "$totalColumns = max(0, (int) ($worksheet['totalColumns'] ?? 0));", "$totalColumns = max(0, (int) $worksheet['totalColumns']);")
+          replace_once(path, "\n\t\t\t\t\t\t$data = array_combine($headers, $values);\n\t\t\t\t\t\tif (!is_array($data)) {\n\t\t\t\t\t\t\tthrow new XlsxException('row_shape_failed', 'XLSX row could not be associated with its headers.', $rowNumber);\n\t\t\t\t\t\t}\n", "\n\t\t\t\t\t\t$data = array_combine($headers, $values);\n")
+          replace_once(path, "if (!is_string($sourceHash) || preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1) {", "if (preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1) {")
+          replace_once(path, "if (!is_array($info) || $info === array()) {", "if ($info === array()) {")
+          replace_once(path, "\t/** @return array<int,string> */\n\tprivate function rowValues($worksheet, int $rowNumber, int $columns): array", "\t/** @return array<int,string> */\n\tprivate function rowValues(Worksheet $worksheet, int $rowNumber, int $columns): array")
+          replace_once(path, "\t/** @param array<int,string> $values @return array<int,string> */\n\tprivate function normalizeHeaders(array $values): array", "\t/**\n\t * @param array<int,string> $values\n\t * @return array<int,string>\n\t */\n\tprivate function normalizeHeaders(array $values): array")
+          replace_once(path, "\tprivate function openOutput(string $path)\n", "\t/** @return resource */\n\tprivate function openOutput(string $path)\n")
+          replace_once(path, "\tprivate function hashLockedHandle($handle): string", "\t/** @param resource $handle */\n\tprivate function hashLockedHandle($handle): string")
+
+      - name: Commit typing cleanup if changed
         run: |
-          git checkout -- .github/workflows/xlsx-integration.yml
           if git diff --quiet; then
-            echo 'No wiring changes to commit.'
+            echo 'No PHPStan cleanup changes to commit.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add plugin/wla-inmo/src/Import/XlsxDocumentReader.php \
-                  plugin/wla-inmo/src/Import/Workspace.php \
-                  plugin/wla-inmo/src/Import/BatchRepository.php \
-                  plugin/wla-inmo/src/Import/BatchRunner.php \
-                  plugin/wla-inmo/src/Admin/ImportExportHub.php \
-                  plugin/wla-inmo/src/Admin/ImportExportPage.php
-          git commit -m 'feat(import): wire XLSX through canonical wizard'
+          git add plugin/wla-inmo/src/Import/Workspace.php \
+                  plugin/wla-inmo/src/Import/XlsxArchiveInspector.php \
+                  plugin/wla-inmo/src/Import/XlsxDocumentReader.php
+          git commit -m 'fix(import): satisfy XLSX static analysis'
           git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
 
   xlsx:
