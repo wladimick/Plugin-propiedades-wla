@@ -76,6 +76,7 @@ function get_posts(array $args = array()): array { return array(); }
 /** @param int|object|null $post */
 function get_post_mime_type(int|object|null $post = null): string|false { return false; }
 function get_attached_file(int $attachment_id, bool $unfiltered = false): string|false { return false; }
+function wp_get_attachment_url(int $attachment_id): string|false { return false; }
 /** @param array<string,mixed> $file_array @param array<string,mixed> $post_data @return mixed */
 function media_handle_sideload(array $file_array, int $post_id = 0, ?string $desc = null, array $post_data = array()) { return 1; }
 /** @return mixed */
