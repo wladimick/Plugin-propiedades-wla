@@ -68,7 +68,7 @@ final class RemoteMediaDownloader implements RemoteMediaDownloaderInterface
 			if ($exception instanceof RemoteMediaException) {
 				throw $exception;
 			}
-			throw new RemoteMediaException('media_download_unexpected', 'Unexpected remote media download failure.', $exception);
+			throw new RemoteMediaException('media_download_unexpected', 'Unexpected remote media download failure.', $exception); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Previous exception is internal context and is never rendered here.
 		}
 	}
 
