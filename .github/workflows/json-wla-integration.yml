@@ -14,8 +14,9 @@ on:
       - 'plugin/wla-inmo/src/Import/BatchRepository.php'
       - 'plugin/wla-inmo/src/Import/BatchSchema.php'
       - 'plugin/wla-inmo/src/Import/BatchRunner.php'
-      - 'plugin/wla-inmo/src/Import/BatchHistoryRepository.php'
+      - 'tests/fixtures/json/**'
       - 'tests/integration/assert-json-wla.php'
+      - 'tests/integration/measure-json-wla.php'
       - 'tests/unit/ImportJson*.php'
       - 'tests/smoke/json-*.php'
       - '.github/workflows/json-wla-integration.yml'
@@ -103,3 +104,21 @@ jobs:
         run: |
           cd /tmp/wla-json-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-wla.php" --allow-root
+
+      - name: Measure JSON datasets 100 / 1k / 5k
+        run: |
+          cd /tmp/wla-json-wordpress
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          RESULT="$GITHUB_WORKSPACE/artifacts/json-wla-${{ matrix.wordpress }}-php-${{ matrix.php }}.jsonl"
+          : > "$RESULT"
+          for size in 100 1000 5000; do
+            WLA_JSON_DATASET_SIZE="$size" wp eval-file "$GITHUB_WORKSPACE/tests/integration/measure-json-wla.php" --allow-root | tail -n 1 | tee -a "$RESULT"
+          done
+          test "$(wc -l < "$RESULT")" -eq 3
+
+      - name: Upload JSON performance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-wla-performance-${{ matrix.wordpress }}-php-${{ matrix.php }}
+          path: artifacts/json-wla-${{ matrix.wordpress }}-php-${{ matrix.php }}.jsonl
+          if-no-files-found: error
