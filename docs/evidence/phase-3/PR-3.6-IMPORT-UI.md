@@ -1,11 +1,13 @@
 # Evidencia — PR 3.6 UI de importación e historial
 
-Estado: `QA_PASSED / READY_TO_MERGE`.
+Estado: `DONE`.
 
-Issue: #56  
-PR: #57  
-Rama: `feat/phase3-import-ui`  
-Head funcional validado: `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9`
+Issue: #56 — CLOSED  
+PR: #57 — MERGED  
+Rama funcional: `feat/phase3-import-ui`  
+Head funcional validado: `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9`  
+Head final previo al merge: `43da37612dee405d1675d7c80b2e5ed1e059423d`  
+Squash en `main`: `d983034bb40a369eaf9bebaeef977548ca752e54`
 
 ## Objetivo
 
@@ -58,13 +60,13 @@ No se crean términos desconocidos automáticamente, no se descargan archivos re
 
 Durante review se detectaron dos findings P2 y ambos quedaron corregidos y resueltos:
 
-1. **Colección no acotada de issues durante dry-run.** Ahora se mantiene un contador total independiente, pero en memoria se conservan como máximo `ISSUE_LIMIT` hallazgos.
+1. **Colección no acotada de issues durante dry-run.** Se mantiene un contador total independiente, pero en memoria se conservan como máximo `ISSUE_LIMIT` hallazgos.
 2. **Drafts temporales huérfanos.** `WorkspaceJanitor` limpia únicamente archivos draft vencidos con ejecución bounded; los archivos de batches confirmados/pausados/fallidos no se eliminan por edad para preservar resume.
 
-Review threads abiertos: **0**.  
+Review threads abiertos al merge: **0**.  
 P0/P1 abiertos conocidos: **0**.
 
-## QA final
+## QA funcional
 
 Sobre `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9` quedaron verdes:
 
@@ -81,14 +83,31 @@ Sobre `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9` quedaron verdes:
 - Settings UI Integration: **SUCCESS**;
 - Help Center Integration: **SUCCESS**.
 
-### Matriz WordPress de Import UI
+### Rerun final del head de merge
+
+Después de los commits exclusivamente documentales, el head final `43da37612dee405d1675d7c80b2e5ed1e059423d` volvió a ejecutar toda la regresión y quedó verde:
+
+- Phase 1 CI `34129573714`: **SUCCESS**;
+- Import UI Integration `34129573608`: **SUCCESS**;
+- Import Batch Runner Integration `34129573557`: **SUCCESS**;
+- Import Persistence Integration `34129573803`: **SUCCESS**;
+- Import Row Executor Integration `34129573761`: **SUCCESS**;
+- Administration Quality Gate `34129573601`: **SUCCESS**;
+- Bootstrap Smoke `34129573638`: **SUCCESS**;
+- Catalogue Quality Integration `34129573619`: **SUCCESS**;
+- Activity Integration `34129573762`: **SUCCESS**;
+- Dashboard Integration `34129573645`: **SUCCESS**;
+- Settings UI Integration `34129573674`: **SUCCESS**;
+- Help Center Integration `34129573585`: **SUCCESS**.
+
+## Matriz WordPress de Import UI
 
 - WordPress 6.6.2 / PHP 8.1: **SUCCESS**;
 - WordPress latest / PHP 8.3: **SUCCESS**;
 - build e instalación del ZIP real: **SUCCESS**;
 - contratos de UI e historial bounded: **SUCCESS**.
 
-### E2E / administración
+## E2E / administración
 
 Administration Quality Gate ejecutó correctamente:
 
@@ -98,7 +117,7 @@ Administration Quality Gate ejecutó correctamente:
 - Playwright administration quality gate;
 - evidencia E2E.
 
-### Artifacts
+## Artifacts funcionales
 
 Plugin QA:
 
@@ -127,11 +146,11 @@ E2E:
 
 ## Fuera de alcance
 
-- JSON WLA;
-- XLSX;
-- media remota;
-- exportación final;
-- rollback completo;
+- JSON WLA — PR 3.7 / Issue #58;
+- XLSX — PR 3.8;
+- media remota — PR 3.9;
+- exportación CSV/XLSX — PR 3.10;
+- rollback completo — PR 3.11;
 - cola/background definitiva;
 - migración WooCommerce/ACF.
 
@@ -141,4 +160,4 @@ E2E:
 
 ## Cierre
 
-**QA_PASSED / READY_TO_MERGE**. El siguiente paso es sincronizar la documentación maestra de Fase 3 con la renumeración efectiva de hitos y realizar squash merge de PR #57.
+**DONE**. PR #57 fue fusionado por squash en `main` como `d983034bb40a369eaf9bebaeef977548ca752e54`. El siguiente hito es **PR 3.7 — JSON WLA versionado**, Issue #58.
