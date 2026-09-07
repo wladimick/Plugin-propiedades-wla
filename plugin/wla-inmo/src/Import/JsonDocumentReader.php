@@ -4,6 +4,7 @@ namespace WLA\Inmo\Import;
 
 use JsonException as NativeJsonException;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Parser exceptions are internal control-flow messages and are never rendered by this class.
 final class JsonDocumentReader
 {
 	public const FORMAT_VERSION = 1;
