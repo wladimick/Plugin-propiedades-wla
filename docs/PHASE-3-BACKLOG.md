@@ -27,9 +27,9 @@ La planificación original fue refinada durante implementación. Persistencia, e
 | 3.6 | UI Importar + historial de batches | #57 | DONE |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE |
 | 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | DONE |
-| 3.9 | Media remota segura | #64 / #63 | IN_PROGRESS / QA_PENDING |
+| 3.9 | Media remota segura | #64 / #63 | DONE |
 | 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE |
-| 3.11 | Rollback seguro de importación | pendiente | PLANNED |
+| 3.11 | Rollback seguro de importación | pendiente | NEXT |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED |
 
 ## Principios no negociables
@@ -219,11 +219,11 @@ Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
 ## PR 3.9 — Media remota segura
 
-Estado: `IN_PROGRESS / QA_PENDING`. PR #64 / Issue #63.
+Estado: `DONE`. PR #64 / Issue #63. Squash `1067d227ac0dea5b1a8a248b57cd217490e4031e`.
 
-Objetivo: importar imágenes después de resolver/persistir la propiedad sin convertir el plugin en SSRF proxy.
+Objetivo cumplido: importar imágenes después de resolver/persistir la propiedad sin convertir el plugin en SSRF proxy.
 
-Implementado en la rama:
+Incluye:
 
 - `media.gallery_urls` y `media.featured_image_url` como targets portables, nunca `gallery_ids` externos;
 - cero HTTP durante dry-run;
@@ -240,7 +240,9 @@ Implementado en la rama:
 - RowExecutor separa `media.*`, hace upsert primero y procesa media después;
 - retry posterior re-resuelve identidad para no duplicar propiedades;
 - sección `media` en JSON WLA y export JSON desde URLs públicas de attachments canónicos;
-- tests unitarios y WordPress integration en PHP 8.1/8.3.
+- tests unitarios y WordPress integration en PHP 8.1/8.3;
+- 13/13 workflows verdes en head funcional y 13/13 nuevamente en head documental final;
+- review threads, P0/P1 abiertos al merge: 0.
 
 Evidencia: `docs/evidence/phase-3/PR-3.9-REMOTE-MEDIA.md`.
 
@@ -259,7 +261,7 @@ Registro: `docs/decisions/PHASE-3-SCOPE-2026-09-07.md`.
 
 ## PR 3.11 — Rollback seguro
 
-Estado: `PLANNED`.
+Estado: `NEXT`.
 
 Revertir únicamente cuando WLA pueda demostrar que no pisa trabajo posterior. Incluye objetos creados por batch, snapshots mínimos, detección de cambios posteriores, preview, capability/confirmación avanzada y Activity.
 
