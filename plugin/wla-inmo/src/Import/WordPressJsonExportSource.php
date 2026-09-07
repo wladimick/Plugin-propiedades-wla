@@ -138,9 +138,7 @@ final class WordPressJsonExportSource implements JsonExportSourceInterface
 				}
 
 				if ($logical === 'feature') {
-					$existing = isset($byPost[$postId][$logical]) && is_array($byPost[$postId][$logical])
-						? $byPost[$postId][$logical]
-						: array();
+					$existing = (array) ($byPost[$postId][$logical] ?? array());
 					$existing[] = $name;
 					$byPost[$postId][$logical] = array_values(array_unique($existing));
 				} elseif (!isset($byPost[$postId][$logical])) {
