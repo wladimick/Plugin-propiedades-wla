@@ -1,6 +1,6 @@
 # Evidencia — PR 3.8 XLSX streaming + ADR/benchmark
 
-Estado: `IN_PROGRESS / DEPENDENCY_SELECTED`.
+Estado: `IN_PROGRESS / QA_PENDING`.
 
 Issue: #61  
 PR: #62  
@@ -15,7 +15,7 @@ Añadir soporte XLSX sin duplicar mapping, validación, dry-run, identidad, exec
 
 Fase 3.7 JSON WLA está cerrada y mergeada. Producción no se modifica.
 
-El plugin declara `php >=8.1` y antes de 3.8 no tiene dependencias Composer runtime.
+El plugin declara `php >=8.1` y antes de 3.8 no tenía dependencias Composer runtime.
 
 ### Baseline release
 
@@ -83,11 +83,86 @@ Todos los candidatos/modos produjeron esos mismos checksums.
 | PhpSpreadsheet 5.8.1 | 1k | chunked 500 | 297,88 ms | 6 MiB |
 | PhpSpreadsheet 5.8.1 | 5k | chunked 500 | 2.853,63 ms | 10 MiB |
 
-\* OpenSpout corresponde a la corrida determinista inmediatamente anterior; fixture SHA/checksum son idénticos. La corrida 4 revalidó OpenSpout `SUCCESS` con el mismo laboratorio.
+\* OpenSpout corresponde a la corrida determinista inmediatamente anterior; fixture SHA/checksum son idénticos.
 
 Los resultados son comparativos de CI, no SLA productivo.
 
-## Runs y artifacts
+## Decisión técnica
+
+Se adopta PhpSpreadsheet 3.10.7 porque:
+
+- respeta D31 ya aprobada;
+- mantiene PHP 8.1;
+- su release del 12-07-2026 contiene security patches;
+- `composer audit` del árbol resuelto está limpio;
+- es menor y más eficiente que 5.8.1 en el laboratorio;
+- el modo chunked reduce el delta de memoria de 20 MiB a 8 MiB en 5k;
+- ~2,61 s para 5k es aceptable como punto de partida para un pipeline de importación por lotes/reanudable.
+
+OpenSpout queda documentado como benchmark winner en footprint/rendimiento, pero no se adopta porque implicaría reemplazar D31 y fijar una release PHP 8.1 de 2024.
+
+## Implementación integrada
+
+La rama 3.8 ya incluye:
+
+- `phpoffice/phpspreadsheet` **3.10.7 exacta** en `composer.json` y `composer.lock`;
+- `XlsxArchiveInspector` con preflight ZIP/OOXML antes del reader;
+- límites de archivo, entries, bytes descomprimidos, ratio de expansión, sheets, rows, columns y cell bytes;
+- rechazo de path traversal/Zip Slip, macros/binarios, contenido ejecutable y relationships externos;
+- `XlsxDocumentReader` por chunks de 500 filas;
+- selección explícita de worksheet antes de normalizar;
+- XLSX → NDJSON privado controlado por servidor;
+- `source_format=xlsx` persistido en batches e historial;
+- ejecución XLSX mediante el mismo `MappingProfile`, `DryRunEngine`, identidad, `BatchRunner` y `RowExecutor` que CSV/JSON;
+- dry-run obligatorio;
+- workspace con permisos privados fail-closed;
+- janitor para drafts y uploads XLSX abandonados, sin borrar fuentes de batch reanudables;
+- pestaña XLSX en el importador e historial filtrado por formato;
+- capability + nonce para upload/selección/mapping/confirmación/ejecución/cancelación;
+- regresión del smoke JSON actualizada para reconocer JSON/XLSX como fuentes normalizadas compartidas.
+
+## Seguridad negativa cubierta
+
+Los contratos XLSX cubren, entre otros:
+
+- ZIP inválido;
+- path traversal / Zip Slip;
+- macros/binarios/partes ejecutables;
+- relationships externos;
+- archive expansion limits;
+- exceso de sheets/rows/columns;
+- worksheet inexistente;
+- headers inválidos/duplicados;
+- límites de celda;
+- fórmulas como datos (`setReadDataOnly(true)`), sin evaluación remota;
+- source hash / archivo cambiado;
+- temporales privados y server-generated.
+
+## CI específico 3.8
+
+Workflow: `.github/workflows/xlsx-integration.yml`.
+
+Matriz:
+
+- PHP 8.1;
+- PHP 8.3.
+
+El gate ejecuta:
+
+1. `composer validate --strict`;
+2. install desde lock;
+3. `composer audit`;
+4. platform requirements;
+5. PHPUnit `ImportXlsx`;
+6. wiring canónico del wizard/workspace/batch/history/janitor;
+7. PHPStan;
+8. build ZIP instalable;
+9. release smoke;
+10. artifact con bytes y SHA-256.
+
+Además, `Import UI Integration` cubre el handler de selección de hoja, el janitor XLSX y el historial `source_format=xlsx` sobre WordPress real.
+
+## Runs y artifacts previos
 
 ### Corrida determinista de dependencia
 
@@ -109,47 +184,20 @@ Artifacts:
 - PhpSpreadsheet 3.10.7: `sha256:9d0d85b9f17aa44241e157a01474bde898859acd965ba45343298df1aeb2018f`;
 - PhpSpreadsheet 5.8.1: `sha256:a70a89f8861dde9a17dea4c0f8cf1dc4e40218d12ae6a6d8f1cfe64c8c3305a6`.
 
-## Decisión técnica
+## QA final pendiente
 
-Se adopta PhpSpreadsheet 3.10.7 porque:
+Antes de merge solo falta registrar el resultado del head final después del último hardening/cleanup:
 
-- respeta D31 ya aprobada;
-- mantiene PHP 8.1;
-- su release del 12-07-2026 contiene security patches;
-- `composer audit` del árbol resuelto está limpio;
-- es menor y más eficiente que 5.8.1 en el laboratorio;
-- el modo chunked reduce el delta de memoria de 20 MiB a 8 MiB en 5k;
-- ~2,61 s para 5k es aceptable como punto de partida para un pipeline de importación por lotes/reanudable.
+- XLSX Integration PHP 8.1/8.3;
+- Bootstrap Smoke;
+- Phase 1 CI / WordPress mínimo y latest;
+- Import UI Integration;
+- Administration Quality Gate;
+- JSON WLA regression;
+- artifact ZIP final + SHA-256;
+- confirmar cero review threads abiertos.
 
-OpenSpout queda documentado como benchmark winner en footprint/rendimiento, pero no se adopta porque implicaría reemplazar D31 y fijar una release PHP 8.1 de 2024.
-
-## Contrato de integración aprobado
-
-La siguiente implementación debe:
-
-1. inspeccionar el ZIP/OOXML antes de PhpSpreadsheet;
-2. bloquear Zip Slip/path traversal y límites de archive bomb;
-3. seleccionar sheet de forma controlada;
-4. leer por chunks de 500 filas inicialmente;
-5. normalizar a una fuente interna privada/reanudable;
-6. reutilizar mapping, `DryRunEngine`, identidad, `BatchRunner` y `RowExecutor`;
-7. mantener fórmulas como datos no ejecutables;
-8. no disparar requests HTTP por relationships externos;
-9. mantener temporales privados;
-10. registrar benchmark y ZIP final después de integrar la dependencia real.
-
-## Pendientes del PR 3.8
-
-- incorporar PhpSpreadsheet 3.10.7 al build productivo de forma reproducible;
-- resolver `composer.lock` de runtime/tooling;
-- implementar `XlsxArchiveInspector` bounded;
-- implementar source/normalización XLSX;
-- workspace y cleanup;
-- dry-run/batch/UI;
-- negativos de ZIP/OOXML/fórmulas/limits;
-- benchmark 1k/5k con implementación WLA real;
-- medir ZIP final vs baseline 214.103 B;
-- CI/review final y artifact/checksum.
+Una vez verdes, este documento debe pasar a `QA_PASSED / READY_TO_MERGE` con los run IDs/checksums finales.
 
 ## Producción
 
