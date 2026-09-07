@@ -15,7 +15,6 @@ final class XlsxArchiveInspector
 	);
 
 	private const DANGEROUS_PATH_PATTERNS = array(
-		'#(?:^|/)vbaProject\.bin$#i',
 		'#(?:^|/).*\.bin$#i',
 		'#^xl/(?:activeX|embeddings|macrosheets|dialogsheets)/#i',
 		'#^customUI/#i',
@@ -59,15 +58,7 @@ final class XlsxArchiveInspector
 		$this->maxSheets = $maxSheets;
 	}
 
-	/**
-	 * @return array{
-	 *   source_hash:string,
-	 *   source_bytes:int,
-	 *   entries:int,
-	 *   uncompressed_bytes:int,
-	 *   worksheet_parts:int
-	 * }
-	 */
+	/** @return array{source_hash:string,source_bytes:int,entries:int,uncompressed_bytes:int,worksheet_parts:int} */
 	public function inspect(string $path): array
 	{
 		if ($path === '' || !is_file($path) || !is_readable($path)) {
@@ -83,6 +74,7 @@ final class XlsxArchiveInspector
 		}
 
 		$zip = new ZipArchive();
+		$zipOpen = false;
 
 		try {
 			$before = fstat($handle);
@@ -103,15 +95,18 @@ final class XlsxArchiveInspector
 			if ($openResult !== true) {
 				throw new XlsxException('invalid_zip', 'XLSX file is not a readable ZIP archive.');
 			}
+			$zipOpen = true;
 
 			$result = $this->inspectOpenArchive($zip, $sourceBytes);
-			$zip->close();
+			if (!$zip->close()) {
+				throw new XlsxException('archive_close_failed', 'XLSX archive could not be finalized after inspection.');
+			}
+			$zipOpen = false;
 
 			$after = fstat($handle);
 			if (!is_array($after) || !$this->sameFileState($before, $after)) {
 				throw new XlsxException('source_changed_during_inspection', 'XLSX source changed during archive inspection.');
 			}
-
 			$afterHash = $this->hashLockedHandle($handle);
 			if (!hash_equals($sourceHash, $afterHash)) {
 				throw new XlsxException('source_changed_during_inspection', 'XLSX source changed during archive inspection.');
@@ -125,7 +120,7 @@ final class XlsxArchiveInspector
 				'worksheet_parts'    => $result['worksheet_parts'],
 			);
 		} finally {
-			if ($zip->status === ZipArchive::ER_OK) {
+			if ($zipOpen) {
 				$zip->close();
 			}
 			flock($handle, LOCK_UN);
@@ -133,9 +128,7 @@ final class XlsxArchiveInspector
 		}
 	}
 
-	/**
-	 * @return array{entries:int,uncompressed_bytes:int,worksheet_parts:int}
-	 */
+	/** @return array{entries:int,uncompressed_bytes:int,worksheet_parts:int} */
 	private function inspectOpenArchive(ZipArchive $zip, int $sourceBytes): array
 	{
 		$entries = $zip->numFiles;
@@ -160,7 +153,6 @@ final class XlsxArchiveInspector
 			$name = (string) $stat['name'];
 			$this->assertSafePath($name);
 			$this->assertSupportedPart($name);
-
 			if (isset($seen[$name])) {
 				throw new XlsxException('duplicate_zip_entry', 'XLSX archive contains a duplicate ZIP entry.');
 			}
@@ -174,16 +166,13 @@ final class XlsxArchiveInspector
 			if ($uncompressed > $this->maxEntryUncompressedBytes) {
 				throw new XlsxException('entry_size_limit_exceeded', 'XLSX ZIP entry exceeds the uncompressed byte limit.');
 			}
-
 			$totalUncompressed += $uncompressed;
 			if ($totalUncompressed > $this->maxTotalUncompressedBytes) {
 				throw new XlsxException('archive_size_limit_exceeded', 'XLSX archive exceeds the total uncompressed byte limit.');
 			}
-
 			if ($uncompressed >= 1024 && $compressed > 0 && ($uncompressed / $compressed) > $this->maxExpansionRatio) {
 				throw new XlsxException('expansion_ratio_exceeded', 'XLSX ZIP entry exceeds the allowed expansion ratio.');
 			}
-
 			if (isset($stat['encryption_method']) && (int) $stat['encryption_method'] !== 0) {
 				throw new XlsxException('encrypted_entry', 'Encrypted XLSX ZIP entries are not supported.');
 			}
@@ -194,7 +183,6 @@ final class XlsxArchiveInspector
 					throw new XlsxException('sheet_limit_exceeded', 'XLSX workbook contains too many worksheet parts.');
 				}
 			}
-
 			if (str_ends_with(strtolower($name), '.rels')) {
 				$relationshipIndexes[] = $index;
 			}
@@ -208,14 +196,12 @@ final class XlsxArchiveInspector
 		if ($worksheetParts < 1) {
 			throw new XlsxException('missing_worksheet', 'XLSX archive does not contain a worksheet part.');
 		}
-
 		if ($totalUncompressed >= 4194304 && ($totalUncompressed / max(1, $sourceBytes)) > $this->maxExpansionRatio) {
 			throw new XlsxException('archive_expansion_ratio_exceeded', 'XLSX archive exceeds the allowed total expansion ratio.');
 		}
 
 		$contentTypes = $this->readMetadataPart($zip, '[Content_Types].xml');
 		$this->assertWorkbookContentType($contentTypes);
-
 		foreach ($relationshipIndexes as $index) {
 			$relationships = $this->readMetadataIndex($zip, $index);
 			if (preg_match('/TargetMode\s*=\s*["\']External["\']/i', $relationships) === 1) {
@@ -238,7 +224,6 @@ final class XlsxArchiveInspector
 		if ($name[0] === '/' || preg_match('/^[A-Za-z]:/', $name) === 1) {
 			throw new XlsxException('unsafe_entry_path', 'XLSX ZIP entry contains an absolute path.');
 		}
-
 		foreach (explode('/', $name) as $segment) {
 			if ($segment === '..' || $segment === '.') {
 				throw new XlsxException('unsafe_entry_path', 'XLSX ZIP entry contains path traversal.');
@@ -263,7 +248,6 @@ final class XlsxArchiveInspector
 		) {
 			throw new XlsxException('macro_enabled_workbook', 'Macro-enabled workbooks are not supported.');
 		}
-
 		if (stripos($contentTypes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') === false) {
 			throw new XlsxException('invalid_workbook_content_type', 'XLSX workbook content type is not supported.');
 		}
@@ -275,7 +259,6 @@ final class XlsxArchiveInspector
 		if ($index === false) {
 			throw new XlsxException('missing_required_part', 'XLSX archive is missing a required OOXML part.');
 		}
-
 		return $this->readMetadataIndex($zip, $index);
 	}
 
@@ -289,12 +272,10 @@ final class XlsxArchiveInspector
 		if ($size < 0 || $size > $this->maxMetadataBytes) {
 			throw new XlsxException('metadata_size_limit_exceeded', 'XLSX metadata part exceeds the byte limit.');
 		}
-
 		$content = $zip->getFromIndex($index, $this->maxMetadataBytes + 1, ZipArchive::FL_UNCHANGED);
 		if (!is_string($content) || strlen($content) > $this->maxMetadataBytes) {
 			throw new XlsxException('metadata_read_failed', 'XLSX metadata part could not be read safely.');
 		}
-
 		return $content;
 	}
 
@@ -303,7 +284,6 @@ final class XlsxArchiveInspector
 		if (fseek($handle, 0) !== 0) {
 			throw new XlsxException('source_read_failed', 'XLSX source could not be rewound for hashing.');
 		}
-
 		$context = hash_init('sha256');
 		$read = 0;
 		while (!feof($handle)) {
@@ -321,7 +301,6 @@ final class XlsxArchiveInspector
 			$read += strlen($chunk);
 			hash_update($context, $chunk);
 		}
-
 		return hash_final($context);
 	}
 
@@ -333,7 +312,6 @@ final class XlsxArchiveInspector
 				return false;
 			}
 		}
-
 		return true;
 	}
 }
