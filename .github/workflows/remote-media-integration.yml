@@ -7,7 +7,13 @@ on:
       - 'plugin/wla-inmo/src/Import/NetworkAddressPolicy.php'
       - 'plugin/wla-inmo/src/Import/DnsResolverInterface.php'
       - 'plugin/wla-inmo/src/Import/SystemDnsResolver.php'
+      - 'plugin/wla-inmo/src/Import/RowExecutor.php'
+      - 'plugin/wla-inmo/src/Import/TargetRegistry.php'
+      - 'plugin/wla-inmo/src/Import/ValueNormalizer.php'
+      - 'plugin/wla-inmo/src/Import/JsonDocumentReader.php'
+      - 'plugin/wla-inmo/src/Import/WordPressJsonExportSource.php'
       - 'tests/unit/ImportRemoteMedia*.php'
+      - 'tests/integration/assert-remote-media.php'
       - 'tests/phpstan/wordpress-import-stubs.php'
       - '.github/workflows/remote-media-integration.yml'
   workflow_dispatch:
@@ -50,7 +56,11 @@ jobs:
           grep -F 'FILTER_FLAG_NO_PRIV_RANGE' plugin/wla-inmo/src/Import/NetworkAddressPolicy.php
           grep -F "array('http', 'https')" plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
           grep -F 'wp_safe_remote_get' plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'redirection'         => \$maxRedirects" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'stream'              => true" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
           grep -F "'limit_response_size' => \$maxBytes + 1" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'reject_unsafe_urls'  => true" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'sslverify'           => true" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
           grep -F "'image/webp'" plugin/wla-inmo/src/Import/RemoteMediaImageInspector.php
           grep -F 'media_handle_sideload' plugin/wla-inmo/src/Import/WordPressRemoteMediaAttachmentStore.php
           grep -F "_wla_inmo_remote_media_sha256" plugin/wla-inmo/src/Import/WordPressRemoteMediaAttachmentStore.php
