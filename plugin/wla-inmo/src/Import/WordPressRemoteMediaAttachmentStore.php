@@ -87,7 +87,7 @@ final class WordPressRemoteMediaAttachmentStore implements RemoteMediaAttachment
 			if ($exception instanceof RemoteMediaException) {
 				throw $exception;
 			}
-			throw new RemoteMediaException('media_attachment_verify_failed', 'Remote media attachment verification failed.', $exception);
+			throw new RemoteMediaException('media_attachment_verify_failed', 'Remote media attachment verification failed.', $exception); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Previous exception is internal context and is never rendered here.
 		}
 
 		return $attachmentId;
