@@ -1,11 +1,12 @@
 # Evidencia — PR 3.9 Media remota segura
 
-Estado: `IN_PROGRESS / QA_PENDING`.
+Estado: `QA_PASSED / READY_TO_MERGE`.
 
 Issue: #63  
 PR: #64  
 Rama: `feat/phase3-remote-media`  
-Base: squash PR #62 `a51cb361f4534935f13c94c72b5d961a88f7a743`
+Base: squash PR #62 `a51cb361f4534935f13c94c72b5d961a88f7a743`  
+Head funcional validado: `e144e2362cd0fea832c6edef317fec747facbb1f`
 
 ## Objetivo
 
@@ -108,7 +109,7 @@ Cubierto:
 - máximo inicial: 40.000.000 píxeles;
 - temporales: nombre server-generated + permisos `0600` fail-closed.
 
-`Content-Length` se usa solo como rechazo temprano; el límite real también se aplica al stream/archivo descargado.
+`Content-Length` se usa solo como rechazo temprano; el límite real también se aplica al stream/archivo descargado. No se ejecuta un benchmark contra Internet en CI: los tests son deterministas y validan los budgets de bytes/timeout/redirects sin depender de terceros.
 
 ## Persistencia / privacidad
 
@@ -188,24 +189,63 @@ No se permiten attachment IDs externos ni meta arbitraria.
 
 Se ejecuta dentro de `Import Row Executor Integration` para WordPress 6.6.2/PHP 8.1 y WordPress latest/PHP 8.3.
 
-## Gates
+## QA final — head `e144e2362cd0fea832c6edef317fec747facbb1f`
 
-- `Remote Media Integration`: PHP 8.1 + PHP 8.3, PHPUnit + PHPStan + source smoke;
-- `Import Row Executor Integration`: WordPress mínimo/latest;
-- `Phase 1 CI`;
-- `Bootstrap Smoke`;
-- `Administration Quality Gate`;
-- regresiones de Persistence, Batch Runner, Catalogue, Activity, Dashboard, Settings y Help;
-- `JSON WLA Integration` cuando cambia el contrato JSON.
+13/13 workflows del head funcional: `SUCCESS`.
 
-## Pendiente para cierre
+- Remote Media Integration — `34161989830` — SUCCESS;
+- Import Row Executor Integration — `34161989809` — SUCCESS;
+- JSON WLA Integration — `34161989796` — SUCCESS;
+- Phase 1 CI — `34161989828` — SUCCESS;
+- Bootstrap Smoke — `34161989803` — SUCCESS;
+- Administration Quality Gate — `34161989806` — SUCCESS;
+- Import Persistence Integration — `34161989876` — SUCCESS;
+- Import Batch Runner Integration — `34161989917` — SUCCESS;
+- Catalogue Quality Integration — `34161989795` — SUCCESS;
+- Activity Integration — `34161989844` — SUCCESS;
+- Dashboard Integration — `34161989945` — SUCCESS;
+- Settings UI Integration — `34161989833` — SUCCESS;
+- Help Center Integration — `34161989846` — SUCCESS.
 
-- ejecutar CI final completamente verde sobre el head funcional/documental final;
-- revisar PR #64 y confirmar threads/findings bloqueantes = 0;
-- registrar run IDs/artifacts relevantes;
-- cambiar este documento a `QA_PASSED / READY_TO_MERGE`;
-- sacar PR #64 de draft y squash merge;
-- verificar cierre de Issue #63.
+### Matrices clave
+
+- Remote Media: PHP 8.1 — SUCCESS;
+- Remote Media: PHP 8.3 — SUCCESS;
+- Row Executor + Media Library: WordPress 6.6.2 / PHP 8.1 — SUCCESS;
+- Row Executor + Media Library: WordPress latest / PHP 8.3 — SUCCESS;
+- JSON WLA: WordPress 6.6.2 / PHP 8.1 — SUCCESS;
+- JSON WLA: WordPress latest / PHP 8.3 — SUCCESS.
+
+### Artifacts relevantes
+
+- Administration E2E: artifact `10032928089`, digest `sha256:fc86284de64460b90f37d0905a298546da4f5592559888b61ad54a18f9282f16`;
+- JSON performance 6.6.2/PHP 8.1: artifact `10032909248`, digest `sha256:f2e2b78b8575bc55eeef8d744f537b0336ecdc9efa619b2f7aa7ae88a29d01a4`;
+- JSON performance latest/PHP 8.3: artifact `10032903982`, digest `sha256:0547dc5e8058f9bffa4e261dfeb6eb511cb543dbc1e2269417627ba71848ba78`.
+
+Remote Media no genera artifact binario propio: su evidencia reproducible está en PHPUnit/PHPStan/source-smoke y la integración WordPress local controlada.
+
+## Review findings
+
+- Review threads abiertos: 0.
+- Reviews con findings: 0.
+- P0/P1 abiertos: 0.
+- Finding de QA corregido: el primer script de integración llamaba helpers inexistentes `setGallery()` / `setFeaturedImage()`; se corrigió para usar el contrato público real `setGalleryIds()` / `setFeaturedImageId()` y ambas matrices quedaron verdes.
+
+## Criterio de merge
+
+Cumplido:
+
+- CI final completamente verde sobre el head funcional;
+- WordPress mínimo/latest validado;
+- regresión JSON/CSV/XLSX pipeline cubierta por gates existentes;
+- seguridad SSRF/MIME/bytes/timeout/redirects cubierta;
+- dry-run sin HTTP por arquitectura y tests;
+- retry/idempotencia validado;
+- privacidad de URL origen validada;
+- review findings bloqueantes = 0;
+- producción sin cambios.
+
+PR #64 puede salir de draft y mergearse por squash.
 
 ## Producción
 
