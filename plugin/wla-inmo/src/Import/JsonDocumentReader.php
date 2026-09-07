@@ -98,11 +98,11 @@ final class JsonDocumentReader
 				} catch (NativeJsonException) {
 					throw new JsonException('normalized_encode_failed', 'Normalized JSON row could not be encoded.', $rowNumber);
 				}
-				if (!is_string($encoded)) {
-					throw new JsonException('normalized_encode_failed', 'Normalized JSON row could not be encoded.', $rowNumber);
-				}
 
 				$line = $encoded . "\n";
+				if (strlen($line) > JsonLinesReader::DEFAULT_MAX_LINE_BYTES) {
+					throw new JsonException('line_limit_exceeded', 'Normalized JSON row exceeds the byte limit.', $rowNumber);
+				}
 				if (fwrite($handle, $line) !== strlen($line)) {
 					throw new JsonException('normalized_write_failed', 'Normalized JSON source could not be written.', $rowNumber);
 				}
@@ -366,9 +366,22 @@ final class JsonDocumentReader
 			throw new JsonException('normalized_path_invalid', 'Normalized JSON destination is invalid.');
 		}
 
-		$handle = fopen($path, 'xb');
+		$previousUmask = umask(0077);
+		try {
+			$handle = fopen($path, 'xb');
+		} finally {
+			umask($previousUmask);
+		}
+
 		if ($handle === false) {
 			throw new JsonException('normalized_open_failed', 'Normalized JSON source could not be created.');
+		}
+
+		$permissionsSet = @chmod($path, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fail closed below if permissions cannot be restricted.
+		if (!$permissionsSet) {
+			fclose($handle);
+			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Remove a source whose permissions cannot be hardened.
+			throw new JsonException('normalized_permissions_failed', 'Normalized JSON source permissions could not be restricted.');
 		}
 
 		return $handle;
