@@ -173,7 +173,7 @@ final class Workspace
 			return self::failure('xlsx_validation_failed');
 		}
 
-		$sheets = isset($inspection['sheets']) && is_array($inspection['sheets']) ? $inspection['sheets'] : array();
+		$sheets = $inspection['sheets'];
 		if ($sheets === array()) {
 			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Empty workbook cleanup.
 			return self::failure('missing_worksheet');

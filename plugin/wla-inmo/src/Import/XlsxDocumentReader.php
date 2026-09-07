@@ -5,6 +5,7 @@ namespace WLA\Inmo\Import;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 // phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Exceptions are internal parser/control-flow messages and are never rendered here.
 final class XlsxDocumentReader
@@ -57,13 +58,13 @@ final class XlsxDocumentReader
 		$sheets = array();
 
 		foreach ($info as $worksheet) {
-			$name = (string) ($worksheet['worksheetName'] ?? '');
+			$name = (string) $worksheet['worksheetName'];
 			if ($name === '') {
 				throw new XlsxException('invalid_sheet_name', 'XLSX workbook contains an invalid worksheet name.');
 			}
 
-			$totalRows = max(0, (int) ($worksheet['totalRows'] ?? 0));
-			$totalColumns = max(0, (int) ($worksheet['totalColumns'] ?? 0));
+			$totalRows = max(0, (int) $worksheet['totalRows']);
+			$totalColumns = max(0, (int) $worksheet['totalColumns']);
 			$sheets[] = array(
 				'name'            => $name,
 				'total_rows'      => $totalRows,
@@ -163,9 +164,6 @@ final class XlsxDocumentReader
 						}
 
 						$data = array_combine($headers, $values);
-						if (!is_array($data)) {
-							throw new XlsxException('row_shape_failed', 'XLSX row could not be associated with its headers.', $rowNumber);
-						}
 
 						try {
 							$encoded = json_encode($data, self::ENCODE_FLAGS);
@@ -206,7 +204,7 @@ final class XlsxDocumentReader
 			}
 
 			$sourceHash = hash_file('sha256', $ndjsonPath);
-			if (!is_string($sourceHash) || preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1) {
+			if (preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1) {
 				@unlink($ndjsonPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Invalid generated source cleanup.
 				throw new XlsxException('source_hash_failed', 'Normalized XLSX source hash could not be generated.');
 			}
@@ -244,7 +242,7 @@ final class XlsxDocumentReader
 			throw new XlsxException('workbook_metadata_failed', 'XLSX workbook metadata could not be read safely.');
 		}
 
-		if (!is_array($info) || $info === array()) {
+		if ($info === array()) {
 			throw new XlsxException('missing_worksheet', 'XLSX workbook does not contain a usable worksheet.');
 		}
 
@@ -281,7 +279,7 @@ final class XlsxDocumentReader
 	}
 
 	/** @return array<int,string> */
-	private function rowValues($worksheet, int $rowNumber, int $columns): array
+	private function rowValues(Worksheet $worksheet, int $rowNumber, int $columns): array
 	{
 		$values = array();
 		for ($column = 1; $column <= $columns; ++$column) {
@@ -311,7 +309,10 @@ final class XlsxDocumentReader
 		return $string;
 	}
 
-	/** @param array<int,string> $values @return array<int,string> */
+	/**
+	 * @param array<int,string> $values
+	 * @return array<int,string>
+	 */
 	private function normalizeHeaders(array $values): array
 	{
 		$headers = array();
@@ -341,6 +342,7 @@ final class XlsxDocumentReader
 		return true;
 	}
 
+	/** @return resource */
 	private function openOutput(string $path)
 	{
 		if ($path === '' || is_file($path)) {
@@ -366,6 +368,7 @@ final class XlsxDocumentReader
 		return $handle;
 	}
 
+	/** @param resource $handle */
 	private function hashLockedHandle($handle): string
 	{
 		if (fseek($handle, 0) !== 0) {

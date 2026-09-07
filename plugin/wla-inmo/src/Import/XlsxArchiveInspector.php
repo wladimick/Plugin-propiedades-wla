@@ -82,7 +82,7 @@ final class XlsxArchiveInspector
 				throw new XlsxException('source_stat_failed', 'XLSX source metadata could not be read.');
 			}
 
-			$sourceBytes = isset($before['size']) ? (int) $before['size'] : 0;
+			$sourceBytes = (int) $before['size'];
 			if ($sourceBytes < 1) {
 				throw new XlsxException('empty_file', 'XLSX file is empty.');
 			}
@@ -146,7 +146,7 @@ final class XlsxArchiveInspector
 
 		for ($index = 0; $index < $entries; ++$index) {
 			$stat = $zip->statIndex($index, ZipArchive::FL_UNCHANGED);
-			if (!is_array($stat) || !isset($stat['name'])) {
+			if ($stat === false) {
 				throw new XlsxException('entry_stat_failed', 'XLSX ZIP entry metadata could not be read.');
 			}
 
@@ -158,8 +158,8 @@ final class XlsxArchiveInspector
 			}
 			$seen[$name] = true;
 
-			$uncompressed = isset($stat['size']) ? (int) $stat['size'] : 0;
-			$compressed = isset($stat['comp_size']) ? (int) $stat['comp_size'] : 0;
+			$uncompressed = (int) $stat['size'];
+			$compressed = (int) $stat['comp_size'];
 			if ($uncompressed < 0 || $compressed < 0) {
 				throw new XlsxException('invalid_entry_size', 'XLSX ZIP entry contains invalid size metadata.');
 			}
@@ -173,7 +173,7 @@ final class XlsxArchiveInspector
 			if ($uncompressed >= 1024 && $compressed > 0 && ($uncompressed / $compressed) > $this->maxExpansionRatio) {
 				throw new XlsxException('expansion_ratio_exceeded', 'XLSX ZIP entry exceeds the allowed expansion ratio.');
 			}
-			if (isset($stat['encryption_method']) && (int) $stat['encryption_method'] !== 0) {
+			if ((int) $stat['encryption_method'] !== 0) {
 				throw new XlsxException('encrypted_entry', 'Encrypted XLSX ZIP entries are not supported.');
 			}
 
@@ -265,10 +265,10 @@ final class XlsxArchiveInspector
 	private function readMetadataIndex(ZipArchive $zip, int $index): string
 	{
 		$stat = $zip->statIndex($index, ZipArchive::FL_UNCHANGED);
-		if (!is_array($stat)) {
+		if ($stat === false) {
 			throw new XlsxException('entry_stat_failed', 'XLSX metadata part could not be inspected.');
 		}
-		$size = isset($stat['size']) ? (int) $stat['size'] : 0;
+		$size = (int) $stat['size'];
 		if ($size < 0 || $size > $this->maxMetadataBytes) {
 			throw new XlsxException('metadata_size_limit_exceeded', 'XLSX metadata part exceeds the byte limit.');
 		}
@@ -279,6 +279,7 @@ final class XlsxArchiveInspector
 		return $content;
 	}
 
+	/** @param resource $handle */
 	private function hashLockedHandle($handle): string
 	{
 		if (fseek($handle, 0) !== 0) {
@@ -304,7 +305,10 @@ final class XlsxArchiveInspector
 		return hash_final($context);
 	}
 
-	/** @param array<string|int,mixed> $before @param array<string|int,mixed> $after */
+	/**
+	 * @param array<int|string,int> $before
+	 * @param array<int|string,int> $after
+	 */
 	private function sameFileState(array $before, array $after): bool
 	{
 		foreach (array('dev', 'ino', 'size', 'mtime') as $key) {
