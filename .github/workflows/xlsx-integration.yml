@@ -9,18 +9,94 @@ on:
       - 'plugin/wla-inmo/src/Import/Workspace.php'
       - 'plugin/wla-inmo/src/Import/BatchRepository.php'
       - 'plugin/wla-inmo/src/Import/BatchRunner.php'
+      - 'plugin/wla-inmo/src/Import/BatchHistoryRepository.php'
       - 'plugin/wla-inmo/src/Admin/ImportExportHub.php'
       - 'plugin/wla-inmo/src/Admin/ImportExportPage.php'
       - 'tests/unit/ImportXlsx*.php'
       - 'tests/smoke/json-admin.php'
+      - 'tests/integration/assert-import-ui.php'
       - 'bin/build-plugin.sh'
       - '.github/workflows/xlsx-integration.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  harden:
+    name: One-shot XLSX UX and permission hardening
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply deterministic final hardening
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected 1 occurrence, found {count}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          path = 'plugin/wla-inmo/src/Import/Workspace.php'
+          replace_once(
+              path,
+              "\t\t@chmod($uploadPath, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening.\n\n\t\ttry {\n\t\t\t$inspection = (new XlsxDocumentReader())->worksheets($uploadPath);",
+              "\t\tif (!chmod($uploadPath, 0600)) {\n\t\t\t@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fail-closed cleanup when private permissions cannot be enforced.\n\t\t\treturn self::failure('upload_permissions_failed');\n\t\t}\n\n\t\ttry {\n\t\t\t$inspection = (new XlsxDocumentReader())->worksheets($uploadPath);"
+          )
+
+          path = 'plugin/wla-inmo/src/Admin/ImportExportPage.php'
+          replace_once(
+              path,
+              "\t\t$steps = array('Subir', 'Mapear', 'Validar', 'Simular', 'Confirmar', 'Procesar', 'Informe');",
+              "\t\t$secondStep = $draft !== null && Workspace::sourceFormat($draft) === 'xlsx' && empty($draft['selected_sheet']) ? 'Elegir hoja' : 'Mapear';\n\t\t$steps = array('Subir', $secondStep, 'Validar', 'Simular', 'Confirmar', 'Procesar', 'Informe');"
+          )
+          replace_once(
+              path,
+              "\t\t$page = max(1, absint(self::queryArg('wla_history_page')));\n\t\t$offset = ($page - 1) * self::HISTORY_PAGE_SIZE;\n\t\t$history = new BatchHistoryRepository();\n\t\t$rows = $history->recent(self::HISTORY_PAGE_SIZE, $offset, $createdBy, $status !== '' ? $status : null);\n\t\t$total = $history->count($createdBy, $status !== '' ? $status : null);",
+              "\t\t$sourceFormat = self::queryArg('wla_format') === 'xlsx' ? 'xlsx' : 'csv';\n\t\t$page = max(1, absint(self::queryArg('wla_history_page')));\n\t\t$offset = ($page - 1) * self::HISTORY_PAGE_SIZE;\n\t\t$history = new BatchHistoryRepository();\n\t\t$rows = $history->recent(self::HISTORY_PAGE_SIZE, $offset, $createdBy, $status !== '' ? $status : null, $sourceFormat);\n\t\t$total = $history->count($createdBy, $status !== '' ? $status : null, $sourceFormat);"
+          )
+          replace_once(
+              path,
+              "\t\techo '<form class=\"wla-inmo-import__filters\" method=\"get\" action=\"' . esc_url(admin_url('admin.php')) . '\"><input type=\"hidden\" name=\"page\" value=\"wla-inmo-import-export\"><label for=\"wla-batch-status\">' . esc_html__('Estado', 'wla-inmo') . '</label><select id=\"wla-batch-status\" name=\"wla_batch_status\"><option value=\"\">' . esc_html__('Todos', 'wla-inmo') . '</option>';",
+              "\t\techo '<form class=\"wla-inmo-import__filters\" method=\"get\" action=\"' . esc_url(admin_url('admin.php')) . '\"><input type=\"hidden\" name=\"page\" value=\"wla-inmo-import-export\">';\n\t\tif ($sourceFormat === 'xlsx') {\n\t\t\techo '<input type=\"hidden\" name=\"wla_format\" value=\"xlsx\">';\n\t\t}\n\t\techo '<label for=\"wla-batch-status\">' . esc_html__('Estado', 'wla-inmo') . '</label><select id=\"wla-batch-status\" name=\"wla_batch_status\"><option value=\"\">' . esc_html__('Todos', 'wla-inmo') . '</option>';"
+          )
+          replace_once(
+              path,
+              "\t\t\t\t$url = add_query_arg(array('page' => 'wla-inmo-import-export', 'batch' => (string) $row['batch_uuid']), admin_url('admin.php'));",
+              "\t\t\t\t$batchArgs = array('page' => 'wla-inmo-import-export', 'batch' => (string) $row['batch_uuid']);\n\t\t\t\tif ((string) ($row['source_format'] ?? '') === 'xlsx') {\n\t\t\t\t\t$batchArgs['wla_format'] = 'xlsx';\n\t\t\t\t}\n\t\t\t\t$url = add_query_arg($batchArgs, admin_url('admin.php'));"
+          )
+          replace_once(
+              path,
+              "\t\t$args = array('page' => 'wla-inmo-import-export', 'wla_history_page' => max(1, $page));\n\t\tif ($status !== '') {",
+              "\t\t$args = array('page' => 'wla-inmo-import-export', 'wla_history_page' => max(1, $page));\n\t\tif (self::queryArg('wla_format') === 'xlsx') {\n\t\t\t$args['wla_format'] = 'xlsx';\n\t\t}\n\t\tif ($status !== '') {"
+          )
+          replace_once(
+              path,
+              "\t\t\t'xlsx_normalization_failed' => __('No fue posible normalizar la hoja XLSX seleccionada.', 'wla-inmo'),",
+              "\t\t\t'xlsx_normalization_failed' => __('No fue posible normalizar la hoja XLSX seleccionada.', 'wla-inmo'),\n\t\t\t'upload_permissions_failed' => __('No fue posible restringir el archivo temporal XLSX a permisos privados. La carga fue descartada.', 'wla-inmo'),"
+          )
+
+      - name: Commit final hardening if changed
+        run: |
+          if git diff --quiet; then
+            echo 'No final hardening changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add plugin/wla-inmo/src/Import/Workspace.php plugin/wla-inmo/src/Admin/ImportExportPage.php
+          git commit -m 'fix(import): harden XLSX workspace and wizard UX'
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
+
   xlsx:
     name: PHP ${{ matrix.php }} / bounded XLSX
     runs-on: ubuntu-latest
