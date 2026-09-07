@@ -10,6 +10,8 @@ final class TargetRegistry
 	public const POST_TITLE = 'post.title';
 	public const POST_CONTENT = 'post.content';
 	public const POST_EXCERPT = 'post.excerpt';
+	public const MEDIA_GALLERY_URLS = 'media.gallery_urls';
+	public const MEDIA_FEATURED_IMAGE_URL = 'media.featured_image_url';
 
 	/**
 	 * @return array<string,array<string,mixed>>
@@ -18,81 +20,63 @@ final class TargetRegistry
 	{
 		$definitions = array(
 			self::POST_TITLE => array(
-				'kind'       => 'post',
-				'field'      => 'title',
-				'type'       => 'string',
-				'private'    => false,
-				'multiple'   => false,
-				'validator'  => 'text',
+				'kind' => 'post', 'field' => 'title', 'type' => 'string', 'private' => false, 'multiple' => false, 'validator' => 'text',
 			),
 			self::POST_CONTENT => array(
-				'kind'       => 'post',
-				'field'      => 'content',
-				'type'       => 'string',
-				'private'    => false,
-				'multiple'   => false,
-				'validator'  => 'textarea',
+				'kind' => 'post', 'field' => 'content', 'type' => 'string', 'private' => false, 'multiple' => false, 'validator' => 'textarea',
 			),
 			self::POST_EXCERPT => array(
-				'kind'       => 'post',
-				'field'      => 'excerpt',
-				'type'       => 'string',
-				'private'    => false,
-				'multiple'   => false,
-				'validator'  => 'textarea',
+				'kind' => 'post', 'field' => 'excerpt', 'type' => 'string', 'private' => false, 'multiple' => false, 'validator' => 'textarea',
+			),
+			self::MEDIA_GALLERY_URLS => array(
+				'kind' => 'media', 'field' => 'gallery_urls', 'type' => 'array', 'private' => true, 'multiple' => true, 'validator' => 'url_list', 'max_items' => 20,
+			),
+			self::MEDIA_FEATURED_IMAGE_URL => array(
+				'kind' => 'media', 'field' => 'featured_image_url', 'type' => 'string', 'private' => true, 'multiple' => false, 'validator' => 'url',
 			),
 		);
 
 		foreach (MetaSchema::definitions() as $field => $definition) {
-			// Gallery attachment IDs are internal WordPress references, not portable import data.
 			if ($field === 'gallery_ids') {
 				continue;
 			}
 
 			$validator = self::metaValidator((string) $field, (string) $definition['type']);
 			$definitions['meta.' . $field] = array(
-				'kind'              => 'meta',
-				'field'             => (string) $field,
-				'meta_key'          => (string) $definition['meta_key'],
-				'type'              => (string) $definition['type'],
-				'private'           => empty($definition['public']),
-				'multiple'          => in_array($field, array('video_urls'), true),
-				'validator'         => $validator,
+				'kind' => 'meta',
+				'field' => (string) $field,
+				'meta_key' => (string) $definition['meta_key'],
+				'type' => (string) $definition['type'],
+				'private' => empty($definition['public']),
+				'multiple' => in_array($field, array('video_urls'), true),
+				'validator' => $validator,
 				'sanitize_callback' => $definition['sanitize_callback'],
 			);
 		}
 
 		$taxonomies = array(
-			'operation'     => TaxonomyRegistry::OPERATION,
+			'operation' => TaxonomyRegistry::OPERATION,
 			'property_type' => TaxonomyRegistry::PROPERTY_TYPE,
-			'region'        => TaxonomyRegistry::REGION,
-			'commune'       => TaxonomyRegistry::COMMUNE,
-			'sector'        => TaxonomyRegistry::SECTOR,
-			'feature'       => TaxonomyRegistry::FEATURE,
+			'region' => TaxonomyRegistry::REGION,
+			'commune' => TaxonomyRegistry::COMMUNE,
+			'sector' => TaxonomyRegistry::SECTOR,
+			'feature' => TaxonomyRegistry::FEATURE,
 		);
 
 		foreach ($taxonomies as $logical => $taxonomy) {
 			$definitions['taxonomy.' . $logical] = array(
-				'kind'      => 'taxonomy',
-				'field'     => $logical,
-				'taxonomy'  => $taxonomy,
-				'type'      => 'string',
-				'private'   => false,
-				'multiple'  => $logical === 'feature',
-				'validator' => 'taxonomy',
+				'kind' => 'taxonomy', 'field' => $logical, 'taxonomy' => $taxonomy, 'type' => 'string', 'private' => false,
+				'multiple' => $logical === 'feature', 'validator' => 'taxonomy',
 			);
 		}
 
 		return $definitions;
 	}
 
-	/**
-	 * @return array<string,mixed>|null
-	 */
+	/** @return array<string,mixed>|null */
 	public static function definition(string $target): ?array
 	{
 		$definitions = self::definitions();
-
 		return $definitions[$target] ?? null;
 	}
 
@@ -104,57 +88,32 @@ final class TargetRegistry
 	public static function isMultiple(string $target): bool
 	{
 		$definition = self::definition($target);
-
 		return $definition !== null && !empty($definition['multiple']);
 	}
 
 	public static function isPrivate(string $target): bool
 	{
 		$definition = self::definition($target);
-
 		return $definition !== null && !empty($definition['private']);
 	}
 
 	private static function metaValidator(string $field, string $type): string
 	{
-		if ($field === 'status') {
-			return 'status';
-		}
-
-		if ($field === 'currency_primary') {
-			return 'currency';
-		}
-
-		if ($field === 'latitude') {
-			return 'latitude';
-		}
-
-		if ($field === 'longitude') {
-			return 'longitude';
-		}
-
-		if ($field === 'video_urls') {
-			return 'url_list';
-		}
-
-		if (in_array($field, array('location_text', 'internal_notes'), true)) {
-			return 'textarea';
-		}
-
-		if (in_array($field, array('price_clp', 'common_expenses_clp', 'bedrooms', 'bathrooms', 'parking', 'storage_units', 'construction_year', 'home_order'), true)) {
-			return 'non_negative_integer';
-		}
-
-		if (in_array($field, array('price_uf', 'price_usd', 'land_area_m2', 'built_area_m2', 'usable_area_m2', 'terrace_area_m2'), true)) {
-			return 'non_negative_number';
-		}
+		if ($field === 'status') { return 'status'; }
+		if ($field === 'currency_primary') { return 'currency'; }
+		if ($field === 'latitude') { return 'latitude'; }
+		if ($field === 'longitude') { return 'longitude'; }
+		if ($field === 'video_urls') { return 'url_list'; }
+		if (in_array($field, array('location_text', 'internal_notes'), true)) { return 'textarea'; }
+		if (in_array($field, array('price_clp', 'common_expenses_clp', 'bedrooms', 'bathrooms', 'parking', 'storage_units', 'construction_year', 'home_order'), true)) { return 'non_negative_integer'; }
+		if (in_array($field, array('price_uf', 'price_usd', 'land_area_m2', 'built_area_m2', 'usable_area_m2', 'terrace_area_m2'), true)) { return 'non_negative_number'; }
 
 		return match ($type) {
 			'boolean' => 'boolean',
 			'integer' => 'integer',
-			'number'  => 'number',
-			'array'   => 'array',
-			default   => in_array($field, array('availability_date', 'last_verified_date'), true) ? 'date' : 'text',
+			'number' => 'number',
+			'array' => 'array',
+			default => in_array($field, array('availability_date', 'last_verified_date'), true) ? 'date' : 'text',
 		};
 	}
 }

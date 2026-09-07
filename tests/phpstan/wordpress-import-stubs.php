@@ -80,3 +80,7 @@ function get_attached_file(int $attachment_id, bool $unfiltered = false): string
 function media_handle_sideload(array $file_array, int $post_id = 0, ?string $desc = null, array $post_data = array()) { return 1; }
 /** @return mixed */
 function wp_delete_attachment(int $post_id, bool $force_delete = false) { return null; }
+function get_post_thumbnail_id(int $post = 0): int|false { return 0; }
+/** @return int|bool */
+function set_post_thumbnail(int $post, int $thumbnail_id) { return true; }
+function delete_post_thumbnail(int $post): bool { return true; }

@@ -4,7 +4,7 @@ namespace WLA\Inmo\Import;
 
 use Throwable;
 
-final class RemoteMediaLibrary
+final class RemoteMediaLibrary implements RemoteMediaLibraryInterface
 {
 	public function __construct(private RemoteMediaAttachmentStoreInterface $store)
 	{

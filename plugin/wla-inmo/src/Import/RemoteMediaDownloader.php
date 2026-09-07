@@ -4,7 +4,7 @@ namespace WLA\Inmo\Import;
 
 use Throwable;
 
-final class RemoteMediaDownloader
+final class RemoteMediaDownloader implements RemoteMediaDownloaderInterface
 {
 	private const DEFAULT_MAX_BYTES = 10485760;
 	private const DEFAULT_TIMEOUT_SECONDS = 15;
@@ -38,8 +38,12 @@ final class RemoteMediaDownloader
 				$this->maxRedirects
 			);
 
-			if ($response->statusCode() < 200 || $response->statusCode() >= 300) {
-				throw new RemoteMediaException('media_http_status', 'Remote media server returned a non-success HTTP status.');
+			$statusCode = $response->statusCode();
+			if ($statusCode < 200 || $statusCode >= 300) {
+				$reason = in_array($statusCode, array(408, 425, 429), true) || $statusCode >= 500
+					? 'media_http_transient_status'
+					: 'media_http_status';
+				throw new RemoteMediaException($reason, 'Remote media server returned a non-success HTTP status.');
 			}
 			$contentLength = $response->contentLength();
 			if ($contentLength !== null && $contentLength > $this->maxBytes) {
