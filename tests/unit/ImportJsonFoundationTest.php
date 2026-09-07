@@ -101,6 +101,123 @@ final class ImportJsonFoundationTest extends TestCase
 		$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
 	}
 
+	public function testMissingFormatVersionIsRejectedBeforeOutputCreation(): void
+	{
+		$input = $this->writeDocument(array(
+			'source_key' => 'portal_a',
+			'properties' => array(array('post' => array('title' => 'Casa'))),
+		));
+		$output = $this->newOutputPath();
+
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $output);
+			self::fail('Expected missing format version exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('missing_format_version', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testInvalidRootIsRejectedBeforeOutputCreation(): void
+	{
+		$input = $this->writeDocument(array(
+			array('format_version' => 1, 'source_key' => 'portal_a'),
+		));
+		$output = $this->newOutputPath();
+
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $output);
+			self::fail('Expected invalid root exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('invalid_root', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testEmptyPropertiesAreRejectedBeforeOutputCreation(): void
+	{
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_a',
+			'properties' => array(),
+		));
+		$output = $this->newOutputPath();
+
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $output);
+			self::fail('Expected empty properties exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('empty_properties', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testByteLimitIsEnforcedBeforeOutputCreation(): void
+	{
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_a',
+			'properties' => array(array('post' => array('title' => str_repeat('x', 512)))),
+		));
+		$output = $this->newOutputPath();
+		$reader = new JsonDocumentReader(128, 100, 16, static fn (string $target): bool => true, static fn (string $target): bool => false);
+
+		try {
+			$reader->normalizeToNdjson($input, $output);
+			self::fail('Expected file size limit exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('file_too_large', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testPropertyCountLimitIsEnforcedBeforeOutputCreation(): void
+	{
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_a',
+			'properties' => array(
+				array('post' => array('title' => 'Uno')),
+				array('post' => array('title' => 'Dos')),
+			),
+		));
+		$output = $this->newOutputPath();
+		$reader = new JsonDocumentReader(1048576, 1, 16, static fn (string $target): bool => true, static fn (string $target): bool => false);
+
+		try {
+			$reader->normalizeToNdjson($input, $output);
+			self::fail('Expected property count limit exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('property_limit_exceeded', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testDecodeDepthLimitIsEnforcedBeforeOutputCreation(): void
+	{
+		$input = $this->newInputPath();
+		file_put_contents(
+			$input,
+			'{"format_version":1,"source_key":"portal_a","properties":[{"meta":{"property_code":{"a":{"b":{"c":"d"}}}}}]}'
+		);
+		$output = $this->newOutputPath();
+		$reader = new JsonDocumentReader(1048576, 100, 4, static fn (string $target): bool => true, static fn (string $target): bool => false);
+
+		try {
+			$reader->normalizeToNdjson($input, $output);
+			self::fail('Expected JSON depth limit exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('malformed_json', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
 	public function testUnknownCanonicalTargetIsRejected(): void
 	{
 		$input = $this->writeDocument(array(
