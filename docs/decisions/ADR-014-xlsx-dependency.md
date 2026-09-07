@@ -33,7 +33,7 @@ El ZIP instalable medido antes de 3.8 pesa **214.103 bytes**.
 
 ## Candidatos medidos
 
-Todos fueron instalados en un proyecto Composer aislado bajo PHP **8.1.34**, sin modificar el `composer.json` productivo. Los tres resolvieron con `composer audit` sin advisories ni paquetes abandoned en las corridas registradas.
+Todos fueron instalados en un proyecto Composer aislado bajo PHP **8.1.34**, sin modificar inicialmente el `composer.json` productivo. Los tres resolvieron con `composer audit` sin advisories ni paquetes abandoned en las corridas registradas.
 
 | Candidato | Runtime packages | Vendor bytes | Vendor ZIP bytes | Estado PHP 8.1 |
 |---|---:|---:|---:|---|
@@ -122,6 +122,22 @@ OpenSpout ganó claramente en tamaño, memoria y tiempo. Sin embargo:
 - la ventaja de OpenSpout no justifica por sí sola introducir una excepción de gobierno y una dependencia antigua.
 
 OpenSpout queda documentado como alternativa futura a reevaluar cuando cambie el mínimo PHP o si los benchmarks reales de producción invalidan el presupuesto actual.
+
+## Implementación resultante
+
+La decisión quedó materializada en PR #62 con:
+
+- `composer.lock` versionado;
+- reader XLSX bounded;
+- preflight ZIP/OOXML antes de PhpSpreadsheet;
+- selección explícita de hoja;
+- normalización XLSX → NDJSON privado;
+- pipeline canónico compartido con CSV/JSON;
+- temporales privados fail-closed;
+- cleanup de uploads XLSX abandonados;
+- CI PHP 8.1/8.3, PHPUnit XLSX, PHPStan, build y smoke.
+
+Esto confirma que ADR-014 no es solo una decisión teórica: es el contrato implementado de 3.8.
 
 ## Reproducibilidad / artifacts
 
