@@ -7,7 +7,7 @@ Versión de entrada: `0.1.0-alpha`
 
 ## Objetivo
 
-Construir un sistema de importación y exportación seguro, repetible y usable para cientos o miles de propiedades, sin convertir un archivo externo en una vía paralela que evite las reglas canónicas de WLA Inmo.
+Construir un sistema de importación seguro, repetible y usable para cientos o miles de propiedades, manteniendo JSON WLA como formato portable de intercambio, sin convertir un archivo externo en una vía paralela que evite las reglas canónicas de WLA Inmo.
 
 La Fase 3 reutiliza `MetaSchema`, `Sanitizer`, `Validator`, taxonomías, capabilities, Search, Quality y Activity. Importar no significa escribir postmeta directamente sin pasar por contratos de dominio.
 
@@ -15,7 +15,7 @@ Fuente funcional: `docs/IMPORT-EXPORT.md`.
 
 ## Estado actual
 
-La planificación original fue refinada durante implementación. Persistencia, executor y runner se separaron antes de exponer UI. Issue #56 fijó la numeración canónica vigente.
+La planificación original fue refinada durante implementación. Persistencia, executor y runner se separaron antes de exponer UI. Issue #56 fijó la numeración canónica vigente. El 2026-09-07 el propietario del proyecto retiró la exportación CSV/XLSX del alcance de Fase 3; el número 3.10 se conserva explícitamente para auditoría.
 
 | PR | Alcance | GitHub | Estado |
 |---|---|---|---|
@@ -26,9 +26,9 @@ La planificación original fue refinada durante implementación. Persistencia, e
 | 3.5 | Runner reanudable de batches | #55 | DONE |
 | 3.6 | UI Importar + historial de batches | #57 | DONE |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE |
-| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | QA_PENDING |
-| 3.9 | Media remota segura | pendiente | NEXT |
-| 3.10 | Exportación CSV/XLSX | pendiente | PLANNED |
+| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | DONE |
+| 3.9 | Media remota segura | #64 / #63 | IN_PROGRESS / QA_PENDING |
+| 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE |
 | 3.11 | Rollback seguro de importación | pendiente | PLANNED |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED |
 
@@ -44,7 +44,7 @@ La planificación original fue refinada durante implementación. Persistencia, e
 8. **Sin side effects ocultos.** Search, Quality y Activity se sincronizan de forma observable.
 9. **Media remota separada.** No forma parte del dry-run.
 10. **Errores por fila.** Un dato inválido no corrompe el batch completo.
-11. **Sin fórmulas ejecutables.** Exportaciones neutralizan spreadsheet/formula injection.
+11. **Sin fórmulas ejecutables.** Fórmulas en archivos CSV/XLSX de entrada son datos inertes; exportación CSV/XLSX está fuera del alcance de Fase 3.
 12. **Permisos reales.** Capability + nonce + autorización por objeto/operación.
 13. **Sin dependencia de producción.** Fixtures sintéticos y WordPress limpio.
 14. **No adelantar Fase 9.** El migrador Woo/ACF/Propiedades Martínez permanece separado.
@@ -177,9 +177,9 @@ Evidencia: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
 
 ## PR 3.8 — XLSX streaming + ADR de dependencia
 
-Estado: `QA_PENDING`. PR #62 / Issue #61.
+Estado: `DONE`. PR #62 / Issue #61. Squash `a51cb361f4534935f13c94c72b5d961a88f7a743`.
 
-Decisión: **PhpSpreadsheet 3.10.7 exacta**, implementando D31 mediante ADR-014 y lectura bounded por chunks de 500 filas.
+Decisión: **PhpSpreadsheet 3.10.7 exacta en lock**, implementando D31 mediante ADR-014 y lectura bounded por chunks de 500 filas.
 
 Incluye:
 
@@ -198,7 +198,8 @@ Incluye:
 - historial XLSX filtrado en su pestaña;
 - PHPUnit XLSX, PHPStan, build/smoke y matriz PHP 8.1/8.3;
 - integración WordPress para handler, cleanup e historial;
-- benchmark 1k/5k y artifacts de decisión documentados.
+- benchmark 1k/5k y artifacts de decisión documentados;
+- 15/15 workflows finales verdes antes del merge.
 
 Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
@@ -211,24 +212,50 @@ Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 - XLSX válido → filas canónicas — DONE;
 - malformado/archive bomb → rechazo controlado — DONE;
 - datasets 1k/5k medidos — DONE;
-- ZIP release comparado antes/después — QA final pendiente de registrar;
-- regresión CSV + JSON completa — QA final pendiente;
-- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3 — QA final pendiente;
-- evidencia `QA_PASSED / READY_TO_MERGE` — pendiente del head final.
+- ZIP release comparado antes/después — DONE;
+- regresión CSV + JSON completa — DONE;
+- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3 — DONE;
+- evidencia QA previa a merge — DONE.
 
 ## PR 3.9 — Media remota segura
 
-Estado: `NEXT` después del merge de 3.8.
+Estado: `IN_PROGRESS / QA_PENDING`. PR #64 / Issue #63.
 
-Objetivo: importar imágenes después de resolver propiedad sin convertir el plugin en SSRF proxy.
+Objetivo: importar imágenes después de resolver/persistir la propiedad sin convertir el plugin en SSRF proxy.
 
-Incluye allowlist de esquemas, resolución DNS/IP, bloqueo de rangos privados/reservados/cloud metadata, revalidación de redirects, timeout/bytes/MIME, máximo de imágenes, deduplicación, retries limitados y ninguna descarga en dry-run.
+Implementado en la rama:
+
+- `media.gallery_urls` y `media.featured_image_url` como targets portables, nunca `gallery_ids` externos;
+- cero HTTP durante dry-run;
+- SSRF policy para scheme/host/port/DNS A+AAAA/IP y redirects mediante WordPress safe HTTP API;
+- streaming bounded a temporales `0600`;
+- 10 MiB/imagen, timeout 15 s, máximo 3 redirects y 20 imágenes;
+- JPEG/PNG/WebP; SVG remoto rechazado;
+- MIME/firma/dimensiones/píxeles/SHA-256 verificados;
+- Media Library con deduplicación WLA por SHA-256;
+- source URL original no persistida, solo hash técnico;
+- galería y featured image persistidos como referencias WordPress canónicas;
+- fallas permanentes de media como warnings;
+- fallas transitorias con retry acotado y error sin checkpoint cuando persisten;
+- RowExecutor separa `media.*`, hace upsert primero y procesa media después;
+- retry posterior re-resuelve identidad para no duplicar propiedades;
+- sección `media` en JSON WLA y export JSON desde URLs públicas de attachments canónicos;
+- tests unitarios y WordPress integration en PHP 8.1/8.3.
+
+Evidencia: `docs/evidence/phase-3/PR-3.9-REMOTE-MEDIA.md`.
 
 ## PR 3.10 — Exportación CSV/XLSX
 
-Estado: `PLANNED`.
+Estado: `OMITTED / OUT_OF_SCOPE`.
 
-Incluye filtros, CSV UTF-8, XLSX con dependencia aprobada en 3.8, streaming/chunks, neutralización de formula injection, privados excluidos por defecto y pruebas de caracteres internacionales/saltos/delimitadores.
+Decisión de alcance aprobada el 2026-09-07. **No es requisito de salida de Fase 3**. Se conserva el número para auditoría y no se renumeran 3.11/3.12.
+
+- no se implementa export CSV en esta fase;
+- no se implementa export XLSX en esta fase;
+- JSON WLA export permanece porque fue implementado en 3.7;
+- puede reconsiderarse en un release futuro si existe necesidad concreta.
+
+Registro: `docs/decisions/PHASE-3-SCOPE-2026-09-07.md`.
 
 ## PR 3.11 — Rollback seguro
 
@@ -242,7 +269,7 @@ No prometer rollback total cuando no pueda demostrarse seguridad.
 
 Estado: `PLANNED`.
 
-Debe cubrir regresión Fase 1/2, formatos CSV/JSON/XLSX, archivos malformados, encoding, duplicados/conflictos, stale dry-run, resume/idempotencia, datasets 100/1k/5k, peak memory, límites, formula injection, SSRF, capability/nonce/IDOR, round-trip, rollback, accesibilidad/responsive, artifact/checksum y evidencia final.
+Debe cubrir regresión Fase 1/2, formatos CSV/JSON/XLSX, archivos malformados, encoding, duplicados/conflictos, stale dry-run, resume/idempotencia, datasets 100/1k/5k, peak memory, límites, fórmulas de entrada, SSRF, capability/nonce/IDOR, JSON round-trip, rollback, accesibilidad/responsive, artifact/checksum y evidencia final.
 
 ## Persistencia de batches
 
@@ -264,23 +291,25 @@ El modelo debe representar como mínimo UUID, tipo/formato, source key, usuario 
 
 - nunca ejecutar contenido;
 - fórmulas de entrada son datos;
-- export neutraliza formula injection;
-- encoding inválido se reporta.
+- encoding inválido se reporta;
+- exportación CSV/XLSX fuera del alcance actual.
 
 ### JSON
 
 - tamaño/profundidad/count limits;
 - schema/shape allowlisted;
 - claves desconocidas no se convierten en meta arbitraria;
-- fuente normalizada privada y hash-verificada.
+- fuente normalizada privada y hash-verificada;
+- sección `media` portable solo mediante targets allowlisted.
 
 ### Media remota
 
-- SSRF protection antes/después de redirects;
+- SSRF protection antes del request y nuevamente en redirects mediante safe HTTP API;
 - bloqueo localhost/private/link-local/cloud metadata;
 - límite de redirects;
-- MIME/bytes reales;
-- sin SVG remoto en primera implementación salvo decisión posterior.
+- MIME/bytes/dimensiones reales;
+- sin SVG remoto;
+- upsert antes de media y checkpoint después de resultado de media.
 
 ## Performance budgets iniciales
 
@@ -302,18 +331,18 @@ Evidencia bajo `docs/evidence/phase-3/`.
 
 ## Fuera de alcance
 
-Fase 3 no implementa frontend público final (Fase 4), WLA Inmo Light (Fase 5), SEO completo (Fase 6), leads/indicadores (Fase 7), hardening global final (Fase 8) ni migrador específico WooCommerce/ACF/WPCode de Propiedades Martínez (Fase 9).
+Fase 3 no implementa exportación CSV/XLSX (decisión 2026-09-07), frontend público final (Fase 4), WLA Inmo Light (Fase 5), SEO completo (Fase 6), leads/indicadores (Fase 7), hardening global final (Fase 8) ni migrador específico WooCommerce/ACF/WPCode de Propiedades Martínez (Fase 9).
 
 ## Quality Gate de salida
 
 Fase 3 pasa a `DONE` solo cuando:
 
-1. PR 3.1–3.12 aplicables estén mergeadas con evidencia;
+1. PR 3.1–3.12 **aplicables** estén mergeadas con evidencia; PR 3.10 queda explícitamente excluida por `OMITTED / OUT_OF_SCOPE`;
 2. CSV/JSON/XLSX usen pipeline canónico común;
 3. dry-run demuestre cero mutaciones;
 4. resume/idempotencia estén probados;
 5. no existan findings críticos/altos abiertos;
-6. fórmulas/SSRF/archivos maliciosos tengan cobertura negativa;
+6. fórmulas de entrada, SSRF y archivos maliciosos tengan cobertura negativa;
 7. performance/memoria estén documentados;
 8. rollback no prometa más de lo demostrable;
 9. artifact/checksum final estén registrados;
