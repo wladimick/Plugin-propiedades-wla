@@ -9,11 +9,16 @@ final class RowExecutor
 {
 	private IdentityResolver $identityResolver;
 	private PropertyWriterInterface $writer;
+	private ?RemoteMediaRowProcessorInterface $remoteMediaProcessor;
 
-	public function __construct(IdentityResolver $identityResolver, PropertyWriterInterface $writer)
-	{
+	public function __construct(
+		IdentityResolver $identityResolver,
+		PropertyWriterInterface $writer,
+		?RemoteMediaRowProcessorInterface $remoteMediaProcessor = null
+	) {
 		$this->identityResolver = $identityResolver;
 		$this->writer = $writer;
+		$this->remoteMediaProcessor = $remoteMediaProcessor;
 	}
 
 	public function execute(DryRunResult $dryRun, string $sourceKey): RowExecutionResult
@@ -34,14 +39,10 @@ final class RowExecutor
 		$values = $dryRun->values();
 		$payloadError = $this->validatePayload($values, $dryRun->preservedTargets());
 		if ($payloadError !== null) {
-			return $this->error(
-				$rowNumber,
-				$payloadError['code'],
-				$payloadError['target'],
-				null,
-				$warnings
-			);
+			return $this->error($rowNumber, $payloadError['code'], $payloadError['target'], null, $warnings);
 		}
+
+		$mediaValues = $this->extractMediaValues($values);
 
 		$externalId = $this->identityValue($values, 'meta.external_id');
 		$propertyCode = $this->identityValue($values, 'meta.property_code');
@@ -59,13 +60,7 @@ final class RowExecutor
 
 		$stateError = $this->validateDryRunState($dryRun, $resolution);
 		if ($stateError !== null) {
-			return $this->error(
-				$rowNumber,
-				$stateError['code'],
-				$stateError['target'],
-				$resolution->propertyId(),
-				$warnings
-			);
+			return $this->error($rowNumber, $stateError['code'], $stateError['target'], $resolution->propertyId(), $warnings);
 		}
 
 		if ($resolution->status() === IdentityResolution::NEW) {
@@ -88,9 +83,13 @@ final class RowExecutor
 				return $this->error($rowNumber, 'invalid_created_property_id', 'persistence', null, $warnings);
 			}
 
+			$mediaError = $this->processRemoteMedia($propertyId, $mediaValues, $warnings);
+			if ($mediaError !== null) {
+				return $this->error($rowNumber, $mediaError['code'], $mediaError['target'], $propertyId, $warnings);
+			}
+
 			$result = RowExecutionResult::created($rowNumber, $propertyId, $resolution->reason(), $warnings);
 			$this->afterExecute($result);
-
 			return $result;
 		}
 
@@ -109,9 +108,13 @@ final class RowExecutor
 			return $this->error($rowNumber, 'unexpected_persistence_failure', 'persistence', $propertyId, $warnings);
 		}
 
+		$mediaError = $this->processRemoteMedia($propertyId, $mediaValues, $warnings);
+		if ($mediaError !== null) {
+			return $this->error($rowNumber, $mediaError['code'], $mediaError['target'], $propertyId, $warnings);
+		}
+
 		$result = RowExecutionResult::updated($rowNumber, $propertyId, $resolution->reason(), $warnings);
 		$this->afterExecute($result);
-
 		return $result;
 	}
 
@@ -126,7 +129,6 @@ final class RowExecutor
 			if (!TargetRegistry::isAllowed($target)) {
 				return array('code' => 'unknown_preserved_target', 'target' => $target);
 			}
-
 			if (array_key_exists($target, $values)) {
 				return array('code' => 'inconsistent_preserved_target', 'target' => $target);
 			}
@@ -138,7 +140,18 @@ final class RowExecutor
 				return array('code' => 'unknown_target', 'target' => (string) $target);
 			}
 
-			if (($definition['kind'] ?? '') !== 'taxonomy') {
+			$kind = (string) ($definition['kind'] ?? '');
+			if ($kind === 'media') {
+				if (!empty($definition['multiple']) && !is_array($value)) {
+					return array('code' => 'invalid_media_payload', 'target' => (string) $target);
+				}
+				if (empty($definition['multiple']) && $value !== null && !is_string($value)) {
+					return array('code' => 'invalid_media_payload', 'target' => (string) $target);
+				}
+				continue;
+			}
+
+			if ($kind !== 'taxonomy') {
 				continue;
 			}
 
@@ -162,19 +175,71 @@ final class RowExecutor
 	}
 
 	/**
-	 * Prevent a stale dry-run from silently targeting a different property.
-	 * A NEW dry-run becoming MATCH is intentionally allowed: that is the retry/
-	 * concurrent-worker path that makes create idempotent.
+	 * Remove import-only media targets so the canonical property writer never sees remote URLs.
 	 *
+	 * @param array<string,mixed> $values Values mutated to persistence-only targets.
+	 * @return array<string,mixed>
+	 */
+	private function extractMediaValues(array &$values): array
+	{
+		$mediaValues = array();
+		foreach (array_keys($values) as $target) {
+			$definition = TargetRegistry::definition((string) $target);
+			if ($definition === null || ($definition['kind'] ?? '') !== 'media') {
+				continue;
+			}
+			$mediaValues[(string) $target] = $values[$target];
+			unset($values[$target]);
+		}
+		return $mediaValues;
+	}
+
+	/**
+	 * @param array<string,mixed>                         $mediaValues Import-only media values.
+	 * @param array<int,array{code:string,target:string}> $warnings Existing warnings, mutated with media warnings.
 	 * @return array{code:string,target:string}|null
 	 */
+	private function processRemoteMedia(int $propertyId, array $mediaValues, array &$warnings): ?array
+	{
+		if ($mediaValues === array()) {
+			return null;
+		}
+
+		try {
+			if ($this->remoteMediaProcessor === null) {
+				$this->remoteMediaProcessor = self::defaultRemoteMediaProcessor();
+			}
+			$warnings = array_merge($warnings, $this->remoteMediaProcessor->process($propertyId, $mediaValues));
+		} catch (RemoteMediaException $exception) {
+			return array('code' => $exception->reason(), 'target' => 'media');
+		} catch (Throwable) {
+			return array('code' => 'media_processing_failed', 'target' => 'media');
+		}
+
+		return null;
+	}
+
+	private static function defaultRemoteMediaProcessor(): RemoteMediaRowProcessorInterface
+	{
+		return new RemoteMediaRowProcessor(
+			new RemoteMediaDownloader(
+				new RemoteMediaUrlPolicy(),
+				new RemoteMediaWordPressHttpClient(),
+				new RemoteMediaWordPressTempFileFactory(),
+				new RemoteMediaImageInspector()
+			),
+			new RemoteMediaLibrary(new WordPressRemoteMediaAttachmentStore()),
+			new WordPressRemoteMediaPropertyStore()
+		);
+	}
+
+	/** @return array{code:string,target:string}|null */
 	private function validateDryRunState(DryRunResult $dryRun, IdentityResolution $resolution): ?array
 	{
 		if ($dryRun->status() === DryRunResult::STATUS_NEW) {
 			if ($dryRun->propertyId() !== null) {
 				return array('code' => 'invalid_dry_run_state', 'target' => 'dry_run');
 			}
-
 			return null;
 		}
 
@@ -186,48 +251,33 @@ final class RowExecutor
 		if ($expectedPropertyId === null || $expectedPropertyId < 1) {
 			return array('code' => 'dry_run_property_missing', 'target' => 'dry_run');
 		}
-
 		if ($resolution->status() === IdentityResolution::NEW) {
 			return array('code' => 'identity_missing_since_dry_run', 'target' => 'identity');
 		}
-
 		if ($resolution->propertyId() !== $expectedPropertyId) {
 			return array('code' => 'identity_changed_since_dry_run', 'target' => 'identity');
 		}
-
 		return null;
 	}
 
-	/**
-	 * @param array<string,mixed> $values Canonical values.
-	 */
+	/** @param array<string,mixed> $values Canonical values. */
 	private function identityValue(array $values, string $target): string
 	{
 		if (!array_key_exists($target, $values) || $values[$target] === null) {
 			return '';
 		}
-
 		$value = $values[$target];
 		if (!is_scalar($value)) {
 			return '';
 		}
-
 		return trim((string) $value);
 	}
 
-	/**
-	 * @param array<int,array{code:string,target:string}> $warnings Warnings inherited from dry-run.
-	 */
-	private function error(
-		int $rowNumber,
-		string $code,
-		string $target,
-		?int $propertyId,
-		array $warnings
-	): RowExecutionResult {
+	/** @param array<int,array{code:string,target:string}> $warnings Warnings inherited from dry-run. */
+	private function error(int $rowNumber, string $code, string $target, ?int $propertyId, array $warnings): RowExecutionResult
+	{
 		$result = RowExecutionResult::error($rowNumber, $code, $target, $propertyId, $warnings);
 		$this->afterExecute($result);
-
 		return $result;
 	}
 

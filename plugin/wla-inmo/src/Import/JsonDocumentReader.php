@@ -144,9 +144,7 @@ final class JsonDocumentReader
 		);
 	}
 
-	/**
-	 * @return array{0:string,1:string}
-	 */
+	/** @return array{0:string,1:string} */
 	private function readLocked(string $path): array
 	{
 		if ($path === '' || !is_file($path) || !is_readable($path)) {
@@ -280,7 +278,7 @@ final class JsonDocumentReader
 	 */
 	private function flattenProperty(array $property, int $rowNumber): array
 	{
-		$allowedSections = array('post', 'meta', 'taxonomies');
+		$allowedSections = array('post', 'meta', 'taxonomies', 'media');
 		foreach (array_keys($property) as $section) {
 			if (!in_array((string) $section, $allowedSections, true)) {
 				throw new JsonException('unknown_property_section', 'JSON property contains an unknown section.', $rowNumber);
@@ -291,6 +289,7 @@ final class JsonDocumentReader
 		$this->flattenSection($row, $property['post'] ?? array(), 'post', $rowNumber);
 		$this->flattenSection($row, $property['meta'] ?? array(), 'meta', $rowNumber);
 		$this->flattenSection($row, $property['taxonomies'] ?? array(), 'taxonomy', $rowNumber);
+		$this->flattenSection($row, $property['media'] ?? array(), 'media', $rowNumber);
 
 		if ($row === array()) {
 			throw new JsonException('empty_property', 'JSON property contains no importable values.', $rowNumber);

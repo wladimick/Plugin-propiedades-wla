@@ -17,9 +17,10 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
-- PR 3.1–3.7: `DONE`
-- PR 3.8: `QA_PENDING` — PR #62 / Issue #61
-- Próximo alcance después de 3.8: **PR 3.9 — Media remota segura**
+- PR 3.1–3.8: `DONE`
+- PR 3.9: `IN_PROGRESS / QA_PENDING` — PR #64 / Issue #63
+- PR 3.10: `OMITTED / OUT_OF_SCOPE` — decisión de alcance 2026-09-07
+- Próximo alcance aplicable después de 3.9: **PR 3.11 — Rollback seguro**
 
 ## Fases
 
@@ -28,7 +29,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-014 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | IN_PROGRESS | PR #46/#49/#51/#53/#55/#57/#60/#62, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
+| 3 | Import/Export | IN_PROGRESS | PR #46/#49/#51/#53/#55/#57/#60/#62/#64, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -43,7 +44,7 @@ Estado: `DONE`.
 
 Arquitectura, requisitos, modelo, stack, metodología, testing, quality gates, administración, seguridad, SEO/GEO/AEO, migración, ADR y decisiones D01–D75 están documentados.
 
-ADR-014 concreta D31 para XLSX sin reemplazarla: PhpSpreadsheet 3.10.7 exacta, encapsulada en Import/Export y lectura bounded.
+ADR-014 concreta D31 para XLSX sin reemplazarla: PhpSpreadsheet 3.10.7 exacta en lock, encapsulada en Import/Export y lectura bounded.
 
 ## Fase 1 — Core del plugin
 
@@ -101,7 +102,7 @@ Backlog canónico: `docs/PHASE-3-BACKLOG.md`.
 Contrato funcional: `docs/IMPORT-EXPORT.md`.  
 Evidencia: `docs/evidence/phase-3/`.
 
-La numeración original fue refinada durante implementación. Persistencia, executor y runner se separaron antes de exponer UI; Issue #56 formalizó que la UI pasara a 3.6 y que los hitos restantes se renumeraran sin cambiar su alcance.
+La numeración original fue refinada durante implementación. Persistencia, executor y runner se separaron antes de exponer UI; Issue #56 formalizó que la UI pasara a 3.6. El 2026-09-07 se aprobó retirar la exportación CSV/XLSX del alcance de Fase 3 sin renumerar los hitos posteriores.
 
 | PR | Alcance | GitHub | Estado | Evidencia |
 |---|---|---|---|---|
@@ -112,9 +113,9 @@ La numeración original fue refinada durante implementación. Persistencia, exec
 | 3.5 | Runner reanudable de batches | #55 | DONE | `PR-3.5-BATCH-RUNNER.md` |
 | 3.6 | UI Importar + historial | #57 | DONE | `PR-3.6-IMPORT-UI.md` |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE | `PR-3.7-JSON-WLA.md` |
-| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | QA_PENDING | `PR-3.8-XLSX.md` |
-| 3.9 | Media remota segura | pendiente | NEXT | pendiente |
-| 3.10 | Exportación CSV/XLSX | pendiente | PLANNED | pendiente |
+| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | DONE | `PR-3.8-XLSX.md` |
+| 3.9 | Media remota segura | #64 / #63 | IN_PROGRESS / QA_PENDING | `PR-3.9-REMOTE-MEDIA.md` |
+| 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE | `docs/decisions/PHASE-3-SCOPE-2026-09-07.md` |
 | 3.11 | Rollback seguro | pendiente | PLANNED | pendiente |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
 
@@ -220,10 +221,10 @@ Evidencia: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
 
 ### PR 3.8 — XLSX streaming + ADR/benchmark
 
-Estado: `QA_PENDING`. PR #62 / Issue #61.
+Estado: `DONE`. PR #62 / Issue #61. Squash `a51cb361f4534935f13c94c72b5d961a88f7a743`.
 
 - ADR-014 `ACCEPTED / IMPLEMENTS D31`;
-- PhpSpreadsheet 3.10.7 exacta y `composer.lock` versionado;
+- PhpSpreadsheet 3.10.7 exacta en `composer.lock`;
 - benchmark reproducible OpenSpout 4.24.5 vs PhpSpreadsheet 3.10.7/5.8.1;
 - preflight ZIP/OOXML bounded;
 - protección Zip Slip/path traversal, archive expansion, macros/binarios y relationships externos;
@@ -235,17 +236,46 @@ Estado: `QA_PENDING`. PR #62 / Issue #61.
 - pipeline compartido con CSV/JSON para mapping, dry-run, identidad, runner y executor;
 - UI XLSX integrada y historial filtrado por formato;
 - PHPUnit XLSX, PHPStan, build/smoke y CI PHP 8.1/8.3;
-- integración WordPress para handler de hoja, cleanup e historial.
+- integración WordPress para handler de hoja, cleanup e historial;
+- 15/15 workflows finales verdes antes de squash merge.
 
 Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
-Al obtener CI final verde, este hito pasa a `READY_TO_MERGE`, se registra artifact/checksum final y PR #62 se mergea por squash.
+### PR 3.9 — Media remota segura
+
+Estado: `IN_PROGRESS / QA_PENDING`. PR #64 / Issue #63.
+
+- targets portables `media.gallery_urls` y `media.featured_image_url`;
+- URLs remotas separadas del `PropertyWriter`;
+- cero HTTP en dry-run;
+- política SSRF WLA + `wp_safe_remote_get()`;
+- DNS A/AAAA, bloqueo de rangos no públicos y URLs inseguras;
+- streaming bounded a temporal `0600`;
+- 10 MiB, 15 s, 3 redirects y máximo 20 imágenes;
+- JPEG/PNG/WebP, firma/MIME/dimensiones/SHA-256;
+- Media Library con deduplicación WLA por SHA-256;
+- URL de origen no persistida en claro;
+- `gallery_ids` y featured image canónicos;
+- errores permanentes como warnings; errores transitorios con retry y sin checkpoint al agotarse;
+- upsert antes de media; retry re-resuelve identidad para evitar duplicate create;
+- JSON WLA acepta sección `media` y exporta URLs públicas de attachments canónicos;
+- tests unitarios + integración WordPress real en matriz mínima/latest.
+
+Evidencia: `docs/evidence/phase-3/PR-3.9-REMOTE-MEDIA.md`.
+
+### PR 3.10 — Exportación CSV/XLSX
+
+Estado: `OMITTED / OUT_OF_SCOPE`.
+
+Decisión aprobada el 2026-09-07. No es requisito de salida de Fase 3. La importación CSV/XLSX permanece; JSON WLA export permanece. No se renumeran 3.11/3.12.
+
+Registro: `docs/decisions/PHASE-3-SCOPE-2026-09-07.md`.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.7 cerrados.
+No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.8 cerrados.
 
-Para 3.8 no hay review threads abiertos conocidos; el estado final depende del último head de QA.
+Para 3.9 el estado final depende del último head de QA y de revisión de threads antes del merge.
 
 Deuda de prioridad baja heredada:
 
