@@ -27,10 +27,6 @@ final class WordPressRemoteMediaAttachmentStore implements RemoteMediaAttachment
 			)
 		);
 
-		if (!is_array($ids)) {
-			return null;
-		}
-
 		foreach ($ids as $id) {
 			$attachmentId = (int) $id;
 			if ($attachmentId < 1 || get_post_type($attachmentId) !== 'attachment') {
