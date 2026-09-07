@@ -89,7 +89,7 @@ final class JsonExporter
 		fclose($handle);
 		$hash = hash_file('sha256', $path);
 		$bytes = filesize($path);
-		if (!is_string($hash) || preg_match('/^[a-f0-9]{64}$/', $hash) !== 1 || $bytes === false) {
+		if ($hash === false || preg_match('/^[a-f0-9]{64}$/', $hash) !== 1 || $bytes === false) {
 			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Invalid export artifact must not survive.
 			throw new JsonException('export_hash_failed', 'JSON export checksum could not be generated.');
 		}
@@ -108,15 +108,9 @@ final class JsonExporter
 	private function encode(mixed $value): string
 	{
 		try {
-			$encoded = json_encode($value, self::ENCODE_FLAGS);
+			return json_encode($value, self::ENCODE_FLAGS);
 		} catch (NativeJsonException) {
 			throw new JsonException('export_encode_failed', 'JSON export contains a value that cannot be encoded.');
 		}
-
-		if (!is_string($encoded)) {
-			throw new JsonException('export_encode_failed', 'JSON export contains a value that cannot be encoded.');
-		}
-
-		return $encoded;
 	}
 }
