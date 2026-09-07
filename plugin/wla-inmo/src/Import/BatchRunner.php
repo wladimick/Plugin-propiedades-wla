@@ -199,7 +199,7 @@ final class BatchRunner
 				$cursorOffset = $nextOffset;
 				++$processedThisRun;
 			}
-		} catch (SourceException $exception) {
+		} catch (CsvException|JsonException $exception) {
 			$reason = self::sourceFailureReason($exception->reason());
 			$rowCodes = $reason === 'source_parse_failed' ? array($exception->reason()) : array();
 
