@@ -21,7 +21,7 @@ final class BatchHistoryRepository
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	public function recent(int $limit = 20, int $offset = 0, ?int $createdBy = null, ?string $status = null): array
+	public function recent(int $limit = 20, int $offset = 0, ?int $createdBy = null, ?string $status = null, ?string $sourceFormat = null): array
 	{
 		if ($this->wpdb === null) {
 			return array();
@@ -50,8 +50,17 @@ final class BatchHistoryRepository
 			$args[] = $status;
 		}
 
+		if ($sourceFormat !== null && $sourceFormat !== '') {
+			$sourceFormat = sanitize_key($sourceFormat);
+			if (!in_array($sourceFormat, array('csv', 'json'), true)) {
+				return array();
+			}
+			$where[] = 'source_format = %s';
+			$args[] = $sourceFormat;
+		}
+
 		$table = BatchSchema::tableName($this->wpdb);
-		$sql = "SELECT batch_uuid, source_key, status, created_by, total_rows, cursor_row, processed_rows, created_count, updated_count, skipped_count, warning_count, error_count, revision, created_at, updated_at, started_at, completed_at FROM {$table} WHERE " . implode(' AND ', $where) . ' ORDER BY id DESC LIMIT %d OFFSET %d';
+		$sql = "SELECT batch_uuid, source_key, source_format, status, created_by, total_rows, cursor_row, processed_rows, created_count, updated_count, skipped_count, warning_count, error_count, revision, created_at, updated_at, started_at, completed_at FROM {$table} WHERE " . implode(' AND ', $where) . ' ORDER BY id DESC LIMIT %d OFFSET %d';
 		$args[] = $limit;
 		$args[] = $offset;
 		$query = $this->wpdb->prepare($sql, $args);
@@ -64,7 +73,7 @@ final class BatchHistoryRepository
 		return array_map(array(self::class, 'normalizeRow'), $rows);
 	}
 
-	public function count(?int $createdBy = null, ?string $status = null): int
+	public function count(?int $createdBy = null, ?string $status = null, ?string $sourceFormat = null): int
 	{
 		if ($this->wpdb === null) {
 			return 0;
@@ -91,6 +100,15 @@ final class BatchHistoryRepository
 			$args[] = $status;
 		}
 
+		if ($sourceFormat !== null && $sourceFormat !== '') {
+			$sourceFormat = sanitize_key($sourceFormat);
+			if (!in_array($sourceFormat, array('csv', 'json'), true)) {
+				return 0;
+			}
+			$where[] = 'source_format = %s';
+			$args[] = $sourceFormat;
+		}
+
 		$table = BatchSchema::tableName($this->wpdb);
 		$sql = "SELECT COUNT(*) FROM {$table} WHERE " . implode(' AND ', $where);
 		if ($args !== array()) {
@@ -115,6 +133,10 @@ final class BatchHistoryRepository
 			if (array_key_exists($field, $row)) {
 				$row[$field] = (int) $row[$field];
 			}
+		}
+
+		if (!isset($row['source_format']) || !in_array((string) $row['source_format'], array('csv', 'json'), true)) {
+			$row['source_format'] = 'csv';
 		}
 
 		return $row;

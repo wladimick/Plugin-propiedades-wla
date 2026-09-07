@@ -1,6 +1,6 @@
 # Catálogo base de casos de prueba
 
-Este catálogo define los casos mínimos que deben existir a medida que cada módulo sea implementado. `PLANNED` significa documentado pero aún no automatizado/ejecutado.
+Este catálogo define los casos mínimos que deben existir a medida que cada módulo sea implementado. `PLANNED` significa documentado pero aún no automatizado/ejecutado. `DONE` requiere automatización o evidencia reproducible enlazada desde el PR/fase correspondiente.
 
 ## Core
 
@@ -72,7 +72,7 @@ Este catálogo define los casos mínimos que deben existir a medida que cada mó
 |---|---|---|---|
 | IMPORT-T001 | CSV válido dry-run | Integration | PLANNED |
 | IMPORT-T002 | XLSX válido dry-run | Integration | PLANNED |
-| IMPORT-T003 | JSON válido dry-run | Integration | PLANNED |
+| IMPORT-T003 | JSON válido dry-run | Integration | DONE — PR #60 |
 | IMPORT-T004 | Archivo vacío | Negative | PLANNED |
 | IMPORT-T005 | Archivo corrupto | Negative | PLANNED |
 | IMPORT-T006 | Mapeo automático de columnas conocidas | Unit/Integration | PLANNED |
@@ -92,9 +92,48 @@ Este catálogo define los casos mínimos que deben existir a medida que cada mó
 | IMPORT-T020 | Importación interrumpida puede reanudar/recuperar | Resilience | PLANNED |
 | IMPORT-T021 | Lote grande no excede estrategia de memoria | Performance | PLANNED |
 | IMPORT-T022 | Historial registra nuevas/actualizadas/errores | Integration | PLANNED |
-| IMPORT-T023 | Usuario sin permiso no importa | Security | PLANNED |
+| IMPORT-T023 | Usuario sin permiso no importa | Security | DONE — JSON PR #60 |
 | IMPORT-T024 | Exportación evita CSV formula injection | Security | PLANNED |
 | IMPORT-T025 | Exportación respeta filtros seleccionados | Integration | PLANNED |
+
+### Fase 3.7 — JSON WLA versionado
+
+Evidencia canónica: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
+
+| ID | Caso | Tipo | Estado |
+|---|---|---|---|
+| JSON-T001 | Fixture WLA v1 UTF-8 normaliza a filas canónicas | Unit/Integration | DONE |
+| JSON-T002 | `format_version` ausente se rechaza | Unit/Negative | DONE |
+| JSON-T003 | Versión futura/no soportada se rechaza | Unit/Negative | DONE |
+| JSON-T004 | Root/shape inválido se rechaza | Unit/Negative | DONE |
+| JSON-T005 | Colección vacía inválida se reporta de forma controlada | Unit/Negative | DONE |
+| JSON-T006 | JSON malformado no deja source normalizado | Unit/Negative | DONE |
+| JSON-T007 | Límite máximo de bytes se aplica antes de procesar | Unit/Security | DONE |
+| JSON-T008 | Límite de profundidad se aplica | Unit/Security | DONE |
+| JSON-T009 | Límite de cantidad de propiedades se aplica | Unit/Performance | DONE |
+| JSON-T010 | Target desconocido no crea meta arbitraria | Unit/Security | DONE |
+| JSON-T011 | Arrays solo se aceptan para targets múltiples | Unit | DONE |
+| JSON-T012 | Source normalizado se crea `0600` | Unit/Security | DONE |
+| JSON-T013 | Fila NDJSON sobre límite se rechaza y elimina | Unit/Security | DONE |
+| JSON-T014 | `exported_at` inválido no deja archivo huérfano | Unit/Security | DONE |
+| JSON-T015 | SHA-256 detecta tampering | Unit/Security | DONE |
+| JSON-T016 | Resume por `cursor_offset` físico | Unit/Resilience | DONE |
+| JSON-T017 | Dry-run JSON no muta catálogo | Integration | DONE |
+| JSON-T018 | Batch JSON reutiliza `BatchRunner` / `RowExecutor` | Integration | DONE |
+| JSON-T019 | `source_format=json` persiste y schema v3 conserva CSV default | Unit/Integration | DONE |
+| JSON-T020 | Export JSON excluye campos privados por defecto | Unit/Integration/Security | DONE |
+| JSON-T021 | Round-trip export → import → dry-run | Integration | DONE |
+| JSON-T022 | Usuario sin capability recibe 403 | Security/Integration | DONE |
+| JSON-T023 | Nonce ausente/inválido bloquea mutaciones JSON | Security/Integration | DONE |
+| JSON-T024 | Dataset 100 propiedades medido | Performance | DONE |
+| JSON-T025 | Dataset 1.000 propiedades medido | Performance | DONE |
+| JSON-T026 | Dataset 5.000 propiedades medido | Performance | DONE |
+| JSON-T027 | WP 6.6.2 / PHP 8.1 | CI/Compatibility | DONE |
+| JSON-T028 | WP latest / PHP 8.3 | CI/Compatibility | DONE |
+| JSON-T029 | Regresión CSV/Fase 1/2/3.1–3.6 | CI | DONE |
+| JSON-T030 | Review sin P0/P1 abiertos y threads resueltos | Review/Security | DONE |
+
+Resultados de performance del head funcional `0eaeda0f02da44ae25018b6ba167b8b1dddda5a4`: 5.000 filas <1 s en ambas matrices y peak delta observado de 8 MiB. Artifacts/checksums quedan registrados en la evidencia 3.7.
 
 ## Frontend / Templates
 

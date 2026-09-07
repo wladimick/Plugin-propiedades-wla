@@ -1,0 +1,19 @@
+{
+  "format_version": 1,
+  "source_key": "fixture_wla_v1",
+  "exported_at": "2026-09-07T00:00:00Z",
+  "properties": [
+    {
+      "post": {
+        "title": "Casa Ñuñoa — Fixture v1",
+        "content": "Propiedad sintética con caracteres UTF-8: áéíóú ñ.",
+        "excerpt": "Fixture interoperable WLA JSON v1"
+      },
+      "meta": {
+        "property_code": "FIXTURE-V1-001",
+        "price_clp": 123456789,
+        "status": "available"
+      }
+    }
+  ]
+}

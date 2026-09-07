@@ -1,0 +1,136 @@
+name: JSON WLA Integration
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/src/Admin/ImportExportHub.php'
+      - 'plugin/wla-inmo/src/Admin/JsonImportExportPage.php'
+      - 'plugin/wla-inmo/src/Admin/Bootstrap.php'
+      - 'plugin/wla-inmo/src/Admin/PageRenderer.php'
+      - 'plugin/wla-inmo/src/Import/Json*.php'
+      - 'plugin/wla-inmo/src/Import/WordPressJsonExportSource.php'
+      - 'plugin/wla-inmo/src/Import/Workspace.php'
+      - 'plugin/wla-inmo/src/Import/WorkspaceJanitor.php'
+      - 'plugin/wla-inmo/src/Import/BatchRepository.php'
+      - 'plugin/wla-inmo/src/Import/BatchSchema.php'
+      - 'plugin/wla-inmo/src/Import/BatchRunner.php'
+      - 'tests/fixtures/json/**'
+      - 'tests/integration/assert-json-wla.php'
+      - 'tests/integration/assert-json-security.php'
+      - 'tests/integration/assert-json-fixture.php'
+      - 'tests/integration/measure-json-wla.php'
+      - 'tests/unit/ImportJson*.php'
+      - 'tests/smoke/json-*.php'
+      - '.github/workflows/json-wla-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wordpress-json-wla:
+    name: WP ${{ matrix.wordpress }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.6.2'
+            php: '8.1'
+          - wordpress: 'latest'
+            php: '8.3'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and WP-CLI
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: mysqli,fileinfo
+          tools: composer:v2, wp-cli
+          coverage: none
+
+      - name: Build installable ZIP
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+
+      - name: Install WordPress
+        run: |
+          mkdir -p /tmp/wla-json-wordpress
+          cd /tmp/wla-json-wordpress
+          wp core download --version="${{ matrix.wordpress }}" --force --quiet --allow-root
+          wp config create \
+            --dbname=wordpress \
+            --dbuser=root \
+            --dbpass=root \
+            --dbhost=127.0.0.1:3306 \
+            --skip-check \
+            --allow-root
+          ADMIN_PASS="$(openssl rand -hex 16)"
+          wp core install \
+            --url=http://json.wla.test \
+            --title='WLA Inmo JSON CI' \
+            --admin_user=admin \
+            --admin_password="$ADMIN_PASS" \
+            --admin_email=json-ci@example.test \
+            --skip-email \
+            --allow-root
+
+      - name: Install and activate release ZIP
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
+          wp plugin status wla-inmo --allow-root
+
+      - name: Validate versioned JSON v1 fixture
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-fixture.php" --allow-root
+
+      - name: Validate JSON import, runner, privacy and round trip
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-wla.php" --allow-root
+
+      - name: Validate JSON capability and nonce negatives
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-security.php" --allow-root
+
+      - name: Measure JSON datasets 100 / 1k / 5k
+        run: |
+          cd /tmp/wla-json-wordpress
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          RESULT="$GITHUB_WORKSPACE/artifacts/json-wla-${{ matrix.wordpress }}-php-${{ matrix.php }}.jsonl"
+          : > "$RESULT"
+          for size in 100 1000 5000; do
+            WLA_JSON_DATASET_SIZE="$size" wp eval-file "$GITHUB_WORKSPACE/tests/integration/measure-json-wla.php" --allow-root | tail -n 1 | tee -a "$RESULT"
+          done
+          test "$(wc -l < "$RESULT")" -eq 3
+
+      - name: Upload JSON performance evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-wla-performance-${{ matrix.wordpress }}-php-${{ matrix.php }}
+          path: artifacts/json-wla-${{ matrix.wordpress }}-php-${{ matrix.php }}.jsonl
+          if-no-files-found: error

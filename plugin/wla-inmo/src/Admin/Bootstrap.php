@@ -21,6 +21,7 @@ final class Bootstrap
 		Onboarding::register();
 		SettingsPage::register();
 		ImportExportPage::register();
+		JsonImportExportPage::register();
 		PropertyList::register();
 		PropertyQualityList::register();
 		PropertyEditor::register();

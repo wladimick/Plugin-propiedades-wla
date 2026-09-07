@@ -10,7 +10,7 @@ final class BatchRunner
 	private BatchCheckpoint $checkpoint;
 	private IdentityResolver $identityResolver;
 	private RowExecutor $executor;
-	private ?CsvReader $reader;
+	private CsvReader|JsonLinesReader|null $reader;
 
 	/** @var callable(string,string):array<int,array<string,mixed>> */
 	private $taxonomyLookup;
@@ -27,7 +27,7 @@ final class BatchRunner
 		?BatchCheckpoint $checkpoint = null,
 		?IdentityResolver $identityResolver = null,
 		?RowExecutor $executor = null,
-		?CsvReader $reader = null,
+		CsvReader|JsonLinesReader|null $reader = null,
 		?callable $taxonomyLookup = null,
 		?callable $clock = null
 	) {
@@ -107,7 +107,7 @@ final class BatchRunner
 
 		$processedThisRun = 0;
 		$startedAt = ($this->clock)();
-		$reader = $this->reader ?? new CsvReader(max(10000, $totalRows + 1));
+		$reader = $this->readerForBatch($batch, $totalRows);
 
 		try {
 			$rows = $reader->verifiedRows(
@@ -199,7 +199,7 @@ final class BatchRunner
 				$cursorOffset = $nextOffset;
 				++$processedThisRun;
 			}
-		} catch (CsvException $exception) {
+		} catch (CsvException|JsonException $exception) {
 			$reason = self::sourceFailureReason($exception->reason());
 			$rowCodes = $reason === 'source_parse_failed' ? array($exception->reason()) : array();
 
@@ -245,6 +245,23 @@ final class BatchRunner
 
 	/**
 	 * @param array<string,mixed> $batch Current batch row.
+	 */
+	private function readerForBatch(array $batch, int $totalRows): CsvReader|JsonLinesReader
+	{
+		if ($this->reader !== null) {
+			return $this->reader;
+		}
+
+		$format = strtolower(trim((string) ($batch['source_format'] ?? 'csv')));
+		if ($format === 'json') {
+			return new JsonLinesReader(max(10000, $totalRows + 1));
+		}
+
+		return new CsvReader(max(10000, $totalRows + 1));
+	}
+
+	/**
+	 * @param array<string,mixed> $batch Current batch row.
 	 * @return array<string,mixed>|null
 	 */
 	private function claimProcessing(string $batchUuid, array $batch): ?array
@@ -284,7 +301,7 @@ final class BatchRunner
 		return count($results) === 1 ? $results[0] : null;
 	}
 
-	private static function sourceFailureReason(string $csvReason): string
+	private static function sourceFailureReason(string $sourceReason): string
 	{
 		$direct = array(
 			'source_unreadable',
@@ -298,7 +315,7 @@ final class BatchRunner
 			'source_offset_failed',
 		);
 
-		return in_array($csvReason, $direct, true) ? $csvReason : 'source_parse_failed';
+		return in_array($sourceReason, $direct, true) ? $sourceReason : 'source_parse_failed';
 	}
 
 	/**
