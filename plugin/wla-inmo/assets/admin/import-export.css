@@ -1,0 +1,169 @@
+.wla-inmo-import__steps {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 8px;
+	margin: 0 0 24px;
+	padding: 0;
+	list-style: none;
+}
+
+.wla-inmo-import__step {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	min-width: 0;
+	padding: 10px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	font-size: 12px;
+	font-weight: 600;
+	background: #fff;
+}
+
+.wla-inmo-import__step span {
+	display: grid;
+	flex: 0 0 24px;
+	width: 24px;
+	height: 24px;
+	place-items: center;
+	border-radius: 50%;
+	background: #f0f0f1;
+}
+
+.wla-inmo-import__step.is-complete,
+.wla-inmo-import__step.is-current {
+	border-color: #2271b1;
+}
+
+.wla-inmo-import__step.is-complete span,
+.wla-inmo-import__step.is-current span {
+	color: #fff;
+	background: #2271b1;
+}
+
+.wla-inmo-import__panel {
+	margin-bottom: 24px;
+}
+
+.wla-inmo-import__panel .wla-inmo-admin__grid {
+	margin-top: 18px;
+}
+
+.wla-inmo-import__settings {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+	margin-bottom: 18px;
+}
+
+.wla-inmo-import__settings input,
+.wla-inmo-import__settings select,
+.wla-inmo-import__mapping select {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: none;
+}
+
+.wla-inmo-import__mapping {
+	min-width: 760px !important;
+}
+
+.wla-inmo-import__mapping th:first-child {
+	width: 26%;
+}
+
+.wla-inmo-import__mapping th:last-child {
+	width: 160px;
+}
+
+.wla-inmo-import__batch-heading {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+	justify-content: space-between;
+	margin-bottom: 18px;
+}
+
+.wla-inmo-import__batch-heading h2 {
+	margin-bottom: 0;
+}
+
+.wla-inmo-import__batch-heading code {
+	max-width: 48%;
+	word-break: break-all;
+}
+
+.wla-inmo-import__progress {
+	overflow: hidden;
+	height: 12px;
+	border-radius: 999px;
+	background: #dcdcde;
+}
+
+.wla-inmo-import__progress span {
+	display: block;
+	height: 100%;
+	background: #2271b1;
+}
+
+.wla-inmo-import__inline-form {
+	display: inline-block;
+	margin: 8px 8px 8px 0;
+}
+
+.wla-inmo-import__secondary {
+	margin: -8px 0 24px;
+}
+
+.wla-inmo-import__filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 12px 0 18px;
+}
+
+.wla-inmo-import__pagination {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 16px;
+}
+
+@media (max-width: 960px) {
+	.wla-inmo-import__steps {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 782px) {
+	.wla-inmo-import__steps,
+	.wla-inmo-import__settings {
+		grid-template-columns: 1fr;
+	}
+
+	.wla-inmo-import__batch-heading {
+		flex-direction: column;
+	}
+
+	.wla-inmo-import__batch-heading code {
+		max-width: 100%;
+	}
+
+	.wla-inmo-import__filters {
+		align-items: stretch;
+	}
+
+	.wla-inmo-import__filters label {
+		align-self: center;
+	}
+
+	.wla-inmo-import__filters select {
+		flex: 1 1 180px;
+	}
+
+	.wla-inmo-import__pagination {
+		justify-content: flex-start;
+	}
+}

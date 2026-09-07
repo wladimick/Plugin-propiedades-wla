@@ -31,6 +31,14 @@ final class ContextHelp
 			$content .= '<h3>' . esc_html__('Calidad', 'wla-inmo') . '</h3>';
 			$content .= '<p>' . esc_html__('Calidad orienta la completitud de la ficha. Un porcentaje bajo no bloquea borradores ni representa un ranking de Google.', 'wla-inmo') . '</p>';
 			$content .= '<p><a href="' . esc_url($helpUrl . '#wla-help-crear-propiedad') . '">' . esc_html__('Ver guía para crear y revisar propiedades', 'wla-inmo') . '</a></p>';
+		} elseif ($page === 'wla-inmo-import-export') {
+			$content .= '<h3>' . esc_html__('Importar con seguridad', 'wla-inmo') . '</h3>';
+			$content .= '<p>' . esc_html__('La carga CSV siempre pasa por mapping y simulación antes de confirmar. Un dry-run con errores no se puede ejecutar.', 'wla-inmo') . '</p>';
+			$content .= '<h3>' . esc_html__('Reanudar un batch', 'wla-inmo') . '</h3>';
+			$content .= '<p>' . esc_html__('Cada lote avanza desde un checkpoint. Si se pausa o falla, usa Continuar/Reanudar; no vuelvas a subir el mismo archivo para intentar continuar el mismo batch.', 'wla-inmo') . '</p>';
+			$content .= '<h3>' . esc_html__('Identidad', 'wla-inmo') . '</h3>';
+			$content .= '<p>' . esc_html__('Mapea código de propiedad o ID externo. WLA Inmo no identifica propiedades por título o dirección para evitar coincidencias silenciosas.', 'wla-inmo') . '</p>';
+			$content .= '<p><a href="' . esc_url($helpUrl) . '">' . esc_html__('Abrir Centro de Ayuda', 'wla-inmo') . '</a></p>';
 		} else {
 			$content .= '<p><a href="' . esc_url($helpUrl) . '">' . esc_html__('Abrir Centro de Ayuda', 'wla-inmo') . '</a></p>';
 		}

@@ -20,6 +20,7 @@ final class Bootstrap
 
 		Onboarding::register();
 		SettingsPage::register();
+		ImportExportPage::register();
 		PropertyList::register();
 		PropertyQualityList::register();
 		PropertyEditor::register();

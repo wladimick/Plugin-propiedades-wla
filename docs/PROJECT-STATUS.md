@@ -17,8 +17,9 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
-- PR 3.1: `DONE`
-- Próximo hito: PR 3.2 — Mapping + Validation + Dry-run
+- PR 3.1–3.5: `DONE`
+- PR 3.6: `QA_PASSED / READY_TO_MERGE`
+- Próximo hito: PR 3.7 — JSON WLA versionado
 
 ## Fases
 
@@ -27,7 +28,7 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-013 |
 | 1 | Core del plugin | DONE | PR #5/#8/#10/#12/#14/#16/#18/#20, `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | PR #24/#26/#28/#30/#32/#34/#36/#38/#40/#42, `docs/evidence/phase-2/` |
-| 3 | Import/Export | IN_PROGRESS | PR #44/#46, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
+| 3 | Import/Export | IN_PROGRESS | PR #44/#46/#49/#51/#53/#55/#57, `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -53,8 +54,10 @@ Estado: `DONE`.
 - PR #14 — Índice/sincronización.
 - PR #16 — Roles/capabilities.
 - PR #18 — Settings/contrato con temas.
-- PR #20 — Quality Gate/release `0.1.0-alpha`, squash `a142a4373ef37e14cd20b5a99105abeab0c1778d`.
+- PR #20 — Quality Gate/release `0.1.0-alpha`.
 - CI final de Fase 1: SUCCESS.
+
+Evidencia completa: `docs/evidence/phase-1/`.
 
 ## Fase 2 — Administración
 
@@ -62,183 +65,181 @@ Estado: `DONE`.
 
 Backlog: `docs/PHASE-2-BACKLOG.md`.
 
-| PR | Alcance | GitHub | Estado | Evidencia |
-|---|---|---|---|---|
-| 2.1 | Admin shell y navegación | #24 | DONE | `PR-2.1-ADMIN-SHELL.md` |
-| 2.2 | Listado profesional | #26 | DONE | `PR-2.2-PROPERTY-LIST.md` |
-| 2.3 | Editor guiado | #28 | DONE | `PR-2.3-GUIDED-PROPERTY-EDITOR.md` |
-| 2.4 | Multimedia y galería | #30 | DONE | `PR-2.4-PROPERTY-MEDIA.md` |
-| 2.5 | Calidad del catálogo | #32 | DONE | `PR-2.5-CATALOGUE-QUALITY.md` |
-| 2.6 | Centro de Ayuda y onboarding | #34 | DONE | `PR-2.6-HELP-CENTER.md` |
-| 2.7 | Ajustes UI | #36 | DONE | `PR-2.7-SETTINGS-UI.md` |
-| 2.8 | Actividad / historial base | #38 | DONE | `PR-2.8-ACTIVITY-HISTORY.md` |
-| 2.9 | Dashboard / Resumen operativo | #40 | DONE | `PR-2.9-OPERATIONAL-DASHBOARD.md` |
-| 2.10 | Quality Gate de Administración | #42 | DONE | `PR-2.10-ADMIN-QUALITY-GATE.md` |
+| PR | Alcance | GitHub | Estado |
+|---|---|---|---|
+| 2.1 | Admin shell y navegación | #24 | DONE |
+| 2.2 | Listado profesional | #26 | DONE |
+| 2.3 | Editor guiado | #28 | DONE |
+| 2.4 | Multimedia y galería | #30 | DONE |
+| 2.5 | Calidad del catálogo | #32 | DONE |
+| 2.6 | Centro de Ayuda y onboarding | #34 | DONE |
+| 2.7 | Ajustes UI | #36 | DONE |
+| 2.8 | Actividad / historial base | #38 | DONE |
+| 2.9 | Dashboard / Resumen operativo | #40 | DONE |
+| 2.10 | Quality Gate de Administración | #42 | DONE |
 
-### PR 2.1 — Admin shell
+### Cierre de Fase 2
 
-- PR #24;
-- squash `50d3800477006af51cd4604009178105ed8002c0`;
-- CI/Bootstrap: SUCCESS.
+PR #42 validó el conjunto administrativo completo:
 
-### PR 2.2 — Listado profesional
+- Administration Quality Gate: SUCCESS;
+- Playwright: 8/8 SUCCESS, retries=0;
+- WordPress 6.6.2/PHP 8.1 y WordPress latest/PHP 8.3: SUCCESS;
+- autorización positiva/negativa, nonce e IDOR: cubiertos;
+- responsive 360/390/768/1024/1440 en pantallas prioritarias;
+- axe sin findings serious/critical en UI propia cubierta;
+- performance sintético estable para catálogo hasta 5k;
+- artifacts/checksums registrados en `docs/evidence/phase-2/PR-2.10-ADMIN-QUALITY-GATE.md`.
 
-- PR #26;
-- squash `15991b70d471fd2ba2ecbf88a762b2fdd9996b09`;
-- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3: SUCCESS.
-
-El índice público continúa almacenando solo propiedades publicadas.
-
-### PR 2.3 — Editor guiado
-
-- PR #28;
-- squash `a02b0bd6fa0c0ceb3430d5410c0c2a46bc0f5b35`;
-- CI e integración WordPress: SUCCESS.
-
-La ficha guiada usa el MetaSchema canónico, autorización por objeto, prevención de código duplicado y rollback lógico de meta/términos WLA.
-
-### PR 2.4 — Multimedia y galería
-
-- Issue #29: CLOSED;
-- PR #30: MERGED;
-- squash `af5c0f2ee59639ae749a0daec81d329e46eef6cc`;
-- Biblioteca de Medios nativa, galería ordenable, ALT protegido por capability y videos como URLs seguras;
-- no existe borrado físico al desasociar una imagen;
-- assets limitados al editor de `wla_property`;
-- integración WordPress y release smoke: SUCCESS.
-
-### PR 2.5 — Calidad del catálogo
-
-- Issue #31: CLOSED;
-- PR #32: MERGED;
-- squash `a3e28e0984e6bea30828baba636dae3abde08d98`;
-- proyección administrativa `wp_wla_property_quality` separada del índice público;
-- score interno explicable 0–100 basado en checks, sin presentarlo como ranking de Google;
-- filtros operativos y pantalla Calidad del catálogo;
-- CI/integración: SUCCESS.
-
-### PR 2.6 — Centro de Ayuda y onboarding
-
-- Issue #33: CLOSED;
-- PR #34: MERGED;
-- squash `56717aa3af97c74407d794f334b295216fe067f8`;
-- Centro de Ayuda local, búsqueda, FAQ y glosario;
-- onboarding persistido por usuario y protegido por nonce/capabilities;
-- ayuda contextual en el editor;
-- JS vanilla, sin llamadas remotas;
-- CI/integración: SUCCESS.
-
-### PR 2.7 — Ajustes UI
-
-- Issue #35: CLOSED;
-- PR #36: MERGED;
-- squash `5c99ed02f4a71cf57716cc8d9a46cb4094856464`;
-- pantalla real de Ajustes con ocho pestañas;
-- contrato canónico de contacto y políticas de retención;
-- `property_base` con pending state y aplicación controlada de rewrites;
-- CI/integración: SUCCESS.
-
-### PR 2.8 — Actividad e historial administrativo
-
-- Issue #37: CLOSED;
-- PR #38: MERGED;
-- squash `6f8de10db3ef03256d8f1bf73c894370fb5ac4b8`;
-- tabla versionada `wla_inmo_activity` con contexto allowlisted;
-- bitácora de eventos operativos relevantes;
-- pantalla Actividad e Historial operativo por propiedad;
-- retención configurable, cron y limpieza por lotes;
-- sin payloads completos, IP/user-agent, dirección privada, notas internas ni valores de contacto;
-- CI/integración: SUCCESS.
-
-### PR 2.9 — Dashboard / Resumen operativo
-
-- Issue #39: CLOSED;
-- PR #40: MERGED;
-- squash `bcff7e17eeda5122d6845c3cc38f14a71d04b57c`;
-- Resumen basado en datos reales y excepciones accionables;
-- Dashboard con 5 queries principales sin Actividad y consultas bounded;
-- privacidad explícita de campos internos;
-- Dashboard Integration y regresiones heredadas: SUCCESS.
-
-### PR 2.10 — Quality Gate de Administración
-
-- Issue #41: CLOSED;
-- PR #42: MERGED;
-- squash `5f8d314fe0cad79ba0d29c3feed7577ca5ec642b`;
-- head funcional validado `190cdf8787e92c17c715ce195e7620cd55cf704d`;
-- Administration Quality Gate `33874413262`: SUCCESS;
-- Playwright: **8/8 SUCCESS, retries=0**;
-- axe sobre UI WLA propia: sin findings serious/critical en los flujos cubiertos;
-- teclado: disclosure del editor validado con focus + Enter;
-- responsive: 360/390/768/1024/1440 en pantallas prioritarias;
-- seguridad/autorización negativa: SUCCESS;
-- assets condicionales: smoke SUCCESS;
-- performance sintético:
-  - Dashboard 100: 5 queries / 0,0033 s;
-  - Dashboard 1k: 5 queries / 0,0037 s;
-  - Dashboard 5k: 5 queries / 0,0085 s;
-  - listado 5k: 2 queries / 0,0040 s;
-  - Actividad: 2 queries / 0,0011 s;
-- Phase 1 CI `33874412820`: SUCCESS;
-- PHPUnit: 3 tests / 40 assertions;
-- artifact plugin `9937251373`, digest `sha256:a699b9024db2932ee1a59b6940f0e0f7b53b397236831675087593f20a81a1a7`;
-- ZIP SHA-256 `cb567d3a5abf320f49fbb238ec308ee64548303b0198e64667632e18876e2581`;
-- artifact E2E `9937305918`, digest `sha256:4aee29b463c856e20b0084d270b8e03fd920f4e9dfbab3bb307112d894b23682`;
-- findings responsive/test/UX detectados durante QA fueron corregidos y revalidados;
-- evidencia final: `docs/evidence/phase-2/PR-2.10-ADMIN-QUALITY-GATE.md`.
-
-Los tiempos son referencias sintéticas de CI, no promesas de rendimiento productivo.
+Evidencia completa: `docs/evidence/phase-2/`.
 
 ## Fase 3 — Import/Export
 
 Estado: `IN_PROGRESS`.
 
-Backlog: `docs/PHASE-3-BACKLOG.md`.  
+Backlog canónico: `docs/PHASE-3-BACKLOG.md`.  
 Contrato funcional: `docs/IMPORT-EXPORT.md`.  
 Evidencia: `docs/evidence/phase-3/`.
 
+La numeración original de Fase 3 fue refinada durante implementación. Persistencia/ejecución se separó en PR 3.3–3.5 antes de exponer la UI. Issue #56 formaliza que la UI pasa a PR 3.6 y que los hitos restantes se renumeran sin cambiar su alcance funcional.
+
 | PR | Alcance | GitHub | Estado | Evidencia |
 |---|---|---|---|---|
-| 3.1 | Import domain / batch state / CSV foundation | #46 | DONE | `PR-3.1-IMPORT-DOMAIN-CSV.md` |
-| 3.2 | Mapping + validation + dry-run | pendiente | NEXT | pendiente |
-| 3.3 | Persistencia batches / resume / idempotencia | pendiente | PLANNED | pendiente |
-| 3.4 | UI Importar / historial | pendiente | PLANNED | pendiente |
-| 3.5 | JSON import/export | pendiente | PLANNED | pendiente |
-| 3.6 | XLSX + ADR/benchmark de dependencia | pendiente | PLANNED | pendiente |
-| 3.7 | Remote media | pendiente | PLANNED | pendiente |
-| 3.8 | CSV/XLSX export | pendiente | PLANNED | pendiente |
-| 3.9 | Rollback seguro | pendiente | PLANNED | pendiente |
-| 3.10 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
+| 3.1 | Import domain / CSV foundation | #46 | DONE | `PR-3.1-IMPORT-DOMAIN-CSV.md` |
+| 3.2 | Mapping + validation + dry-run | #49 | DONE | evidencia phase-3 |
+| 3.3 | Persistencia de identidad y batches | #51 | DONE | evidencia phase-3 |
+| 3.4 | Executor idempotente de filas | #53 | DONE | `PR-3.4-ROW-EXECUTOR.md` |
+| 3.5 | Runner reanudable de batches | #55 | DONE | `PR-3.5-BATCH-RUNNER.md` |
+| 3.6 | UI Importar + historial | #57 | QA_PASSED / READY_TO_MERGE | `PR-3.6-IMPORT-UI.md` |
+| 3.7 | JSON WLA versionado | pendiente | NEXT | pendiente |
+| 3.8 | XLSX streaming + ADR/benchmark | pendiente | PLANNED | pendiente |
+| 3.9 | Media remota segura | pendiente | PLANNED | pendiente |
+| 3.10 | Exportación CSV/XLSX | pendiente | PLANNED | pendiente |
+| 3.11 | Rollback seguro | pendiente | PLANNED | pendiente |
+| 3.12 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
 
 ### PR 3.1 — Import domain / CSV foundation
 
-- Issue #45: CLOSED;
-- PR #46: MERGED;
-- squash `74dcc032946df8ea582a57d1f58521a45f7d99f0`;
-- dominio `WLA\Inmo\Import` base;
-- estados/transiciones de batch explícitos;
-- `source_key` normalizado y seguro para namespace de identidad externa;
-- resolución read-only `(source_key, external_id)` → `property_code`, con conflictos explícitos;
-- CSV UTF-8 incremental mediante `SplFileObject` + `Generator`;
-- BOM, coma, punto y coma, tab, headers normalizados, límites y errores por fila;
+Estado: `DONE`. PR #46.
+
+- dominio `WLA\Inmo\Import`;
+- state machine de batches;
+- `source_key` normalizado;
+- resolución read-only `(source_key, external_id)` → `property_code`;
+- CSV incremental UTF-8 con límites;
+- BOM, coma, punto y coma y tab;
+- headers duplicados rechazados;
 - strings similares a fórmulas permanecen datos inertes;
-- findings P1/P2 de source key y autodetección de delimitador corregidos antes del merge;
-- PHP syntax/WPCS/PHPStan: SUCCESS;
-- PHPUnit: **13 tests / 91 assertions**;
-- smoke CSV y regresiones heredadas: SUCCESS;
-- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3: SUCCESS;
-- Administration Quality Gate: SUCCESS;
-- evidencia final: `docs/evidence/phase-3/PR-3.1-IMPORT-DOMAIN-CSV.md`.
+- CI/integración WordPress: SUCCESS.
 
-La persistencia real de propiedades, creación de términos y descarga de media continúan fuera de PR 3.1.
+### PR 3.2 — Mapping + validation + dry-run
 
-### Próximo hito — PR 3.2
+Estado: `DONE`. PR #49.
 
-Implementar mapping de columnas hacia el contrato canónico de WLA Inmo, validación por fila y dry-run sin mutaciones. Debe detectar duplicados dentro del archivo, coincidencias existentes, taxonomías desconocidas y producir conteos `new/update/warning/error` antes de habilitar cualquier confirmación futura.
+- `TargetRegistry` allowlisted;
+- `MappingProfile` versionado;
+- normalización y validación tipada;
+- dry-run read-only en dos pasadas;
+- duplicados intra-file;
+- clasificación new/update/error/warning;
+- taxonomías desconocidas sin creación automática;
+- serialización pública sin meta privada;
+- regresiones heredadas verdes antes del merge.
+
+### PR 3.3 — Persistencia de identidad y batches
+
+Estado: `DONE`. PR #51.
+
+- `IdentityMeta`;
+- proyección `wla_import_identity` con UNIQUE;
+- `IdentityRepository` / `IdentityIndexer`;
+- tabla `wla_import_batches`;
+- UUID, hash, profile snapshot, estado, cursor, contadores, timestamps y `revision`;
+- optimistic locking;
+- WordPress post/meta continúa siendo fuente canónica;
+- integración WordPress/MySQL: SUCCESS.
+
+### PR 3.4 — Executor idempotente de filas
+
+Estado: `DONE`. PR #53.
+
+- `RowExecutor` re-resuelve identidad antes de escribir;
+- create como draft / update inequívoco;
+- retry NEW → MATCH → UPDATE;
+- protección de dry-run stale/retargeted;
+- sanitización canónica vía `MetaSchema`;
+- rollback local de escrituras parciales;
+- checkpoint solo después de ejecución exitosa;
+- review P1/P2 corregido antes del merge.
+
+### PR 3.5 — Runner reanudable de batches
+
+Estado: `DONE`. PR #55.
+
+- `MappingProfileCodec`;
+- `BatchRunner` por slices;
+- SHA-256 y lectura sobre el mismo handle bloqueado;
+- resume por `cursor_row`, `cursor_offset` y `revision`;
+- optimistic locking por checkpoint;
+- pausa limpia por presupuesto;
+- idempotencia ante crash/reintento;
+- PHPUnit 50 tests / 275 assertions en el cierre registrado del PR;
+- CI e integración WordPress/MySQL: SUCCESS.
+
+### PR 3.6 — UI Importar + historial
+
+Estado: `QA_PASSED / READY_TO_MERGE`. PR #57 / Issue #56.
+
+- `WLA Inmo → Importar / Exportar` deja de ser placeholder;
+- wizard server-rendered Subir → Mapear → Validar → Simular → Confirmar → Procesar → Informe;
+- CSV en esta etapa;
+- capability `import_wla_properties` + nonces por mutación;
+- workspace temporal con rutas controladas por servidor;
+- 10 MiB / 10.000 filas;
+- preview bounded;
+- mapping allowlisted;
+- dry-run obligatorio;
+- snapshot + SHA-256 antes de confirmar;
+- procesamiento por `BatchRunner` en slices;
+- historial bounded/paginado;
+- cancelación solo en checkpoints seguros;
+- `WorkspaceJanitor` elimina drafts vencidos sin afectar batches reanudables;
+- dos findings P2 de review corregidos;
+- review threads abiertos: 0;
+- P0/P1 abiertos conocidos: 0.
+
+QA sobre head funcional `5d2c26d2fdd6d4c820865c2bff6f2eb9ff37c9e9` antes del cierre documental:
+
+- Phase 1 CI `34046249484`: SUCCESS;
+- Import UI Integration `34046249476`: SUCCESS;
+- Import Batch Runner Integration `34046249469`: SUCCESS;
+- Import Persistence Integration `34046249467`: SUCCESS;
+- Import Row Executor Integration `34046249516`: SUCCESS;
+- Administration Quality Gate `34046249499`: SUCCESS;
+- WordPress 6.6.2/PHP 8.1: SUCCESS;
+- WordPress latest/PHP 8.3: SUCCESS.
+
+Artifacts registrados en `docs/evidence/phase-3/PR-3.6-IMPORT-UI.md`.
+
+### Próximo hito — PR 3.7 JSON WLA versionado
+
+Objetivo: crear un formato JSON interoperable y versionado que use el mismo pipeline canónico, sin introducir un segundo mecanismo de importación.
+
+Debe incluir como mínimo:
+
+- `format_version`;
+- límites de tamaño/profundidad;
+- schema/shape allowlisted;
+- importación por mapping/validation/dry-run;
+- exportación lógica filtrada;
+- campos privados excluidos por defecto;
+- compatibilidad entre versiones;
+- round-trip tests;
+- ninguna meta arbitraria construida desde claves externas.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro del alcance cerrado de Fase 1, Fase 2 y PR 3.1.
+No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.6 cerrados o listos para merge.
 
 Deuda de prioridad baja heredada:
 
@@ -246,20 +247,18 @@ Deuda de prioridad baja heredada:
 - PHPStan debe expandir cobertura progresivamente;
 - warnings Node observados provienen de actions de terceros/GitHub, no del runtime del plugin.
 
-El texto obsoleto del editor sobre PR 2.4/2.5/2.8 fue corregido en PR 2.10 y ya no se considera deuda abierta.
-
 ## Riesgos trasladados
 
 1. Índices SQL se ajustarán con benchmarks reales.
-2. La librería XLSX elegida para Fase 3 debe medirse antes de 1.0.
+2. La librería XLSX de PR 3.8 debe elegirse mediante ADR y benchmark antes de merge.
 3. Proveedor OSM de tiles/geocoding se definirá para alto tráfico.
 4. Adaptadores SEO se validarán en Fase 6.
 5. Multisite se valida progresivamente.
 6. Lighthouse ≥95 es budget de referencia; CWV reales requieren datos productivos.
 7. Migraciones futuras que cambien slugs existentes deberán conservar URLs o definir 301 explícitas.
-8. Una futura búsqueda indexada de borradores debe usar un mecanismo administrativo separado; no reutilizar el índice público.
-9. La optimización final de imágenes, lightbox y prioridades de carga frontend corresponde a Fase 4/5.
-10. Antes de persistir identidades externas en PR 3.3 debe congelarse el almacenamiento físico de `source_key` junto a `external_id`; no se permiten external IDs globales sin namespace.
+8. Búsqueda indexada de borradores debe seguir separada del índice público.
+9. Optimización final de imágenes, lightbox y prioridades frontend corresponde a Fase 4/5.
+10. JSON/XLSX/media deben reutilizar identidad, mapping, dry-run, executor y runner existentes; no crear pipelines paralelos.
 
 ## Producción
 
@@ -271,4 +270,4 @@ Un ítem solo pasa a `DONE` con PR, tests/evidencia o documento que lo sustente.
 
 ## Auditoría
 
-Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar aquí y continuar por Decision Register, fases, PRs, catálogo de tests y evidencias.
+Para auditoría completa usar `AUDIT-TRACEABILITY.md`. Para revisión rápida comenzar aquí y continuar por Decision Register, backlog de fase, catálogo de tests y evidencias.
