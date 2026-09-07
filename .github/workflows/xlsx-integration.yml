@@ -49,6 +49,7 @@ jobs:
 
       - name: Commit wiring if changed
         run: |
+          git checkout -- .github/workflows/xlsx-integration.yml
           if git diff --quiet; then
             echo 'No wiring changes to commit.'
             exit 0
@@ -60,8 +61,7 @@ jobs:
                   plugin/wla-inmo/src/Import/BatchRepository.php \
                   plugin/wla-inmo/src/Import/BatchRunner.php \
                   plugin/wla-inmo/src/Admin/ImportExportHub.php \
-                  plugin/wla-inmo/src/Admin/ImportExportPage.php \
-                  .github/workflows/xlsx-integration.yml
+                  plugin/wla-inmo/src/Admin/ImportExportPage.php
           git commit -m 'feat(import): wire XLSX through canonical wizard'
           git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
 
