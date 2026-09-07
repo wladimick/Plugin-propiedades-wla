@@ -1,0 +1,483 @@
+name: Wire XLSX Wizard
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/phase3-xlsx-wire.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply deterministic XLSX wiring
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected 1 occurrence, found {count}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          # XlsxDocumentReader: expose preflighted worksheet metadata without normalizing yet.
+          path = 'plugin/wla-inmo/src/Import/XlsxDocumentReader.php'
+          marker = "\n\t/**\n\t * Normalize one selected worksheet to private NDJSON rows."
+          method = r'''
+	/**
+	 * Inspect workbook sheets after archive preflight, without materializing rows.
+	 *
+	 * @return array{
+	 *   original_hash:string,
+	 *   source_bytes:int,
+	 *   archive_entries:int,
+	 *   sheets:array<int,array{name:string,total_rows:int,total_columns:int,importable_rows:int}>
+	 * }
+	 */
+	public function worksheets(string $xlsxPath): array
+	{
+		$inspection = $this->inspector->inspect($xlsxPath);
+		$info = $this->worksheetInfo($xlsxPath);
+		$sheets = array();
+
+		foreach ($info as $worksheet) {
+			$name = (string) ($worksheet['worksheetName'] ?? '');
+			if ($name === '') {
+				throw new XlsxException('invalid_sheet_name', 'XLSX workbook contains an invalid worksheet name.');
+			}
+
+			$totalRows = max(0, (int) ($worksheet['totalRows'] ?? 0));
+			$totalColumns = max(0, (int) ($worksheet['totalColumns'] ?? 0));
+			$sheets[] = array(
+				'name'            => $name,
+				'total_rows'      => $totalRows,
+				'total_columns'   => $totalColumns,
+				'importable_rows' => max(0, $totalRows - 1),
+			);
+		}
+
+		return array(
+			'original_hash'   => $inspection['source_hash'],
+			'source_bytes'    => $inspection['source_bytes'],
+			'archive_entries' => $inspection['entries'],
+			'sheets'          => $sheets,
+		);
+	}
+'''
+          replace_once(path, marker, '\n' + method + marker)
+
+          # Workspace: add logical XLSX format, staged upload and selected-sheet normalization.
+          path = 'plugin/wla-inmo/src/Import/Workspace.php'
+          replace_once(path, "\tprivate const FORMAT_JSON = 'json';", "\tprivate const FORMAT_JSON = 'json';\n\tprivate const FORMAT_XLSX = 'xlsx';")
+
+          load_marker = "\n\t/**\n\t * @return array<string,mixed>|null\n\t */\n\tpublic static function loadDraft"
+          xlsx_methods = r'''
+	/**
+	 * Store a real HTTP XLSX upload after ZIP/OOXML preflight. The workbook stays
+	 * private until the user explicitly selects which worksheet will be normalized.
+	 *
+	 * @param array<string,mixed> $file `$_FILES` entry.
+	 * @return array{ok:bool,code:string,token?:string,state?:array<string,mixed>}
+	 */
+	public static function storeUploadedXlsx(array $file, int $createdBy): array
+	{
+		$validated = self::validateUpload($file, $createdBy, self::FORMAT_XLSX);
+		if (empty($validated['ok'])) {
+			return self::failure((string) $validated['code']);
+		}
+
+		$token = (string) $validated['token'];
+		$name = (string) $validated['name'];
+		$tmpName = (string) $validated['tmp_name'];
+		$uploadPath = self::xlsxUploadPath($token);
+		if ($uploadPath === null || file_exists($uploadPath) || !move_uploaded_file($tmpName, $uploadPath)) {
+			return self::failure('upload_store_failed');
+		}
+		@chmod($uploadPath, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening.
+
+		try {
+			$inspection = (new XlsxDocumentReader())->worksheets($uploadPath);
+		} catch (XlsxException $exception) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup invalid workbook.
+			return self::failure($exception->reason());
+		} catch (\Throwable) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected validation failure.
+			return self::failure('xlsx_validation_failed');
+		}
+
+		$sheets = isset($inspection['sheets']) && is_array($inspection['sheets']) ? $inspection['sheets'] : array();
+		if ($sheets === array()) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Empty workbook cleanup.
+			return self::failure('missing_worksheet');
+		}
+
+		$state = array(
+			'token'             => $token,
+			'created_by'        => $createdBy,
+			'original_name'     => $name,
+			'source_format'     => self::FORMAT_XLSX,
+			'source_hash'       => '',
+			'original_hash'     => (string) $inspection['original_hash'],
+			'total_rows'        => 0,
+			'headers'           => array(),
+			'xlsx_sheets'       => $sheets,
+			'selected_sheet'    => '',
+			'canonical_mapping' => array(),
+			'profile_json'      => '',
+			'dry_run'           => array(),
+			'created_at'        => time(),
+			'updated_at'        => time(),
+		);
+
+		return self::persistNewDraft($token, $state, $uploadPath);
+	}
+
+	/**
+	 * Normalize only the explicitly selected worksheet to private NDJSON.
+	 *
+	 * @return array{ok:bool,code:string,state?:array<string,mixed>}
+	 */
+	public static function selectUploadedXlsxSheet(string $token, int $userId, string $sheetName): array
+	{
+		$state = self::loadDraft($token, $userId);
+		if ($state === null || self::stateFormat($state) !== self::FORMAT_XLSX) {
+			return self::failure('draft_expired');
+		}
+		if ((string) ($state['selected_sheet'] ?? '') !== '') {
+			return self::failure('sheet_already_selected');
+		}
+
+		$sheetName = trim($sheetName);
+		$allowed = false;
+		$sheets = isset($state['xlsx_sheets']) && is_array($state['xlsx_sheets']) ? $state['xlsx_sheets'] : array();
+		foreach ($sheets as $sheet) {
+			if (is_array($sheet) && isset($sheet['name']) && is_string($sheet['name']) && hash_equals($sheet['name'], $sheetName)) {
+				$allowed = true;
+				break;
+			}
+		}
+		if (!$allowed) {
+			return self::failure('unknown_sheet');
+		}
+
+		$uploadPath = self::xlsxUploadPath($token);
+		$normalizedPath = self::draftPath($token, self::FORMAT_XLSX);
+		if ($uploadPath === null || $normalizedPath === null || !is_file($uploadPath) || file_exists($normalizedPath)) {
+			return self::failure('source_unreadable');
+		}
+
+		try {
+			$inspection = (new XlsxDocumentReader(null, 500, self::MAX_ROWS))->normalizeToNdjson($uploadPath, $normalizedPath, $sheetName);
+		} catch (XlsxException $exception) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup failed normalization.
+			return self::failure($exception->reason());
+		} catch (\Throwable) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected normalization failure.
+			return self::failure('xlsx_normalization_failed');
+		}
+
+		if (!hash_equals((string) ($state['original_hash'] ?? ''), (string) $inspection['original_hash'])) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Workbook changed after upload.
+			return self::failure('source_hash_mismatch');
+		}
+
+		$state['selected_sheet'] = (string) $inspection['sheet_name'];
+		$state['source_hash'] = (string) $inspection['source_hash'];
+		$state['total_rows'] = (int) $inspection['total_rows'];
+		$state['headers'] = $inspection['headers'];
+		$state['profile_json'] = '';
+		$state['dry_run'] = array();
+		if (!self::saveDraft($token, $state)) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Keep original workbook if state cannot be committed.
+			return self::failure('draft_store_failed');
+		}
+
+		@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Original workbook no longer needed after safe normalization.
+		return array('ok' => true, 'code' => 'sheet_ready', 'state' => $state);
+	}
+'''
+          replace_once(path, load_marker, '\n' + xlsx_methods + load_marker)
+
+          replace_once(path,
+              "\t\t$format = self::stateFormat($state);\n\t\t$path = self::draftPath($token, $format);\n\t\tif ($path === null || !is_file($path) || !is_readable($path)) {",
+              "\t\t$format = self::stateFormat($state);\n\t\t$path = $format === self::FORMAT_XLSX && empty($state['selected_sheet'])\n\t\t\t? self::xlsxUploadPath($token)\n\t\t\t: self::draftPath($token, $format);\n\t\tif ($path === null || !is_file($path) || !is_readable($path)) {")
+
+          replace_once(path,
+              "\t\t\t$sourceRows = $format === self::FORMAT_JSON\n\t\t\t\t? (new JsonLinesReader(self::MAX_ROWS))->verifiedRows($path, (string) ($state['source_hash'] ?? ''))\n\t\t\t\t: (new CsvReader(self::MAX_ROWS))->rows($path);",
+              "\t\t\t$sourceRows = in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)\n\t\t\t\t? (new JsonLinesReader(self::MAX_ROWS))->verifiedRows($path, (string) ($state['source_hash'] ?? ''))\n\t\t\t\t: (new CsvReader(self::MAX_ROWS))->rows($path);")
+
+          replace_once(path,
+              "\t\tif ($state === null) {\n\t\t\treturn null;\n\t\t}\n\n\t\treturn self::draftPath($token, self::stateFormat($state));",
+              "\t\tif ($state === null) {\n\t\t\treturn null;\n\t\t}\n\t\tif (self::stateFormat($state) === self::FORMAT_XLSX && empty($state['selected_sheet'])) {\n\t\t\treturn null;\n\t\t}\n\n\t\treturn self::draftPath($token, self::stateFormat($state));")
+
+          replace_once(path,
+              "\t\tforeach (array('*.csv', '*.ndjson', '*.json') as $suffix) {",
+              "\t\tforeach (array('*.csv', '*.ndjson', '*.json') as $suffix) {")
+          # Add stale XLSX upload cleanup after the existing draft glob loop.
+          replace_once(path,
+              "\t\t}\n\n\t\t$cutoff = time() - (self::DRAFT_TTL * 2);",
+              "\t\t}\n\t\t$xlsxUploads = glob(self::tempRoot() . 'wla-inmo-import-upload-*.xlsx');\n\t\tif (is_array($xlsxUploads)) {\n\t\t\t$files = array_merge($files, $xlsxUploads);\n\t\t}\n\n\t\t$cutoff = time() - (self::DRAFT_TTL * 2);")
+
+          replace_once(path,
+              "\t\tforeach (array(self::FORMAT_CSV, self::FORMAT_JSON) as $format) {",
+              "\t\tforeach (array(self::FORMAT_CSV, self::FORMAT_JSON, self::FORMAT_XLSX) as $format) {")
+
+          replace_once(path,
+              "\t\t$uploadPath = self::jsonUploadPath($token);\n\t\tif ($uploadPath !== null && is_file($uploadPath)) {\n\t\t\t@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted JSON normalization.\n\t\t}",
+              "\t\t$uploadPath = self::jsonUploadPath($token);\n\t\tif ($uploadPath !== null && is_file($uploadPath)) {\n\t\t\t@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted JSON normalization.\n\t\t}\n\n\t\t$xlsxUploadPath = self::xlsxUploadPath($token);\n\t\tif ($xlsxUploadPath !== null && is_file($xlsxUploadPath)) {\n\t\t\t@unlink($xlsxUploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted XLSX selection.\n\t\t}")
+
+          replace_once(path,
+              "\t\tif ($format === self::FORMAT_JSON) {\n\t\t\treturn self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.ndjson';\n\t\t}",
+              "\t\tif (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)) {\n\t\t\treturn self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.ndjson';\n\t\t}")
+
+          json_upload_marker = "\n\tprivate static function batchPath(string $batchUuid, string $format = self::FORMAT_CSV): ?string"
+          xlsx_upload_method = r'''
+	private static function xlsxUploadPath(string $token): ?string
+	{
+		$token = strtolower(trim($token));
+		if (!self::isUuid($token)) {
+			return null;
+		}
+
+		return self::tempRoot() . 'wla-inmo-import-upload-' . $token . '.xlsx';
+	}
+'''
+          replace_once(path, json_upload_marker, '\n' + xlsx_upload_method + json_upload_marker)
+
+          replace_once(path,
+              "\t\tif ($format === self::FORMAT_JSON) {\n\t\t\treturn self::tempRoot() . 'wla-inmo-import-batch-' . $batchUuid . '.ndjson';\n\t\t}",
+              "\t\tif (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)) {\n\t\t\treturn self::tempRoot() . 'wla-inmo-import-batch-' . $batchUuid . '.ndjson';\n\t\t}")
+
+          replace_once(path,
+              "\t\tif ($format === self::FORMAT_JSON) {\n\t\t\treturn array(\n\t\t\t\t'application/json',",
+              "\t\tif ($format === self::FORMAT_XLSX) {\n\t\t\treturn array(\n\t\t\t\t'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',\n\t\t\t\t'application/zip',\n\t\t\t\t'application/octet-stream',\n\t\t\t);\n\t\t}\n\n\t\tif ($format === self::FORMAT_JSON) {\n\t\t\treturn array(\n\t\t\t\t'application/json',")
+
+          replace_once(path,
+              "\t\treturn in_array(strtolower(trim($format)), array(self::FORMAT_CSV, self::FORMAT_JSON), true);",
+              "\t\treturn in_array(strtolower(trim($format)), array(self::FORMAT_CSV, self::FORMAT_JSON, self::FORMAT_XLSX), true);")
+
+          # Batch persistence and runner: XLSX is logical format, NDJSON is physical source.
+          path = 'plugin/wla-inmo/src/Import/BatchRepository.php'
+          replace_once(path,
+              "\t\t\t|| !in_array($sourceFormat, array('csv', 'json'), true)",
+              "\t\t\t|| !in_array($sourceFormat, array('csv', 'json', 'xlsx'), true)")
+          replace_once(path,
+              "\t\t$row['source_format'] = in_array($sourceFormat, array('csv', 'json'), true) ? $sourceFormat : 'csv';",
+              "\t\t$row['source_format'] = in_array($sourceFormat, array('csv', 'json', 'xlsx'), true) ? $sourceFormat : 'csv';")
+
+          path = 'plugin/wla-inmo/src/Import/BatchRunner.php'
+          replace_once(path,
+              "\t\tif ($format === 'json') {\n\t\t\treturn new JsonLinesReader(max(10000, $totalRows + 1));\n\t\t}",
+              "\t\tif (in_array($format, array('json', 'xlsx'), true)) {\n\t\t\treturn new JsonLinesReader(max(10000, $totalRows + 1));\n\t\t}")
+
+          # Hub: expose XLSX tab through the generic mapping wizard.
+          path = 'plugin/wla-inmo/src/Admin/ImportExportHub.php'
+          replace_once(path,
+              "\t\t$format = $format === 'json' ? 'json' : 'csv';",
+              "\t\t$format = in_array($format, array('json', 'xlsx'), true) ? $format : 'csv';")
+          replace_once(path,
+              "\t\t$jsonUrl = add_query_arg(array('page' => 'wla-inmo-import-export', 'wla_format' => 'json'), admin_url('admin.php'));",
+              "\t\t$jsonUrl = add_query_arg(array('page' => 'wla-inmo-import-export', 'wla_format' => 'json'), admin_url('admin.php'));\n\t\t$xlsxUrl = add_query_arg(array('page' => 'wla-inmo-import-export', 'wla_format' => 'xlsx'), admin_url('admin.php'));")
+          replace_once(path,
+              "\t\techo '<a class=\"nav-tab' . ($format === 'json' ? ' nav-tab-active' : '') . '\" href=\"' . esc_url($jsonUrl) . '\">' . esc_html__('JSON WLA', 'wla-inmo') . '</a>';",
+              "\t\techo '<a class=\"nav-tab' . ($format === 'json' ? ' nav-tab-active' : '') . '\" href=\"' . esc_url($jsonUrl) . '\">' . esc_html__('JSON WLA', 'wla-inmo') . '</a>';\n\t\techo '<a class=\"nav-tab' . ($format === 'xlsx' ? ' nav-tab-active' : '') . '\" href=\"' . esc_url($xlsxUrl) . '\">' . esc_html__('XLSX', 'wla-inmo') . '</a>';")
+          replace_once(path,
+              "\t\tImportExportPage::render();",
+              "\t\tImportExportPage::render($format);")
+
+          # Generic CSV/XLSX wizard wiring.
+          path = 'plugin/wla-inmo/src/Admin/ImportExportPage.php'
+          replace_once(path,
+              "use WLA\\Inmo\\Import\\CsvReader;",
+              "use WLA\\Inmo\\Import\\CsvReader;\nuse WLA\\Inmo\\Import\\JsonException;\nuse WLA\\Inmo\\Import\\JsonLinesReader;")
+          replace_once(path,
+              "\tprivate const UPLOAD_ACTION = 'wla_inmo_import_upload';",
+              "\tprivate const UPLOAD_ACTION = 'wla_inmo_import_upload';\n\tprivate const SHEET_ACTION = 'wla_inmo_import_xlsx_sheet';")
+          replace_once(path,
+              "\tprivate const NONCE_UPLOAD = 'wla_inmo_import_upload';",
+              "\tprivate const NONCE_UPLOAD = 'wla_inmo_import_upload';\n\tprivate const NONCE_SHEET = 'wla_inmo_import_xlsx_sheet';")
+          replace_once(path,
+              "\t\tadd_action('admin_post_' . self::UPLOAD_ACTION, array(self::class, 'handleUpload'));",
+              "\t\tadd_action('admin_post_' . self::UPLOAD_ACTION, array(self::class, 'handleUpload'));\n\t\tadd_action('admin_post_' . self::SHEET_ACTION, array(self::class, 'handleSheet'));" )
+          replace_once(path,
+              "\tpublic static function render(): void\n\t{\n\t\tself::authorize();",
+              "\tpublic static function render(string $requestedFormat = 'csv'): void\n\t{\n\t\tself::authorize();\n\t\t$requestedFormat = $requestedFormat === 'xlsx' ? 'xlsx' : 'csv';")
+          replace_once(path,
+              "\t\tif ($batch !== null && !self::canAccessBatch($batch)) {\n\t\t\t$batch = null;\n\t\t}\n\n\t\tself::renderSteps($draft, $batch);",
+              "\t\tif ($batch !== null && !self::canAccessBatch($batch)) {\n\t\t\t$batch = null;\n\t\t}\n\t\tif ($draft !== null && Workspace::sourceFormat($draft) === 'xlsx') {\n\t\t\t$requestedFormat = 'xlsx';\n\t\t}\n\t\tif ($batch !== null && (string) ($batch['source_format'] ?? '') === 'xlsx') {\n\t\t\t$requestedFormat = 'xlsx';\n\t\t}\n\n\t\tself::renderSteps($draft, $batch);")
+          replace_once(path,
+              "\t\t\tself::renderUpload();",
+              "\t\t\tself::renderUpload($requestedFormat);")
+
+          replace_once(path,
+              "\t\t$file = ImportRequest::uploadedFile('wla_import_file');\n\t\t$result = Workspace::storeUploadedCsv($file, get_current_user_id());",
+              "\t\t$file = ImportRequest::uploadedFile('wla_import_file');\n\t\t$sourceFormat = self::postScalar('wla_source_format');\n\t\t$result = $sourceFormat === 'xlsx'\n\t\t\t? Workspace::storeUploadedXlsx($file, get_current_user_id())\n\t\t\t: Workspace::storeUploadedCsv($file, get_current_user_id());")
+
+          map_marker = "\n\tpublic static function handleMap(): void"
+          sheet_handler = r'''
+	public static function handleSheet(): void
+	{
+		self::authorize();
+		check_admin_referer(self::NONCE_SHEET);
+
+		$token = self::postScalar('draft_token');
+		$sheetName = self::postScalar('sheet_name');
+		$result = Workspace::selectUploadedXlsxSheet($token, get_current_user_id(), $sheetName);
+		if (empty($result['ok'])) {
+			self::redirect(array('draft' => $token, 'wla_import_error' => (string) $result['code'], 'wla_format' => 'xlsx'));
+		}
+
+		self::redirect(array('draft' => $token, 'wla_import_notice' => 'sheet_ready', 'wla_format' => 'xlsx'));
+	}
+'''
+          replace_once(path, map_marker, '\n' + sheet_handler + map_marker)
+
+          replace_once(path,
+              "\t\t$rowFactory = static function () use ($path): iterable {\n\t\t\treturn (new CsvReader(Workspace::maxRows()))->rows($path);\n\t\t};",
+              "\t\t$sourceFormat = Workspace::sourceFormat($state);\n\t\t$rowFactory = static function () use ($path, $sourceHash, $sourceFormat): iterable {\n\t\t\tif ($sourceFormat === 'xlsx') {\n\t\t\t\treturn (new JsonLinesReader(Workspace::maxRows()))->verifiedRows($path, $sourceHash);\n\t\t\t}\n\n\t\t\treturn (new CsvReader(Workspace::maxRows()))->rows($path);\n\t\t};")
+          replace_once(path,
+              "\t\t} catch (CsvException $exception) {",
+              "\t\t} catch (CsvException|JsonException $exception) {")
+
+          replace_once(path,
+              "\t\t\t$userId,\n\t\t\t$batchUuid\n\t\t);",
+              "\t\t\t$userId,\n\t\t\t$batchUuid,\n\t\t\tWorkspace::sourceFormat($state)\n\t\t);")
+
+          replace_once(path,
+              "\t\t$path = Workspace::batchSourcePath($batchUuid);",
+              "\t\t$sourceFormat = (string) ($batch['source_format'] ?? 'csv');\n\t\t$path = Workspace::batchSourcePath($batchUuid, $sourceFormat);")
+          replace_once(path,
+              "\t\t\tWorkspace::deleteBatchSource($batchUuid);",
+              "\t\t\tWorkspace::deleteBatchSource($batchUuid, $sourceFormat);")
+          # cancel path has its own delete without sourceFormat local.
+          replace_once(path,
+              "\t\tWorkspace::deleteBatchSource($batchUuid);\n\t\tself::redirect(array('batch' => $batchUuid, 'wla_import_notice' => 'batch_cancelled'));",
+              "\t\tWorkspace::deleteBatchSource($batchUuid, (string) ($batch['source_format'] ?? 'csv'));\n\t\tself::redirect(array('batch' => $batchUuid, 'wla_import_notice' => 'batch_cancelled'));")
+
+          # Replace upload renderer with format-aware copy.
+          start = text = Path(path).read_text()
+          a = text.index("\tprivate static function renderUpload(): void")
+          b = text.index("\n\t/** @param array<string,mixed> $state */\n\tprivate static function renderDraft", a)
+          upload_method = r'''	private static function renderUpload(string $format = 'csv'): void
+	{
+		$isXlsx = $format === 'xlsx';
+		$title = $isXlsx ? __('Nueva importación XLSX', 'wla-inmo') : __('Nueva importación CSV', 'wla-inmo');
+		$description = $isXlsx
+			? __('Sube un XLSX. Primero se inspecciona el contenedor, luego eliges la hoja y recién después se normaliza y simula. Ninguna propiedad se modifica antes de confirmar.', 'wla-inmo')
+			: __('Sube un CSV UTF-8. Primero se revisa y simula: ninguna propiedad se crea o modifica hasta que confirmes un dry-run sin errores.', 'wla-inmo');
+		$label = $isXlsx ? __('Archivo XLSX', 'wla-inmo') : __('Archivo CSV', 'wla-inmo');
+		$accept = $isXlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : '.csv,text/csv';
+
+		echo '<section class="wla-inmo-admin__panel wla-inmo-import__panel">';
+		echo '<h2>' . esc_html($title) . '</h2>';
+		echo '<p>' . esc_html($description) . '</p>';
+		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr(self::UPLOAD_ACTION) . '">';
+		echo '<input type="hidden" name="wla_source_format" value="' . esc_attr($isXlsx ? 'xlsx' : 'csv') . '">';
+		wp_nonce_field(self::NONCE_UPLOAD);
+		echo '<p><label for="wla-import-file"><strong>' . esc_html($label) . '</strong></label><br>';
+		echo '<input id="wla-import-file" type="file" name="wla_import_file" accept="' . esc_attr($accept) . '" required></p>';
+		echo '<p class="description">' . esc_html(sprintf(__('Máximo %1$s MB y %2$s filas importables por hoja.', 'wla-inmo'), number_format_i18n(Workspace::maxUploadBytes() / 1048576, 0), number_format_i18n(Workspace::maxRows()))) . '</p>';
+		echo '<button type="submit" class="button button-primary">' . esc_html__('Subir y revisar', 'wla-inmo') . '</button>';
+		echo '</form></section>';
+	}
+'''
+          Path(path).write_text(text[:a] + upload_method + text[b:])
+
+          # Early XLSX sheet selection before preview/mapping.
+          replace_once(path,
+              "\t\t$token = (string) $state['token'];\n\t\t$preview = Workspace::preview($token, get_current_user_id());",
+              "\t\t$token = (string) $state['token'];\n\t\tif (Workspace::sourceFormat($state) === 'xlsx' && empty($state['selected_sheet'])) {\n\t\t\tself::renderXlsxSheetSelection($state);\n\t\t\techo '<section class=\"wla-inmo-import__secondary\"><form method=\"post\" action=\"' . esc_url(admin_url('admin-post.php')) . '\">';\n\t\t\techo '<input type=\"hidden\" name=\"action\" value=\"' . esc_attr(self::DISCARD_ACTION) . '\">';\n\t\t\techo '<input type=\"hidden\" name=\"draft_token\" value=\"' . esc_attr($token) . '\">';\n\t\t\twp_nonce_field(self::NONCE_DISCARD);\n\t\t\techo '<button type=\"submit\" class=\"button\">' . esc_html__('Descartar carga', 'wla-inmo') . '</button></form></section>';\n\t\t\treturn;\n\t\t}\n\n\t\t$preview = Workspace::preview($token, get_current_user_id());")
+
+          preview_marker = "\n\t/** @param array{headers:array<int,string>,rows:array<int,array<string,string>>} $preview */\n\tprivate static function renderPreview"
+          sheet_renderer = r'''
+	/** @param array<string,mixed> $state */
+	private static function renderXlsxSheetSelection(array $state): void
+	{
+		$sheets = isset($state['xlsx_sheets']) && is_array($state['xlsx_sheets']) ? $state['xlsx_sheets'] : array();
+		echo '<section class="wla-inmo-admin__panel wla-inmo-import__panel">';
+		echo '<h2>' . esc_html__('Seleccionar hoja del XLSX', 'wla-inmo') . '</h2>';
+		echo '<p>' . esc_html__('El archivo ya pasó la inspección ZIP/OOXML. Elige explícitamente qué hoja se normalizará; las demás no se leerán para la importación.', 'wla-inmo') . '</p>';
+		echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr(self::SHEET_ACTION) . '">';
+		echo '<input type="hidden" name="draft_token" value="' . esc_attr((string) ($state['token'] ?? '')) . '">';
+		echo '<input type="hidden" name="wla_source_format" value="xlsx">';
+		wp_nonce_field(self::NONCE_SHEET);
+		echo '<p><label for="wla-xlsx-sheet"><strong>' . esc_html__('Hoja a importar', 'wla-inmo') . '</strong></label><br><select id="wla-xlsx-sheet" name="sheet_name" required>';
+		echo '<option value="">' . esc_html__('Selecciona una hoja', 'wla-inmo') . '</option>';
+		foreach ($sheets as $sheet) {
+			if (!is_array($sheet) || !isset($sheet['name'])) {
+				continue;
+			}
+			$name = (string) $sheet['name'];
+			$rows = max(0, (int) ($sheet['importable_rows'] ?? 0));
+			$columns = max(0, (int) ($sheet['total_columns'] ?? 0));
+			$label = sprintf(__('%1$s — %2$s filas · %3$s columnas', 'wla-inmo'), $name, number_format_i18n($rows), number_format_i18n($columns));
+			echo '<option value="' . esc_attr($name) . '">' . esc_html($label) . '</option>';
+		}
+		echo '</select></p>';
+		echo '<button type="submit" class="button button-primary">' . esc_html__('Usar esta hoja', 'wla-inmo') . '</button>';
+		echo '</form></section>';
+	}
+'''
+          replace_once(path, preview_marker, '\n' + sheet_renderer + preview_marker)
+
+          replace_once(path,
+              "<th>' . esc_html__('Columna CSV', 'wla-inmo') . '</th>",
+              "<th>' . esc_html__('Columna de origen', 'wla-inmo') . '</th>")
+
+          # Preserve XLSX tab across centralized redirects.
+          replace_once(path,
+              "\tprivate static function redirect(array $args): never\n\t{\n\t\t$url = add_query_arg(array_merge(array('page' => 'wla-inmo-import-export'), $args), admin_url('admin.php'));",
+              "\tprivate static function redirect(array $args): never\n\t{\n\t\tif (!isset($args['wla_format'])) {\n\t\t\t$requestFormat = ImportRequest::postScalar('wla_source_format');\n\t\t\tif ($requestFormat === 'xlsx') {\n\t\t\t\t$args['wla_format'] = 'xlsx';\n\t\t\t} elseif (isset($args['draft'])) {\n\t\t\t\t$draft = Workspace::loadDraft((string) $args['draft'], get_current_user_id());\n\t\t\t\tif ($draft !== null && Workspace::sourceFormat($draft) === 'xlsx') {\n\t\t\t\t\t$args['wla_format'] = 'xlsx';\n\t\t\t\t}\n\t\t\t} elseif (isset($args['batch'])) {\n\t\t\t\t$batch = (new BatchRepository())->find((string) $args['batch']);\n\t\t\t\tif ($batch !== null && (string) ($batch['source_format'] ?? '') === 'xlsx') {\n\t\t\t\t\t$args['wla_format'] = 'xlsx';\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\t$url = add_query_arg(array_merge(array('page' => 'wla-inmo-import-export'), $args), admin_url('admin.php'));")
+
+          # Generic and XLSX-specific notices.
+          replace_once(path,
+              "\t\t\t'upload_ready' => __('Archivo recibido. Revisa columnas y mapping antes de simular.', 'wla-inmo'),",
+              "\t\t\t'upload_ready' => __('Archivo recibido y validado para continuar.', 'wla-inmo'),\n\t\t\t'sheet_ready' => __('Hoja seleccionada y normalizada. Revisa columnas y mapping antes de simular.', 'wla-inmo'),")
+          replace_once(path,
+              "\t\t\t'invalid_extension' => __('Solo se aceptan archivos CSV en esta etapa.', 'wla-inmo'),\n\t\t\t'invalid_mime' => __('El tipo de archivo no coincide con un CSV permitido.', 'wla-inmo'),",
+              "\t\t\t'invalid_extension' => __('La extensión del archivo no corresponde al formato seleccionado.', 'wla-inmo'),\n\t\t\t'invalid_mime' => __('El tipo MIME del archivo no corresponde al formato seleccionado.', 'wla-inmo'),\n\t\t\t'invalid_zip' => __('El XLSX no es un contenedor ZIP válido.', 'wla-inmo'),\n\t\t\t'unsafe_entry_path' => __('El XLSX contiene una ruta interna insegura y fue bloqueado.', 'wla-inmo'),\n\t\t\t'unsupported_executable_part' => __('El XLSX contiene macros, binarios o contenido ejecutable no permitido.', 'wla-inmo'),\n\t\t\t'external_relationship' => __('El XLSX contiene relaciones externas y fue bloqueado.', 'wla-inmo'),\n\t\t\t'macro_enabled_workbook' => __('Los libros con macros no están permitidos.', 'wla-inmo'),\n\t\t\t'unknown_sheet' => __('La hoja seleccionada no existe o ya no coincide con el archivo revisado.', 'wla-inmo'),\n\t\t\t'xlsx_validation_failed' => __('No fue posible validar el XLSX de forma segura.', 'wla-inmo'),\n\t\t\t'xlsx_normalization_failed' => __('No fue posible normalizar la hoja XLSX seleccionada.', 'wla-inmo'),")
+          replace_once(path,
+              "\t\t\t'draft_expired' => __('La carga temporal venció o ya no está disponible. Vuelve a subir el CSV.', 'wla-inmo'),",
+              "\t\t\t'draft_expired' => __('La carga temporal venció o ya no está disponible. Vuelve a subir el archivo.', 'wla-inmo'),")
+
+          # XLSX CI contract: ensure the wiring remains explicit.
+          workflow = Path('.github/workflows/xlsx-integration.yml')
+          w = workflow.read_text()
+          needle = "      - name: Run XLSX unit contracts\n        run: plugin/wla-inmo/vendor/bin/phpunit -c phpunit.xml.dist --filter ImportXlsx\n"
+          if needle not in w:
+              raise SystemExit('xlsx workflow unit step anchor missing')
+          replacement = needle + "\n      - name: Validate XLSX wizard wiring\n        run: |\n          grep -F \"FORMAT_XLSX = 'xlsx'\" plugin/wla-inmo/src/Import/Workspace.php\n          grep -F \"array('json', 'xlsx')\" plugin/wla-inmo/src/Import/BatchRunner.php\n          grep -F \"storeUploadedXlsx\" plugin/wla-inmo/src/Admin/ImportExportPage.php\n          grep -F \"wla_inmo_import_xlsx_sheet\" plugin/wla-inmo/src/Admin/ImportExportPage.php\n          grep -F \"wla_format' => 'xlsx'\" plugin/wla-inmo/src/Admin/ImportExportHub.php\n"
+          workflow.write_text(w.replace(needle, replacement, 1))
+
+      - name: Commit XLSX wiring
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add plugin/wla-inmo/src/Import/XlsxDocumentReader.php \
+                  plugin/wla-inmo/src/Import/Workspace.php \
+                  plugin/wla-inmo/src/Import/BatchRepository.php \
+                  plugin/wla-inmo/src/Import/BatchRunner.php \
+                  plugin/wla-inmo/src/Admin/ImportExportHub.php \
+                  plugin/wla-inmo/src/Admin/ImportExportPage.php \
+                  .github/workflows/xlsx-integration.yml
+          git commit -m 'feat(import): wire XLSX through canonical wizard'
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
