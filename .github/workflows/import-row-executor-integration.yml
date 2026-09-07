@@ -9,6 +9,7 @@ on:
       - 'plugin/wla-inmo/src/Quality/**'
       - 'bin/**'
       - 'tests/integration/assert-import-row-executor.php'
+      - 'tests/integration/assert-remote-media.php'
       - '.github/workflows/import-row-executor-integration.yml'
   workflow_dispatch:
 
@@ -51,7 +52,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '${{ matrix.php }}'
-          extensions: mysqli
+          extensions: mysqli,gd,fileinfo
           tools: composer:v2, wp-cli
           coverage: none
 
@@ -94,3 +95,8 @@ jobs:
         run: |
           cd /tmp/wla-import-row-executor-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-row-executor.php" --allow-root
+
+      - name: Validate real Media Library persistence and JSON portability
+        run: |
+          cd /tmp/wla-import-row-executor-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-remote-media.php" --allow-root
