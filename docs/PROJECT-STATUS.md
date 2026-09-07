@@ -17,10 +17,9 @@ Este documento es el registro vivo para auditorías rápidas. Debe actualizarse 
 - Registro: `docs/decisions/DECISION-REGISTER.md`
 - PR 1.1–1.8: `DONE`
 - PR 2.1–2.10: `DONE`
-- PR 3.1–3.8: `DONE`
-- PR 3.9: `IN_PROGRESS / QA_PENDING` — PR #64 / Issue #63
+- PR 3.1–3.9: `DONE`
 - PR 3.10: `OMITTED / OUT_OF_SCOPE` — decisión de alcance 2026-09-07
-- Próximo alcance aplicable después de 3.9: **PR 3.11 — Rollback seguro**
+- Próximo alcance aplicable: **PR 3.11 — Rollback seguro**
 
 ## Fases
 
@@ -114,9 +113,9 @@ La numeración original fue refinada durante implementación. Persistencia, exec
 | 3.6 | UI Importar + historial | #57 | DONE | `PR-3.6-IMPORT-UI.md` |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE | `PR-3.7-JSON-WLA.md` |
 | 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | DONE | `PR-3.8-XLSX.md` |
-| 3.9 | Media remota segura | #64 / #63 | IN_PROGRESS / QA_PENDING | `PR-3.9-REMOTE-MEDIA.md` |
+| 3.9 | Media remota segura | #64 / #63 | DONE | `PR-3.9-REMOTE-MEDIA.md` |
 | 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE | `docs/decisions/PHASE-3-SCOPE-2026-09-07.md` |
-| 3.11 | Rollback seguro | pendiente | PLANNED | pendiente |
+| 3.11 | Rollback seguro | pendiente | NEXT | pendiente |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
 
 ### PR 3.1 — Import domain / CSV foundation
@@ -243,7 +242,7 @@ Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
 ### PR 3.9 — Media remota segura
 
-Estado: `IN_PROGRESS / QA_PENDING`. PR #64 / Issue #63.
+Estado: `DONE`. PR #64 / Issue #63. Squash `1067d227ac0dea5b1a8a248b57cd217490e4031e`.
 
 - targets portables `media.gallery_urls` y `media.featured_image_url`;
 - URLs remotas separadas del `PropertyWriter`;
@@ -259,7 +258,9 @@ Estado: `IN_PROGRESS / QA_PENDING`. PR #64 / Issue #63.
 - errores permanentes como warnings; errores transitorios con retry y sin checkpoint al agotarse;
 - upsert antes de media; retry re-resuelve identidad para evitar duplicate create;
 - JSON WLA acepta sección `media` y exporta URLs públicas de attachments canónicos;
-- tests unitarios + integración WordPress real en matriz mínima/latest.
+- tests unitarios + integración WordPress real en matriz mínima/latest;
+- 13/13 workflows verdes en el head funcional y nuevamente 13/13 en el head documental final;
+- review threads/P0/P1 abiertos al merge: 0.
 
 Evidencia: `docs/evidence/phase-3/PR-3.9-REMOTE-MEDIA.md`.
 
@@ -273,9 +274,7 @@ Registro: `docs/decisions/PHASE-3-SCOPE-2026-09-07.md`.
 
 ## Findings / deuda no bloqueante conocida
 
-No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.8 cerrados.
-
-Para 3.9 el estado final depende del último head de QA y de revisión de threads antes del merge.
+No existen findings críticos o altos abiertos conocidos dentro de Fase 1, Fase 2 y PR 3.1–3.9 cerrados.
 
 Deuda de prioridad baja heredada:
 

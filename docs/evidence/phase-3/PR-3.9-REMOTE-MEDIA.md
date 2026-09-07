@@ -1,12 +1,20 @@
 # Evidencia — PR 3.9 Media remota segura
 
-Estado: `QA_PASSED / READY_TO_MERGE`.
+Estado: `DONE`.
 
-Issue: #63  
-PR: #64  
+Issue: #63 — `CLOSED`  
+PR: #64 — `MERGED`  
 Rama: `feat/phase3-remote-media`  
 Base: squash PR #62 `a51cb361f4534935f13c94c72b5d961a88f7a743`  
-Head funcional validado: `e144e2362cd0fea832c6edef317fec747facbb1f`
+Head funcional validado: `e144e2362cd0fea832c6edef317fec747facbb1f`  
+Head documental pre-merge: `29f93d316fbb3966be7177a4d9a5d88908e1df63`  
+Squash en `main`: `1067d227ac0dea5b1a8a248b57cd217490e4031e`
+
+## Cierre
+
+PR #64 fue mergeada por squash después de dos validaciones consecutivas completamente verdes: el head funcional y el head documental final. Issue #63 se cerró automáticamente como `completed`.
+
+La implementación deja media remota como input portable/transitorio; el estado canónico termina en Media Library, `gallery_ids` y featured image de WordPress. Producción no fue modificada.
 
 ## Objetivo
 
@@ -140,17 +148,6 @@ Fallos transitorios se reintentan de forma acotada. Incluyen DNS/transport y HTT
 
 Disponibles mediante `TargetRegistry` para CSV/XLSX mapping y mediante sección `media` en JSON WLA v1.
 
-Ejemplo JSON:
-
-```json
-{
-  "media": {
-    "gallery_urls": ["https://cdn.example.com/a.jpg"],
-    "featured_image_url": "https://cdn.example.com/a.jpg"
-  }
-}
-```
-
 No se permiten attachment IDs externos ni meta arbitraria.
 
 ## Tests implementados
@@ -189,34 +186,45 @@ No se permiten attachment IDs externos ni meta arbitraria.
 
 Se ejecuta dentro de `Import Row Executor Integration` para WordPress 6.6.2/PHP 8.1 y WordPress latest/PHP 8.3.
 
-## QA final — head `e144e2362cd0fea832c6edef317fec747facbb1f`
+## QA final
 
-13/13 workflows del head funcional: `SUCCESS`.
+### Head funcional `e144e2362cd0fea832c6edef317fec747facbb1f`
 
-- Remote Media Integration — `34161989830` — SUCCESS;
-- Import Row Executor Integration — `34161989809` — SUCCESS;
-- JSON WLA Integration — `34161989796` — SUCCESS;
-- Phase 1 CI — `34161989828` — SUCCESS;
-- Bootstrap Smoke — `34161989803` — SUCCESS;
-- Administration Quality Gate — `34161989806` — SUCCESS;
-- Import Persistence Integration — `34161989876` — SUCCESS;
-- Import Batch Runner Integration — `34161989917` — SUCCESS;
-- Catalogue Quality Integration — `34161989795` — SUCCESS;
-- Activity Integration — `34161989844` — SUCCESS;
-- Dashboard Integration — `34161989945` — SUCCESS;
-- Settings UI Integration — `34161989833` — SUCCESS;
-- Help Center Integration — `34161989846` — SUCCESS.
+13/13 workflows: `SUCCESS`.
 
-### Matrices clave
+- Remote Media Integration — `34161989830`;
+- Import Row Executor Integration — `34161989809`;
+- JSON WLA Integration — `34161989796`;
+- Phase 1 CI — `34161989828`;
+- Bootstrap Smoke — `34161989803`;
+- Administration Quality Gate — `34161989806`;
+- Import Persistence Integration — `34161989876`;
+- Import Batch Runner Integration — `34161989917`;
+- Catalogue Quality Integration — `34161989795`;
+- Activity Integration — `34161989844`;
+- Dashboard Integration — `34161989945`;
+- Settings UI Integration — `34161989833`;
+- Help Center Integration — `34161989846`.
 
-- Remote Media: PHP 8.1 — SUCCESS;
-- Remote Media: PHP 8.3 — SUCCESS;
-- Row Executor + Media Library: WordPress 6.6.2 / PHP 8.1 — SUCCESS;
-- Row Executor + Media Library: WordPress latest / PHP 8.3 — SUCCESS;
-- JSON WLA: WordPress 6.6.2 / PHP 8.1 — SUCCESS;
-- JSON WLA: WordPress latest / PHP 8.3 — SUCCESS.
+### Head documental final `29f93d316fbb3966be7177a4d9a5d88908e1df63`
 
-### Artifacts relevantes
+13/13 workflows: `SUCCESS`.
+
+- Remote Media Integration — `34162235183`;
+- Import Row Executor Integration — `34162235151`;
+- JSON WLA Integration — `34162235138`;
+- Phase 1 CI — `34162235141`;
+- Bootstrap Smoke — `34162235160`;
+- Administration Quality Gate — `34162235159`;
+- Import Persistence Integration — `34162235167`;
+- Import Batch Runner Integration — `34162235166`;
+- Catalogue Quality Integration — `34162235143`;
+- Activity Integration — `34162235147`;
+- Dashboard Integration — `34162235162`;
+- Settings UI Integration — `34162235173`;
+- Help Center Integration — `34162235149`.
+
+### Artifacts relevantes del head funcional
 
 - Administration E2E: artifact `10032928089`, digest `sha256:fc86284de64460b90f37d0905a298546da4f5592559888b61ad54a18f9282f16`;
 - JSON performance 6.6.2/PHP 8.1: artifact `10032909248`, digest `sha256:f2e2b78b8575bc55eeef8d744f537b0336ecdc9efa619b2f7aa7ae88a29d01a4`;
@@ -226,26 +234,10 @@ Remote Media no genera artifact binario propio: su evidencia reproducible está 
 
 ## Review findings
 
-- Review threads abiertos: 0.
+- Review threads abiertos al merge: 0.
 - Reviews con findings: 0.
 - P0/P1 abiertos: 0.
 - Finding de QA corregido: el primer script de integración llamaba helpers inexistentes `setGallery()` / `setFeaturedImage()`; se corrigió para usar el contrato público real `setGalleryIds()` / `setFeaturedImageId()` y ambas matrices quedaron verdes.
-
-## Criterio de merge
-
-Cumplido:
-
-- CI final completamente verde sobre el head funcional;
-- WordPress mínimo/latest validado;
-- regresión JSON/CSV/XLSX pipeline cubierta por gates existentes;
-- seguridad SSRF/MIME/bytes/timeout/redirects cubierta;
-- dry-run sin HTTP por arquitectura y tests;
-- retry/idempotencia validado;
-- privacidad de URL origen validada;
-- review findings bloqueantes = 0;
-- producción sin cambios.
-
-PR #64 puede salir de draft y mergearse por squash.
 
 ## Producción
 
