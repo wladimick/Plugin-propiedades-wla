@@ -35,7 +35,7 @@ final class RemoteMediaLibrary implements RemoteMediaLibraryInterface
 			if ($exception instanceof RemoteMediaException) {
 				throw $exception;
 			}
-			throw new RemoteMediaException('media_library_unexpected', 'Unexpected Media Library persistence failure.', $exception);
+			throw new RemoteMediaException('media_library_unexpected', 'Unexpected Media Library persistence failure.', $exception); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Previous exception is internal context and is never rendered here.
 		} finally {
 			$file->cleanup();
 		}
