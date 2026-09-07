@@ -62,9 +62,9 @@ final class RemoteMediaImageInspector
 		if (!is_array($image)) {
 			throw new RemoteMediaException('media_image_invalid', 'Downloaded remote media is not a valid raster image.');
 		}
-		$width = (int) ($image[0] ?? 0);
-		$height = (int) ($image[1] ?? 0);
-		$imageType = (int) ($image[2] ?? 0);
+		$width = (int) $image[0];
+		$height = (int) $image[1];
+		$imageType = (int) $image[2];
 		$detectedMime = match ($imageType) {
 			IMAGETYPE_JPEG => 'image/jpeg',
 			IMAGETYPE_PNG  => 'image/png',
