@@ -23,6 +23,7 @@ final class ImportRemoteMediaDownloaderTest extends TestCase
 			if (is_file($path)) {
 				unlink($path);
 			}
+		}
 		$this->temporaryFiles = array();
 	}
 
@@ -97,7 +98,7 @@ final class ImportRemoteMediaDownloaderTest extends TestCase
 		self::assertFileDoesNotExist((string) $factory->lastPath);
 	}
 
-	private function downloader(object $client, int $maxBytes, ?object $factory = null): RemoteMediaDownloader
+	private function downloader(RemoteMediaHttpClientInterface $client, int $maxBytes, ?RemoteMediaTempFileFactoryInterface $factory = null): RemoteMediaDownloader
 	{
 		$resolver = new class implements DnsResolverInterface {
 			public function resolve(string $host): array
@@ -117,7 +118,7 @@ final class ImportRemoteMediaDownloaderTest extends TestCase
 		);
 	}
 
-	private function client(string $payload, int $status, ?int $contentLength): object
+	private function client(string $payload, int $status, ?int $contentLength): RemoteMediaHttpClientInterface
 	{
 		return new class($payload, $status, $contentLength) implements RemoteMediaHttpClientInterface {
 			public int $calls = 0;
@@ -142,7 +143,7 @@ final class ImportRemoteMediaDownloaderTest extends TestCase
 		};
 	}
 
-	private function tempFactory(): object
+	private function tempFactory(): RemoteMediaTempFileFactoryInterface
 	{
 		$test = $this;
 		return new class($test) implements RemoteMediaTempFileFactoryInterface {
