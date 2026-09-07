@@ -198,7 +198,8 @@ final class XlsxDocumentReader
 			fclose($output);
 			$output = null;
 
-			if (!hash_equals($inspection['source_hash'], $this->hashLockedHandle($handle))) {
+			$afterSourceHash = $this->hashLockedHandle($handle);
+			if ($inspection['source_hash'] !== $afterSourceHash) {
 				@unlink($ndjsonPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Plugin-created invalid normalized source cleanup.
 				throw new XlsxException('source_changed_during_normalization', 'XLSX source changed during normalization.');
 			}
