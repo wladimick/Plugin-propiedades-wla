@@ -34,6 +34,7 @@ final class WorkspaceJanitor
 			$root . 'wla-inmo-import-draft-*.csv',
 			$root . 'wla-inmo-import-draft-*.ndjson',
 			$root . 'wla-inmo-import-upload-*.json',
+			$root . 'wla-inmo-import-upload-*.xlsx',
 		);
 		$files = array();
 		foreach ($patterns as $pattern) {

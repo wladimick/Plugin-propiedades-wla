@@ -28,7 +28,7 @@ wlaJsonAdminSmokeExpect(is_string($hub), 'Import/export hub source missing.');
 wlaJsonAdminSmokeExpect(is_string($workspace), 'Workspace source missing.');
 wlaJsonAdminSmokeExpect(is_string($runner), 'BatchRunner source missing.');
 wlaJsonAdminSmokeExpect(str_contains($hub, "JsonImportExportPage::render()"), 'Hub does not expose JSON on the existing import/export screen.');
-wlaJsonAdminSmokeExpect(str_contains($hub, "ImportExportPage::render()"), 'Hub no longer preserves the CSV screen.');
+wlaJsonAdminSmokeExpect(str_contains($hub, "ImportExportPage::render(\$format)"), 'Hub no longer preserves the shared CSV/XLSX mapping screen.');
 wlaJsonAdminSmokeExpect(substr_count($page, 'check_admin_referer(') >= 7, 'JSON mutations/download are not all nonce protected.');
 wlaJsonAdminSmokeExpect(str_contains($page, 'AccessCapabilities::IMPORT_PROPERTIES'), 'JSON import does not enforce import capability.');
 wlaJsonAdminSmokeExpect(str_contains($page, 'AccessCapabilities::EXPORT_PROPERTIES'), 'JSON export does not enforce export capability.');
@@ -45,6 +45,8 @@ wlaJsonAdminSmokeExpect(str_contains($page, 'JsonExporter(new WordPressJsonExpor
 wlaJsonAdminSmokeExpect(!preg_match('/\$_(?:GET|POST|REQUEST)\[[^\]]*(?:path|source_path|file_path)/i', $page), 'JSON admin accepts a filesystem path from the request.');
 wlaJsonAdminSmokeExpect(str_contains($workspace, "'canonical_mapping' => \$inspection['mapping']"), 'Workspace does not persist the validated JSON mapping.');
 wlaJsonAdminSmokeExpect(str_contains($workspace, "@unlink(\$uploadPath)"), 'Original JSON upload is not removed after normalization.');
-wlaJsonAdminSmokeExpect(str_contains($runner, "\$format === 'json'"), 'Shared runner does not select the JSON reader from batch format.');
+wlaJsonAdminSmokeExpect(str_contains($runner, "array('json', 'xlsx')"), 'Shared runner does not recognize normalized JSON/XLSX source formats.');
+wlaJsonAdminSmokeExpect(str_contains($runner, 'return new JsonLinesReader'), 'Shared runner does not select JsonLinesReader for normalized sources.');
+wlaJsonAdminSmokeExpect(str_contains($runner, 'return new CsvReader'), 'Shared runner no longer preserves the CSV reader path.');
 
 echo "WLA Inmo JSON admin smoke tests passed.\n";

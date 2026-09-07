@@ -38,7 +38,7 @@ final class BatchRepository
 		if (
 			!SourceKey::isValid($sourceKey)
 			|| preg_match('/^[a-f0-9]{64}$/', $sourceHash) !== 1
-			|| !in_array($sourceFormat, array('csv', 'json'), true)
+			|| !in_array($sourceFormat, array('csv', 'json', 'xlsx'), true)
 		) {
 			return null;
 		}
@@ -262,7 +262,7 @@ final class BatchRepository
 		}
 
 		$sourceFormat = strtolower(trim((string) ($row['source_format'] ?? 'csv')));
-		$row['source_format'] = in_array($sourceFormat, array('csv', 'json'), true) ? $sourceFormat : 'csv';
+		$row['source_format'] = in_array($sourceFormat, array('csv', 'json', 'xlsx'), true) ? $sourceFormat : 'csv';
 
 		return $row;
 	}

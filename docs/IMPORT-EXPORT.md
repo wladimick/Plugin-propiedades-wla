@@ -7,10 +7,10 @@ Permitir crear o actualizar cientos o miles de propiedades de manera segura, rep
 ## Formatos y estado
 
 - CSV UTF-8: implementado en Fase 3.1–3.6.
-- JSON WLA versionado: Fase 3.7.
-- XLSX: Fase 3.8.
+- JSON WLA versionado: implementado en Fase 3.7.
+- XLSX: implementado en Fase 3.8, QA final pendiente en PR #62.
 
-CSV y JSON convergen en el mismo pipeline de mapping, validación, dry-run, identidad, `RowExecutor`, batches y checkpoints.
+CSV, JSON y XLSX convergen en el mismo pipeline de mapping, validación, dry-run, identidad, `RowExecutor`, batches y checkpoints. El formato externo puede tener un lector distinto, pero nunca un segundo mecanismo de upsert.
 
 ## Flujo del importador
 
@@ -19,7 +19,9 @@ Subir archivo
    ↓
 Detectar / validar contrato
    ↓
-Mapear campos (CSV) o congelar mapping canónico (JSON WLA)
+Normalizar a fuente controlada por servidor cuando corresponda
+   ↓
+Mapear campos / congelar mapping canónico
    ↓
 Validar
    ↓
@@ -138,6 +140,80 @@ El mapping se genera en servidor durante la validación del contrato. La UI lo m
 
 `source_key` y mapping JSON **no se aceptan desde POST**. El usuario solo puede decidir políticas explícitas permitidas, como la semántica de vacíos.
 
+## XLSX
+
+PR 3.8 adopta **PhpSpreadsheet 3.10.7 exacta** conforme a ADR-014, implementando D31 sin reemplazarla.
+
+### Preflight y selección de hoja
+
+Un XLSX no entra directamente a PhpSpreadsheet. Primero se valida mediante `XlsxArchiveInspector`:
+
+- extensión y MIME compatibles;
+- ZIP legible;
+- límite de bytes comprimidos;
+- límite de entries ZIP;
+- límite de bytes descomprimidos por entry y total;
+- ratio de expansión bounded;
+- required OOXML parts;
+- límite de worksheets;
+- bloqueo de path traversal / Zip Slip;
+- bloqueo de macros, binarios y partes ejecutables no soportadas;
+- bloqueo de relationships externos.
+
+Después del preflight, el usuario debe **elegir explícitamente la worksheet** que se importará. WLA Inmo no selecciona silenciosamente la primera hoja cuando existen varias.
+
+### Lectura bounded y normalización
+
+La worksheet seleccionada se procesa mediante PhpSpreadsheet con:
+
+- `setReadDataOnly(true)`;
+- `setReadEmptyCells(false)`;
+- `IReadFilter` por chunks de 500 filas;
+- máximo de 10.000 filas importables;
+- máximo de columnas;
+- máximo de bytes por celda;
+- headers normalizados mediante los contratos existentes.
+
+El XLSX se transforma a una fuente **NDJSON privada y server-generated**. Desde ese punto XLSX reutiliza el mismo pipeline de JSON/CSV.
+
+No existe un segundo runner XLSX.
+
+### Seguridad XLSX
+
+- fórmulas se leen como datos y no se ejecutan;
+- no se realizan requests HTTP por relationships externos;
+- no se descargan imágenes/media en 3.8;
+- temporales usan nombres derivados de UUIDs generados por servidor;
+- el XLSX staged debe poder restringirse a permisos `0600`; si no, la carga falla y se elimina;
+- la fuente NDJSON normalizada mantiene hash propio;
+- el hash del XLSX original se compara antes/después de la normalización;
+- uploads XLSX abandonados se limpian por `WorkspaceJanitor`;
+- el janitor no borra fuentes de batch reanudables por antigüedad.
+
+### UI XLSX
+
+La pantalla existente `WLA Inmo → Importar / Exportar` incorpora pestaña XLSX.
+
+Flujo:
+
+```text
+Subir
+  ↓
+Elegir hoja
+  ↓
+Mapear
+  ↓
+Validar / Simular
+  ↓
+Confirmar
+  ↓
+Procesar
+  ↓
+Informe
+```
+
+La pestaña XLSX conserva su formato al navegar historial/paginación y filtra batches `source_format=xlsx`.
+
 ## Identificación y upsert
 
 Prioridad:
@@ -157,9 +233,9 @@ Antes de escribir se valida, entre otros:
 - tipos/números/fechas/coordenadas;
 - taxonomías desconocidas;
 - estados no soportados;
-- shape y versión del formato.
+- shape/versión o estructura del formato.
 
-El dry-run no crea posts, no modifica meta/taxonomías y no descarga media.
+El dry-run no crea posts, no modifica meta/taxonomías, no crea términos y no descarga media.
 
 ## Procesamiento por lotes
 
@@ -167,15 +243,15 @@ Nunca procesar un dataset grande en un único request.
 
 Los batches avanzan en slices pequeños y guardan:
 
-- `source_format` (`csv` o `json`);
+- `source_format` (`csv`, `json` o `xlsx`);
 - `cursor_row`;
-- `cursor_offset` físico;
+- `cursor_offset` físico cuando aplica;
 - contadores;
 - `revision` para optimistic locking;
 - snapshot de mapping;
 - hash de fuente confirmada.
 
-Un batch pausado/fallido se reanuda desde un checkpoint consistente. Los archivos de batches no se eliminan por antigüedad; solo drafts temporales abandonados se limpian automáticamente.
+Un batch pausado/fallido se reanuda desde un checkpoint consistente. Los archivos de batches no se eliminan por antigüedad; solo drafts/uploads temporales abandonados se limpian automáticamente.
 
 ## Actualizaciones parciales
 
@@ -228,7 +304,7 @@ Incluir campos privados en el futuro requerirá una decisión explícita, capabi
 
 ## Exportación CSV/XLSX
 
-CSV/XLSX final corresponde a PR 3.10. Debe mantener filtros, streaming/chunks y neutralización de Spreadsheet Formula Injection.
+CSV/XLSX final corresponde a PR 3.10. Debe mantener filtros, streaming/chunks y neutralización de Spreadsheet Formula Injection. La dependencia XLSX ya quedó definida en ADR-014/PR 3.8.
 
 ## Imágenes
 
@@ -248,7 +324,8 @@ Reglas previstas:
 Cada importación registra metadata bounded:
 
 - batch UUID;
-- formato/origen;
+- `source_format`;
+- origen;
 - usuario/fecha;
 - estado;
 - total/progreso;
@@ -276,16 +353,30 @@ Rollback seguro corresponde a PR 3.11. Solo se permitirá cuando WLA pueda demos
 - hashes y locks de fuente;
 - schema/targets allowlisted;
 - sin deserialización PHP de input;
-- sin HTTP durante parse/dry-run JSON;
+- sin HTTP durante parse/dry-run JSON/XLSX;
+- preflight archive bounded para XLSX;
 - logs/evidencia sin payload privado.
 
 ## Rendimiento
 
 - parsing CSV incremental;
 - JSON externo bounded por bytes/propiedades/profundidad;
+- XLSX bounded por chunks de 500 filas después de preflight OOXML;
 - ejecución mediante batches reanudables;
 - exportación JSON streaming/paginada;
 - sin cargas completas del catálogo;
 - Search/Quality sincronizados incrementalmente;
 - historial paginado;
 - datasets 100 / 1.000 / 5.000 como regresión de fase.
+
+## QA / evidencia
+
+- ADR: `docs/decisions/ADR-014-xlsx-dependency.md`;
+- evidencia 3.8: `docs/evidence/phase-3/PR-3.8-XLSX.md`;
+- workflow: `.github/workflows/xlsx-integration.yml`;
+- matrices PHP 8.1 / PHP 8.3;
+- WordPress mínimo/latest mediante gates de regresión existentes.
+
+## Producción
+
+La Fase 3 usa fixtures sintéticos y WordPress limpio. `propiedadesmartinez.cl` permanece sin cambios.

@@ -26,8 +26,8 @@ La planificación original fue refinada durante implementación. Persistencia, e
 | 3.5 | Runner reanudable de batches | #55 | DONE |
 | 3.6 | UI Importar + historial de batches | #57 | DONE |
 | 3.7 | JSON WLA versionado | #60 / #58 | DONE |
-| 3.8 | XLSX streaming + ADR/benchmark | pendiente | NEXT |
-| 3.9 | Media remota segura | pendiente | PLANNED |
+| 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | QA_PENDING |
+| 3.9 | Media remota segura | pendiente | NEXT |
 | 3.10 | Exportación CSV/XLSX | pendiente | PLANNED |
 | 3.11 | Rollback seguro de importación | pendiente | PLANNED |
 | 3.12 | Quality Gate Fase 3 | pendiente | PLANNED |
@@ -177,41 +177,48 @@ Evidencia: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
 
 ## PR 3.8 — XLSX streaming + ADR de dependencia
 
-Estado: `NEXT`.
+Estado: `QA_PENDING`. PR #62 / Issue #61.
 
-Objetivo: añadir XLSX sin degradar memoria, tamaño del ZIP ni seguridad y sin duplicar pipeline.
+Decisión: **PhpSpreadsheet 3.10.7 exacta**, implementando D31 mediante ADR-014 y lectura bounded por chunks de 500 filas.
 
-Antes de implementar la dependencia definitiva:
+Incluye:
 
-- comparar al menos dos alternativas razonables;
-- medir memoria con 1k/5k y dataset mayor razonable;
-- medir peso agregado al ZIP release;
-- revisar mantenimiento, licencia y superficie de dependencias;
-- evaluar compatibilidad PHP 8.1 y WordPress mínimo;
-- documentar ADR final;
-- proteger contra ZIP/archive bombs y descompresión no acotada;
-- definir límites de sheets/rows/columns/cell bytes;
-- rechazar fórmulas/macros/contenido no soportado de forma controlada.
+- comparación reproducible OpenSpout 4.24.5 / PhpSpreadsheet 3.10.7 / 5.8.1;
+- `composer.lock` runtime/tooling reproducible;
+- inspección ZIP/OOXML antes del reader;
+- límites de bytes comprimidos/descomprimidos, entries, ratio, sheets, rows, columns y cell bytes;
+- bloqueo de path traversal/Zip Slip, macros/binarios y relationships externos;
+- selección explícita de hoja;
+- normalización XLSX → NDJSON privado;
+- permisos temporales `0600` fail-closed;
+- janitor de uploads XLSX abandonados;
+- `source_format=xlsx` persistido en batch/historial;
+- mismo mapping, `DryRunEngine`, identidad, `BatchRunner` y `RowExecutor` de CSV/JSON;
+- UI XLSX integrada al importador existente;
+- historial XLSX filtrado en su pestaña;
+- PHPUnit XLSX, PHPStan, build/smoke y matriz PHP 8.1/8.3;
+- integración WordPress para handler, cleanup e historial;
+- benchmark 1k/5k y artifacts de decisión documentados.
 
-Regla arquitectónica: la librería seleccionada solo transforma XLSX → filas normalizadas. Mapping, validación, dry-run, identidad, executor y runner no se duplican.
+Evidencia: `docs/evidence/phase-3/PR-3.8-XLSX.md`.
 
 ### Criterios de aceptación 3.8
 
-- ADR con comparación objetiva de alternativas;
-- dependencia con licencia compatible y mantenimiento razonable;
-- parser bounded;
-- límites antes/durante descompresión;
-- XLSX válido → filas canónicas;
-- malformado/archive bomb → rechazo controlado;
-- datasets 1k/5k medidos;
-- ZIP release comparado antes/después;
-- regresión CSV + JSON completa;
-- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3 verdes;
-- evidencia `QA_PASSED / READY_TO_MERGE` antes de merge.
+- ADR con comparación objetiva de alternativas — DONE;
+- dependencia con licencia compatible y mantenimiento razonable — DONE;
+- parser bounded — DONE;
+- límites antes/durante descompresión — DONE;
+- XLSX válido → filas canónicas — DONE;
+- malformado/archive bomb → rechazo controlado — DONE;
+- datasets 1k/5k medidos — DONE;
+- ZIP release comparado antes/después — QA final pendiente de registrar;
+- regresión CSV + JSON completa — QA final pendiente;
+- WordPress 6.6.2/PHP 8.1 y latest/PHP 8.3 — QA final pendiente;
+- evidencia `QA_PASSED / READY_TO_MERGE` — pendiente del head final.
 
 ## PR 3.9 — Media remota segura
 
-Estado: `PLANNED`.
+Estado: `NEXT` después del merge de 3.8.
 
 Objetivo: importar imágenes después de resolver propiedad sin convertir el plugin en SSRF proxy.
 

@@ -1,0 +1,134 @@
+name: XLSX Dependency Lab
+
+on:
+  pull_request:
+    paths:
+      - 'docs/decisions/ADR-014-xlsx-dependency.md'
+      - 'docs/evidence/phase-3/PR-3.8-XLSX.md'
+      - 'tests/benchmarks/generate-xlsx-fixture.php'
+      - 'tests/benchmarks/read-xlsx-candidate.php'
+      - '.github/workflows/xlsx-dependency-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: ${{ matrix.id }} / PHP 8.1
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: openspout-4.24.5
+            package: openspout/openspout
+            version: 4.24.5
+          - id: phpspreadsheet-3.10.7
+            package: phpoffice/phpspreadsheet
+            version: 3.10.7
+          - id: phpspreadsheet-5.8.1
+            package: phpoffice/phpspreadsheet
+            version: 5.8.1
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: dom,fileinfo,filter,gd,iconv,libxml,mbstring,simplexml,xml,xmlreader,xmlwriter,zip,zlib
+          tools: composer:v2
+          coverage: none
+
+      - name: Install candidate in isolated project
+        env:
+          PACKAGE: ${{ matrix.package }}
+          VERSION: ${{ matrix.version }}
+          CANDIDATE: ${{ matrix.id }}
+        run: |
+          LAB_DIR="$RUNNER_TEMP/wla-xlsx-$CANDIDATE"
+          mkdir -p "$LAB_DIR"
+          composer init --working-dir="$LAB_DIR" --name="wla/xlsx-lab" --no-interaction
+          composer config --working-dir="$LAB_DIR" audit.block-insecure false
+          composer require --working-dir="$LAB_DIR" "$PACKAGE:$VERSION" \
+            --no-interaction \
+            --no-progress \
+            --prefer-dist \
+            --no-scripts \
+            --no-audit
+          echo "LAB_DIR=$LAB_DIR" >> "$GITHUB_ENV"
+
+      - name: Audit candidate dependencies
+        run: |
+          composer audit --working-dir="$LAB_DIR" --format=json > "$RUNNER_TEMP/audit.json" || true
+          cat "$RUNNER_TEMP/audit.json"
+
+      - name: Measure dependency footprint
+        env:
+          CANDIDATE: ${{ matrix.id }}
+        run: |
+          VENDOR_BYTES="$(du -sb "$LAB_DIR/vendor" | cut -f1)"
+          PACKAGE_COUNT="$(php -r '$lock=json_decode(file_get_contents($argv[1]), true); echo count($lock["packages"] ?? []);' "$LAB_DIR/composer.lock")"
+          VENDOR_ZIP="$RUNNER_TEMP/vendor-$CANDIDATE.zip"
+          (cd "$LAB_DIR" && zip -qr "$VENDOR_ZIP" vendor composer.lock)
+          VENDOR_ZIP_BYTES="$(stat -c%s "$VENDOR_ZIP")"
+          cat > "$RUNNER_TEMP/footprint.json" <<EOF
+          {
+            "candidate": "$CANDIDATE",
+            "php": "$(php -r 'echo PHP_VERSION;')",
+            "package_count": $PACKAGE_COUNT,
+            "vendor_bytes": $VENDOR_BYTES,
+            "vendor_zip_bytes": $VENDOR_ZIP_BYTES,
+            "baseline_plugin_zip_bytes": 214103
+          }
+          EOF
+          cat "$RUNNER_TEMP/footprint.json"
+
+      - name: Generate neutral XLSX fixtures
+        run: |
+          php tests/benchmarks/generate-xlsx-fixture.php "$RUNNER_TEMP/wla-1000.xlsx" 1000 | tee "$RUNNER_TEMP/fixture-1000.json"
+          php tests/benchmarks/generate-xlsx-fixture.php "$RUNNER_TEMP/wla-5000.xlsx" 5000 | tee "$RUNNER_TEMP/fixture-5000.json"
+
+      - name: Benchmark candidate reader
+        env:
+          CANDIDATE: ${{ matrix.id }}
+        run: |
+          : > "$RUNNER_TEMP/reader-metrics.jsonl"
+          MODES="native"
+          if [[ "$CANDIDATE" == phpspreadsheet-* ]]; then
+            MODES="native chunked"
+          fi
+          for MODE in $MODES; do
+            for ROWS in 1000 5000; do
+              WLA_XLSX_VENDOR="$LAB_DIR/vendor" \
+                php tests/benchmarks/read-xlsx-candidate.php "$CANDIDATE" "$RUNNER_TEMP/wla-$ROWS.xlsx" "$MODE" \
+                | tee -a "$RUNNER_TEMP/reader-metrics.jsonl"
+              ACTUAL="$(tail -n1 "$RUNNER_TEMP/reader-metrics.jsonl" | jq -r '.rows_read')"
+              EXPECTED="$((ROWS + 1))"
+              test "$ACTUAL" -eq "$EXPECTED"
+            done
+          done
+
+      - name: Build lab evidence bundle
+        env:
+          CANDIDATE: ${{ matrix.id }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/evidence"
+          cp "$RUNNER_TEMP/footprint.json" "$RUNNER_TEMP/evidence/"
+          cp "$RUNNER_TEMP/audit.json" "$RUNNER_TEMP/evidence/"
+          cp "$RUNNER_TEMP/reader-metrics.jsonl" "$RUNNER_TEMP/evidence/"
+          cp "$RUNNER_TEMP/fixture-1000.json" "$RUNNER_TEMP/evidence/"
+          cp "$RUNNER_TEMP/fixture-5000.json" "$RUNNER_TEMP/evidence/"
+          sha256sum "$RUNNER_TEMP/wla-1000.xlsx" "$RUNNER_TEMP/wla-5000.xlsx" > "$RUNNER_TEMP/evidence/fixtures.sha256"
+          printf '%s\n' "$CANDIDATE" > "$RUNNER_TEMP/evidence/candidate.txt"
+
+      - name: Upload lab artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xlsx-dependency-lab-${{ matrix.id }}
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
+          retention-days: 30

@@ -52,7 +52,7 @@ final class BatchHistoryRepository
 
 		if ($sourceFormat !== null && $sourceFormat !== '') {
 			$sourceFormat = sanitize_key($sourceFormat);
-			if (!in_array($sourceFormat, array('csv', 'json'), true)) {
+			if (!in_array($sourceFormat, array('csv', 'json', 'xlsx'), true)) {
 				return array();
 			}
 			$where[] = 'source_format = %s';
@@ -102,7 +102,7 @@ final class BatchHistoryRepository
 
 		if ($sourceFormat !== null && $sourceFormat !== '') {
 			$sourceFormat = sanitize_key($sourceFormat);
-			if (!in_array($sourceFormat, array('csv', 'json'), true)) {
+			if (!in_array($sourceFormat, array('csv', 'json', 'xlsx'), true)) {
 				return 0;
 			}
 			$where[] = 'source_format = %s';
@@ -135,7 +135,7 @@ final class BatchHistoryRepository
 			}
 		}
 
-		if (!isset($row['source_format']) || !in_array((string) $row['source_format'], array('csv', 'json'), true)) {
+		if (!isset($row['source_format']) || !in_array((string) $row['source_format'], array('csv', 'json', 'xlsx'), true)) {
 			$row['source_format'] = 'csv';
 		}
 

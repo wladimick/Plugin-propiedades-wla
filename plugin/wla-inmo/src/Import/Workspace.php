@@ -11,6 +11,7 @@ final class Workspace
 	private const PREVIEW_ROWS = 5;
 	private const FORMAT_CSV = 'csv';
 	private const FORMAT_JSON = 'json';
+	private const FORMAT_XLSX = 'xlsx';
 
 	/**
 	 * Store a real HTTP CSV upload in a server-controlled temporary path and return
@@ -138,6 +139,134 @@ final class Workspace
 		return self::persistNewDraft($token, $state, $normalizedPath);
 	}
 
+
+	/**
+	 * Store a real HTTP XLSX upload after ZIP/OOXML preflight. The workbook stays
+	 * private until the user explicitly selects which worksheet will be normalized.
+	 *
+	 * @param array<string,mixed> $file `$_FILES` entry.
+	 * @return array{ok:bool,code:string,token?:string,state?:array<string,mixed>}
+	 */
+	public static function storeUploadedXlsx(array $file, int $createdBy): array
+	{
+		$validated = self::validateUpload($file, $createdBy, self::FORMAT_XLSX);
+		if (empty($validated['ok'])) {
+			return self::failure((string) $validated['code']);
+		}
+
+		$token = (string) $validated['token'];
+		$name = (string) $validated['name'];
+		$tmpName = (string) $validated['tmp_name'];
+		$uploadPath = self::xlsxUploadPath($token);
+		if ($uploadPath === null || file_exists($uploadPath) || !move_uploaded_file($tmpName, $uploadPath)) {
+			return self::failure('upload_store_failed');
+		}
+		if (!chmod($uploadPath, 0600)) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fail-closed cleanup when private permissions cannot be enforced.
+			return self::failure('upload_permissions_failed');
+		}
+
+		try {
+			$inspection = (new XlsxDocumentReader())->worksheets($uploadPath);
+		} catch (XlsxException $exception) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup invalid workbook.
+			return self::failure($exception->reason());
+		} catch (\Throwable) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected validation failure.
+			return self::failure('xlsx_validation_failed');
+		}
+
+		$sheets = $inspection['sheets'];
+		if ($sheets === array()) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Empty workbook cleanup.
+			return self::failure('missing_worksheet');
+		}
+
+		$state = array(
+			'token'             => $token,
+			'created_by'        => $createdBy,
+			'original_name'     => $name,
+			'source_format'     => self::FORMAT_XLSX,
+			'source_hash'       => '',
+			'original_hash'     => (string) $inspection['original_hash'],
+			'total_rows'        => 0,
+			'headers'           => array(),
+			'xlsx_sheets'       => $sheets,
+			'selected_sheet'    => '',
+			'canonical_mapping' => array(),
+			'profile_json'      => '',
+			'dry_run'           => array(),
+			'created_at'        => time(),
+			'updated_at'        => time(),
+		);
+
+		return self::persistNewDraft($token, $state, $uploadPath);
+	}
+
+	/**
+	 * Normalize only the explicitly selected worksheet to private NDJSON.
+	 *
+	 * @return array{ok:bool,code:string,state?:array<string,mixed>}
+	 */
+	public static function selectUploadedXlsxSheet(string $token, int $userId, string $sheetName): array
+	{
+		$state = self::loadDraft($token, $userId);
+		if ($state === null || self::stateFormat($state) !== self::FORMAT_XLSX) {
+			return self::failure('draft_expired');
+		}
+		if ((string) ($state['selected_sheet'] ?? '') !== '') {
+			return self::failure('sheet_already_selected');
+		}
+
+		$sheetName = trim($sheetName);
+		$allowed = false;
+		$sheets = isset($state['xlsx_sheets']) && is_array($state['xlsx_sheets']) ? $state['xlsx_sheets'] : array();
+		foreach ($sheets as $sheet) {
+			if (is_array($sheet) && isset($sheet['name']) && is_string($sheet['name']) && hash_equals($sheet['name'], $sheetName)) {
+				$allowed = true;
+				break;
+			}
+		}
+		if (!$allowed) {
+			return self::failure('unknown_sheet');
+		}
+
+		$uploadPath = self::xlsxUploadPath($token);
+		$normalizedPath = self::draftPath($token, self::FORMAT_XLSX);
+		if ($uploadPath === null || $normalizedPath === null || !is_file($uploadPath) || file_exists($normalizedPath)) {
+			return self::failure('source_unreadable');
+		}
+
+		try {
+			$inspection = (new XlsxDocumentReader(null, 500, self::MAX_ROWS))->normalizeToNdjson($uploadPath, $normalizedPath, $sheetName);
+		} catch (XlsxException $exception) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup failed normalization.
+			return self::failure($exception->reason());
+		} catch (\Throwable) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected normalization failure.
+			return self::failure('xlsx_normalization_failed');
+		}
+
+		if (!hash_equals((string) ($state['original_hash'] ?? ''), (string) $inspection['original_hash'])) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Workbook changed after upload.
+			return self::failure('source_hash_mismatch');
+		}
+
+		$state['selected_sheet'] = (string) $inspection['sheet_name'];
+		$state['source_hash'] = (string) $inspection['source_hash'];
+		$state['total_rows'] = (int) $inspection['total_rows'];
+		$state['headers'] = $inspection['headers'];
+		$state['profile_json'] = '';
+		$state['dry_run'] = array();
+		if (!self::saveDraft($token, $state)) {
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Keep original workbook if state cannot be committed.
+			return self::failure('draft_store_failed');
+		}
+
+		@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Original workbook no longer needed after safe normalization.
+		return array('ok' => true, 'code' => 'sheet_ready', 'state' => $state);
+	}
+
 	/**
 	 * @return array<string,mixed>|null
 	 */
@@ -158,7 +287,9 @@ final class Workspace
 		}
 
 		$format = self::stateFormat($state);
-		$path = self::draftPath($token, $format);
+		$path = $format === self::FORMAT_XLSX && empty($state['selected_sheet'])
+			? self::xlsxUploadPath($token)
+			: self::draftPath($token, $format);
 		if ($path === null || !is_file($path) || !is_readable($path)) {
 			self::deleteDraft($token);
 			return null;
@@ -216,7 +347,7 @@ final class Workspace
 		$rows = array();
 
 		try {
-			$sourceRows = $format === self::FORMAT_JSON
+			$sourceRows = in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)
 				? (new JsonLinesReader(self::MAX_ROWS))->verifiedRows($path, (string) ($state['source_hash'] ?? ''))
 				: (new CsvReader(self::MAX_ROWS))->rows($path);
 
@@ -245,6 +376,9 @@ final class Workspace
 	{
 		$state = self::loadDraft($token, $userId);
 		if ($state === null) {
+			return null;
+		}
+		if (self::stateFormat($state) === self::FORMAT_XLSX && empty($state['selected_sheet'])) {
 			return null;
 		}
 
@@ -338,6 +472,10 @@ final class Workspace
 				$files = array_merge($files, $matches);
 			}
 		}
+		$xlsxUploads = glob(self::tempRoot() . 'wla-inmo-import-upload-*.xlsx');
+		if (is_array($xlsxUploads)) {
+			$files = array_merge($files, $xlsxUploads);
+		}
 
 		$cutoff = time() - (self::DRAFT_TTL * 2);
 		foreach (array_values(array_unique($files)) as $path) {
@@ -353,7 +491,7 @@ final class Workspace
 
 	private static function deleteDraftFileOnly(string $token): void
 	{
-		foreach (array(self::FORMAT_CSV, self::FORMAT_JSON) as $format) {
+		foreach (array(self::FORMAT_CSV, self::FORMAT_JSON, self::FORMAT_XLSX) as $format) {
 			$path = self::draftPath($token, $format);
 			if ($path !== null && is_file($path)) {
 				@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort plugin-owned draft cleanup.
@@ -363,6 +501,11 @@ final class Workspace
 		$uploadPath = self::jsonUploadPath($token);
 		if ($uploadPath !== null && is_file($uploadPath)) {
 			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted JSON normalization.
+		}
+
+		$xlsxUploadPath = self::xlsxUploadPath($token);
+		if ($xlsxUploadPath !== null && is_file($xlsxUploadPath)) {
+			@unlink($xlsxUploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted XLSX selection.
 		}
 	}
 
@@ -484,7 +627,7 @@ final class Workspace
 			return null;
 		}
 
-		if ($format === self::FORMAT_JSON) {
+		if (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)) {
 			return self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.ndjson';
 		}
 
@@ -501,6 +644,17 @@ final class Workspace
 		return self::tempRoot() . 'wla-inmo-import-upload-' . $token . '.json';
 	}
 
+
+	private static function xlsxUploadPath(string $token): ?string
+	{
+		$token = strtolower(trim($token));
+		if (!self::isUuid($token)) {
+			return null;
+		}
+
+		return self::tempRoot() . 'wla-inmo-import-upload-' . $token . '.xlsx';
+	}
+
 	private static function batchPath(string $batchUuid, string $format = self::FORMAT_CSV): ?string
 	{
 		$batchUuid = strtolower(trim($batchUuid));
@@ -508,7 +662,7 @@ final class Workspace
 			return null;
 		}
 
-		if ($format === self::FORMAT_JSON) {
+		if (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XLSX), true)) {
 			return self::tempRoot() . 'wla-inmo-import-batch-' . $batchUuid . '.ndjson';
 		}
 
@@ -542,6 +696,14 @@ final class Workspace
 	/** @return array<int,string> */
 	private static function allowedMimes(string $format): array
 	{
+		if ($format === self::FORMAT_XLSX) {
+			return array(
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+				'application/zip',
+				'application/octet-stream',
+			);
+		}
+
 		if ($format === self::FORMAT_JSON) {
 			return array(
 				'application/json',
@@ -563,7 +725,7 @@ final class Workspace
 
 	private static function isSupportedFormat(string $format): bool
 	{
-		return in_array(strtolower(trim($format)), array(self::FORMAT_CSV, self::FORMAT_JSON), true);
+		return in_array(strtolower(trim($format)), array(self::FORMAT_CSV, self::FORMAT_JSON, self::FORMAT_XLSX), true);
 	}
 
 	/** @return array{ok:false,code:string} */
