@@ -1,6 +1,6 @@
 # Evidencia — PR 3.8 XLSX streaming + ADR/benchmark
 
-Estado: `IN_PROGRESS / QA_PENDING`.
+Estado: `QA_PASSED / READY_TO_MERGE`.
 
 Issue: #61  
 PR: #62  
@@ -103,7 +103,7 @@ OpenSpout queda documentado como benchmark winner en footprint/rendimiento, pero
 
 ## Implementación integrada
 
-La rama 3.8 ya incluye:
+La rama 3.8 incluye:
 
 - `phpoffice/phpspreadsheet` **3.10.7 exacta** en `composer.json` y `composer.lock`;
 - `XlsxArchiveInspector` con preflight ZIP/OOXML antes del reader;
@@ -119,7 +119,8 @@ La rama 3.8 ya incluye:
 - janitor para drafts y uploads XLSX abandonados, sin borrar fuentes de batch reanudables;
 - pestaña XLSX en el importador e historial filtrado por formato;
 - capability + nonce para upload/selección/mapping/confirmación/ejecución/cancelación;
-- regresión del smoke JSON actualizada para reconocer JSON/XLSX como fuentes normalizadas compartidas.
+- regresión del smoke JSON actualizada para reconocer JSON/XLSX como fuentes normalizadas compartidas;
+- verificación de integridad del XLSX antes y después de normalizar.
 
 ## Seguridad negativa cubierta
 
@@ -184,20 +185,93 @@ Artifacts:
 - PhpSpreadsheet 3.10.7: `sha256:9d0d85b9f17aa44241e157a01474bde898859acd965ba45343298df1aeb2018f`;
 - PhpSpreadsheet 5.8.1: `sha256:a70a89f8861dde9a17dea4c0f8cf1dc4e40218d12ae6a6d8f1cfe64c8c3305a6`.
 
-## QA final pendiente
+## QA final
 
-Antes de merge solo falta registrar el resultado del head final después del último hardening/cleanup:
+Head funcional auditado: `12463f1fcf12f1a25c4216770ea6f8a504671591`.
 
-- XLSX Integration PHP 8.1/8.3;
-- Bootstrap Smoke;
-- Phase 1 CI / WordPress mínimo y latest;
-- Import UI Integration;
-- Administration Quality Gate;
-- JSON WLA regression;
-- artifact ZIP final + SHA-256;
-- confirmar cero review threads abiertos.
+**15/15 workflows asociados al head: `SUCCESS`.**
 
-Una vez verdes, este documento debe pasar a `QA_PASSED / READY_TO_MERGE` con los run IDs/checksums finales.
+| Workflow | Run | Resultado |
+|---|---:|---|
+| Import Persistence Integration | `34156186941` | SUCCESS |
+| Import Row Executor Integration | `34156186987` | SUCCESS |
+| Bootstrap Smoke | `34156186935` | SUCCESS |
+| Import UI Integration | `34156186939` | SUCCESS |
+| JSON WLA Integration | `34156186952` | SUCCESS |
+| Catalogue Quality Integration | `34156186978` | SUCCESS |
+| XLSX Dependency Lab | `34156186947` | SUCCESS |
+| Help Center Integration | `34156186931` | SUCCESS |
+| Activity Integration | `34156186915` | SUCCESS |
+| Import Batch Runner Integration | `34156186909` | SUCCESS |
+| XLSX Integration | `34156186907` | SUCCESS |
+| Settings UI Integration | `34156186904` | SUCCESS |
+| Phase 1 CI | `34156186905` | SUCCESS |
+| Dashboard Integration | `34156186921` | SUCCESS |
+| Administration Quality Gate | `34156186966` | SUCCESS |
+
+### XLSX Integration final
+
+Run `34156186907`: `SUCCESS`.
+
+PHP 8.1 y PHP 8.3 completaron:
+
+- dependency lock/audit/platform requirements;
+- **15 tests XLSX / 72 assertions**;
+- wiring XLSX + janitor;
+- PHPStan;
+- build instalable;
+- release smoke;
+- artifact de evidencia.
+
+### WordPress / compatibilidad
+
+Phase 1 CI run `34156186905`: `SUCCESS`.
+
+- WordPress 6.6.2 / PHP 8.1: SUCCESS;
+- WordPress latest / PHP 8.3: SUCCESS;
+- Quality Gate PHP 8.1: WPCS, PHPStan, PHPUnit, source smokes, build, release smoke y artifact: SUCCESS.
+
+Import UI Integration run `34156186939`: `SUCCESS` en ambas matrices, incluyendo handler XLSX, cleanup de upload XLSX abandonado e historial bounded por formato.
+
+JSON WLA Integration run `34156186952`: `SUCCESS` en ambas matrices, incluyendo round-trip, privacidad, capability/nonce y datasets 100/1k/5k.
+
+Administration Quality Gate run `34156186966`: `SUCCESS`, incluyendo autorización/nonce/objeto, benchmark 100/1k/5k y Playwright.
+
+### Artifact final / footprint
+
+Baseline previo a XLSX: **214.103 bytes**.
+
+ZIP final WLA Inmo 0.1.0-alpha: **1.746.465 bytes** en ambas matrices.
+
+Delta: **+1.532.362 bytes**, equivalente a aproximadamente **+715,7%**; el ZIP final es aproximadamente **8,16×** el baseline. Este crecimiento corresponde principalmente a la dependencia XLSX y queda aceptado/documentado como trade-off de D31/ADR-014.
+
+PHP 8.1:
+
+- artifact id: `10031075021`;
+- artifact digest: `sha256:4466785e90a1a610ca6ae32d9393f00772035c684679c3543ca5cef3d40811c2`;
+- ZIP SHA-256: `35a0dc3e023ea28b7274d7bdca46fa18fa8648cd6fc4beb65cfdd11762c54820`.
+
+PHP 8.3:
+
+- artifact id: `10031060722`;
+- artifact digest: `sha256:05d940b7df8a8daa4014b8d6275be67d1b6e7f945692824cf42468bb53f3a7ce`;
+- ZIP SHA-256: `d1b366d8eafc0037aa39bed0ac3419e7b77a7619fe62a70f58026224163f9faa`.
+
+Los ZIP tienen el mismo tamaño, pero no se declara identidad byte-a-byte entre runtimes; se registran ambos checksums de forma explícita.
+
+### Review / findings
+
+- review threads abiertos: **0**;
+- findings P0/P1 abiertos conocidos: **0**;
+- findings detectados durante QA (tipado PHPStan, smoke JSON heredado, historial `source_format`, janitor XLSX, permisos 0600 y comparación post-normalización) fueron corregidos antes de este head final.
+
+## Resultado
+
+PR 3.8 cumple sus criterios de aceptación y queda en estado:
+
+`QA_PASSED / READY_TO_MERGE`.
+
+El siguiente alcance funcional después del merge es **PR 3.9 — Media remota segura**.
 
 ## Producción
 
