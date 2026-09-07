@@ -75,46 +75,76 @@ for ($index = 1; $index <= $rows; ++$index) {
 fwrite($sheet, '</sheetData></worksheet>');
 fclose($sheet);
 
+$fixedTimestamp = 946684800; // 2000-01-01T00:00:00Z: stable ZIP metadata for cross-job SHA-256.
+@touch($sheetPath, $fixedTimestamp);
+
 $zip = new ZipArchive();
 if ($zip->open($output, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 	@unlink($sheetPath);
 	fwrite(STDERR, "Unable to create XLSX archive.\n");
 	exit(1);
 }
+if (!method_exists($zip, 'setMtimeName')) {
+	$zip->close();
+	@unlink($sheetPath);
+	fwrite(STDERR, "ZipArchive::setMtimeName is required for deterministic fixtures.\n");
+	exit(1);
+}
 
-$zip->addFromString(
-	'[Content_Types].xml',
-	'<?xml version="1.0" encoding="UTF-8"?>'
-	. '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-	. '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-	. '<Default Extension="xml" ContentType="application/xml"/>'
-	. '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-	. '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-	. '</Types>'
-);
-$zip->addFromString(
-	'_rels/.rels',
-	'<?xml version="1.0" encoding="UTF-8"?>'
-	. '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-	. '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
-	. '</Relationships>'
-);
-$zip->addFromString(
-	'xl/workbook.xml',
-	'<?xml version="1.0" encoding="UTF-8"?>'
-	. '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-	. '<sheets><sheet name="Properties" sheetId="1" r:id="rId1"/></sheets>'
-	. '</workbook>'
-);
-$zip->addFromString(
-	'xl/_rels/workbook.xml.rels',
-	'<?xml version="1.0" encoding="UTF-8"?>'
-	. '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-	. '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
-	. '</Relationships>'
-);
-$zip->addFile($sheetPath, 'xl/worksheets/sheet1.xml');
-$zip->close();
+$addString = static function (ZipArchive $archive, string $name, string $content) use ($fixedTimestamp): void {
+	if (!$archive->addFromString($name, $content) || !$archive->setMtimeName($name, $fixedTimestamp)) {
+		throw new RuntimeException('Unable to add deterministic XLSX entry: ' . $name);
+	}
+};
+
+try {
+	$addString(
+		$zip,
+		'[Content_Types].xml',
+		'<?xml version="1.0" encoding="UTF-8"?>'
+		. '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+		. '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+		. '<Default Extension="xml" ContentType="application/xml"/>'
+		. '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+		. '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+		. '</Types>'
+	);
+	$addString(
+		$zip,
+		'_rels/.rels',
+		'<?xml version="1.0" encoding="UTF-8"?>'
+		. '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+		. '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+		. '</Relationships>'
+	);
+	$addString(
+		$zip,
+		'xl/workbook.xml',
+		'<?xml version="1.0" encoding="UTF-8"?>'
+		. '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+		. '<sheets><sheet name="Properties" sheetId="1" r:id="rId1"/></sheets>'
+		. '</workbook>'
+	);
+	$addString(
+		$zip,
+		'xl/_rels/workbook.xml.rels',
+		'<?xml version="1.0" encoding="UTF-8"?>'
+		. '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+		. '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+		. '</Relationships>'
+	);
+	if (!$zip->addFile($sheetPath, 'xl/worksheets/sheet1.xml') || !$zip->setMtimeName('xl/worksheets/sheet1.xml', $fixedTimestamp)) {
+		throw new RuntimeException('Unable to add deterministic worksheet entry.');
+	}
+	$zip->close();
+} catch (Throwable $exception) {
+	$zip->close();
+	@unlink($sheetPath);
+	@unlink($output);
+	fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+	exit(1);
+}
+
 @unlink($sheetPath);
 
 $bytes = filesize($output);
