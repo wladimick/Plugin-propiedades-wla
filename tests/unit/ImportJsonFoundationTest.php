@@ -48,22 +48,21 @@ final class ImportJsonFoundationTest extends TestCase
 			),
 		));
 		$output = $this->newOutputPath();
-		$reader = $this->documentReader();
-		$inspection = $reader->normalizeToNdjson($input, $output);
+		$inspection = $this->documentReader()->normalizeToNdjson($input, $output);
 
 		self::assertSame(1, $inspection['format_version']);
 		self::assertSame('portal_proveedor_n', $inspection['source_key']);
 		self::assertSame(2, $inspection['total_rows']);
 		self::assertSame('2026-09-07T13:00:00Z', $inspection['exported_at']);
-		self::assertSame('post.title', $inspection['mapping']['post.title']);
-		self::assertSame('taxonomy.feature', $inspection['mapping']['taxonomy.feature']);
+		self::assertSame('post.title', $inspection['mapping']['post_title']);
+		self::assertSame('taxonomy.feature', $inspection['mapping']['taxonomy_feature']);
 		self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $inspection['source_hash']);
 
 		$rows = iterator_to_array((new JsonLinesReader())->verifiedRows($output, $inspection['source_hash']));
 		self::assertCount(2, $rows);
-		self::assertSame(120000000, $rows[1]['data']['meta.price_clp']);
-		self::assertSame(array('https://example.com/video-1'), $rows[1]['data']['meta.video_urls']);
-		self::assertSame(array('Piscina', 'Terraza'), $rows[1]['data']['taxonomy.feature']);
+		self::assertSame(120000000, $rows[1]['data']['meta_price_clp']);
+		self::assertSame(array('https://example.com/video-1'), $rows[1]['data']['meta_video_urls']);
+		self::assertSame(array('Piscina', 'Terraza'), $rows[1]['data']['taxonomy_feature']);
 		self::assertGreaterThan(0, $rows[1]['next_offset']);
 	}
 
@@ -85,8 +84,8 @@ final class ImportJsonFoundationTest extends TestCase
 
 		$resumed = iterator_to_array((new JsonLinesReader())->verifiedRows($output, $inspection['source_hash'], $offset, 1));
 		self::assertSame(array(2, 3), array_keys($resumed));
-		self::assertSame('A-2', $resumed[2]['data']['meta.property_code']);
-		self::assertSame('A-3', $resumed[3]['data']['meta.property_code']);
+		self::assertSame('A-2', $resumed[2]['data']['meta_property_code']);
+		self::assertSame('A-3', $resumed[3]['data']['meta_property_code']);
 	}
 
 	public function testUnsupportedVersionIsRejected(): void
@@ -97,7 +96,8 @@ final class ImportJsonFoundationTest extends TestCase
 			'properties' => array(array('post' => array('title' => 'Casa'))),
 		));
 
-		$this->expectJsonReason('unsupported_format_version');
+		$this->expectException(JsonException::class);
+		$this->expectExceptionMessage('format_version is not supported');
 		$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
 	}
 
@@ -109,8 +109,13 @@ final class ImportJsonFoundationTest extends TestCase
 			'properties' => array(array('meta' => array('evil_dynamic_meta' => 'x'))),
 		));
 
-		$this->expectJsonReason('unknown_target');
-		$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
+			self::fail('Expected unknown target exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('unknown_target', $exception->reason());
+			self::assertSame(1, $exception->rowNumber());
+		}
 	}
 
 	public function testStructuredValueIsAllowedOnlyForMultipleTargets(): void
@@ -121,8 +126,13 @@ final class ImportJsonFoundationTest extends TestCase
 			'properties' => array(array('meta' => array('property_code' => array('A', 'B')))),
 		));
 
-		$this->expectJsonReason('invalid_target_value');
-		$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $this->newOutputPath());
+			self::fail('Expected invalid target value exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('invalid_target_value', $exception->reason());
+			self::assertSame(1, $exception->rowNumber());
+		}
 	}
 
 	public function testMalformedJsonIsRejectedWithoutLeavingNormalizedSource(): void
@@ -202,28 +212,5 @@ final class ImportJsonFoundationTest extends TestCase
 		$path = sys_get_temp_dir() . '/wla-json-source-' . bin2hex(random_bytes(8)) . '.ndjson';
 		$this->temporaryFiles[] = $path;
 		return $path;
-	}
-
-	private function expectJsonReason(string $reason): void
-	{
-		try {
-			throw new \LogicException('sentinel');
-		} catch (\LogicException) {
-			// Keep PHPUnit expectation logic out of the production exception contract.
-		}
-
-		$this->expectException(JsonException::class);
-		$this->expectExceptionMessageMatches('/.+/');
-		$this->expectExceptionObject(new JsonException($reason, $this->messageForReason($reason)));
-	}
-
-	private function messageForReason(string $reason): string
-	{
-		return match ($reason) {
-			'unsupported_format_version' => 'JSON format_version is not supported.',
-			'unknown_target' => 'JSON property contains an unsupported canonical target.',
-			'invalid_target_value' => 'JSON target contains an unsupported structured value.',
-			default => 'JSON error.',
-		};
 	}
 }
