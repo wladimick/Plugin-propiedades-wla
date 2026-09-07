@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lock:
@@ -16,8 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout PR head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Setup PHP 8.1
         uses: shivammathur/setup-php@v2
@@ -41,6 +43,18 @@ jobs:
         run: |
           composer validate --strict --working-dir=plugin/wla-inmo
           composer audit --working-dir=plugin/wla-inmo --format=json | tee "$RUNNER_TEMP/composer-audit.json"
+
+      - name: Commit validated lock
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add plugin/wla-inmo/composer.lock
+          if git diff --cached --quiet; then
+            echo "composer.lock already matches resolved dependencies."
+          else
+            git commit -m "build: lock XLSX runtime dependency"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
 
       - name: Upload lock evidence
         uses: actions/upload-artifact@v4
