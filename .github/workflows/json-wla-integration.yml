@@ -17,6 +17,7 @@ on:
       - 'tests/fixtures/json/**'
       - 'tests/integration/assert-json-wla.php'
       - 'tests/integration/assert-json-security.php'
+      - 'tests/integration/assert-json-fixture.php'
       - 'tests/integration/measure-json-wla.php'
       - 'tests/unit/ImportJson*.php'
       - 'tests/smoke/json-*.php'
@@ -100,6 +101,11 @@ jobs:
           cd /tmp/wla-json-wordpress
           wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
           wp plugin status wla-inmo --allow-root
+
+      - name: Validate versioned JSON v1 fixture
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-fixture.php" --allow-root
 
       - name: Validate JSON import, runner, privacy and round trip
         run: |
