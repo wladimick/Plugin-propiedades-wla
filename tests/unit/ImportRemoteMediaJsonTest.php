@@ -50,7 +50,7 @@ final class ImportRemoteMediaJsonTest extends TestCase
 		self::assertSame(TargetRegistry::MEDIA_GALLERY_URLS, $result['mapping']['media_gallery_urls']);
 		self::assertSame(TargetRegistry::MEDIA_FEATURED_IMAGE_URL, $result['mapping']['media_featured_image_url']);
 
-		$rows = iterator_to_array((new JsonLinesReader())->verifiedRows($normalized, $result['source_hash']));
+		$rows = array_values(iterator_to_array((new JsonLinesReader())->verifiedRows($normalized, $result['source_hash'])));
 		self::assertCount(1, $rows);
 		self::assertSame(
 			array('https://cdn.example.com/a.jpg', 'https://cdn.example.com/b.webp'),
