@@ -7,6 +7,7 @@ on:
       - 'plugin/wla-inmo/composer.lock'
       - 'plugin/wla-inmo/src/Import/Xlsx*.php'
       - 'plugin/wla-inmo/src/Import/Workspace.php'
+      - 'plugin/wla-inmo/src/Import/WorkspaceJanitor.php'
       - 'plugin/wla-inmo/src/Import/BatchRepository.php'
       - 'plugin/wla-inmo/src/Import/BatchRunner.php'
       - 'plugin/wla-inmo/src/Import/BatchHistoryRepository.php'
@@ -58,6 +59,7 @@ jobs:
           grep -F "FORMAT_XLSX = 'xlsx'" plugin/wla-inmo/src/Import/Workspace.php
           grep -F 'storeUploadedXlsx' plugin/wla-inmo/src/Import/Workspace.php
           grep -F 'selectUploadedXlsxSheet' plugin/wla-inmo/src/Import/Workspace.php
+          grep -F "wla-inmo-import-upload-*.xlsx" plugin/wla-inmo/src/Import/WorkspaceJanitor.php
           grep -F "array('json', 'xlsx')" plugin/wla-inmo/src/Import/BatchRunner.php
           grep -F "'xlsx'" plugin/wla-inmo/src/Import/BatchRepository.php
           grep -F "'xlsx'" plugin/wla-inmo/src/Import/BatchHistoryRepository.php
