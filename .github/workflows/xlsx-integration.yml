@@ -1,0 +1,68 @@
+name: XLSX Integration
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/composer.json'
+      - 'plugin/wla-inmo/composer.lock'
+      - 'plugin/wla-inmo/src/Import/Xlsx*.php'
+      - 'tests/unit/ImportXlsx*.php'
+      - 'bin/build-plugin.sh'
+      - '.github/workflows/xlsx-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  xlsx:
+    name: PHP ${{ matrix.php }} / bounded XLSX
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: ctype,dom,fileinfo,filter,gd,iconv,libxml,mbstring,simplexml,xml,xmlreader,xmlwriter,zip,zlib
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate locked dependency graph
+        run: |
+          composer validate --strict --working-dir=plugin/wla-inmo
+          composer install --working-dir=plugin/wla-inmo --no-interaction --no-progress --prefer-dist
+          composer audit --working-dir=plugin/wla-inmo
+          composer check-platform-reqs --working-dir=plugin/wla-inmo --no-dev
+
+      - name: Run XLSX unit contracts
+        run: plugin/wla-inmo/vendor/bin/phpunit -c phpunit.xml.dist --filter ImportXlsx
+
+      - name: Build installable plugin
+        id: build
+        run: |
+          ZIP_PATH="$(bash bin/build-plugin.sh)"
+          echo "zip_path=$ZIP_PATH" >> "$GITHUB_OUTPUT"
+          test -f "$ZIP_PATH"
+          stat -c '%s' "$ZIP_PATH" | tee "$RUNNER_TEMP/release-zip-bytes.txt"
+          sha256sum "$ZIP_PATH" | tee "$RUNNER_TEMP/release-zip.sha256"
+
+      - name: Release ZIP smoke
+        run: bash bin/smoke-plugin.sh "${{ steps.build.outputs.zip_path }}"
+
+      - name: Upload XLSX build evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: xlsx-build-php-${{ matrix.php }}
+          path: |
+            ${{ runner.temp }}/release-zip-bytes.txt
+            ${{ runner.temp }}/release-zip.sha256
+          if-no-files-found: error
+          retention-days: 30
