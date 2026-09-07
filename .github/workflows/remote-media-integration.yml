@@ -1,0 +1,52 @@
+name: Remote Media Integration
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/src/Import/RemoteMedia*.php'
+      - 'plugin/wla-inmo/src/Import/NetworkAddressPolicy.php'
+      - 'plugin/wla-inmo/src/Import/DnsResolverInterface.php'
+      - 'plugin/wla-inmo/src/Import/SystemDnsResolver.php'
+      - 'tests/unit/ImportRemoteMedia*.php'
+      - '.github/workflows/remote-media-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remote-media:
+    name: PHP ${{ matrix.php }} / SSRF foundation
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php }}'
+          extensions: ctype,dom,fileinfo,filter,gd,iconv,libxml,mbstring,simplexml,xml,xmlreader,xmlwriter,zip,zlib
+          tools: composer:v2
+          coverage: none
+
+      - name: Install locked dependencies
+        run: composer install --working-dir=plugin/wla-inmo --no-interaction --no-progress --prefer-dist
+
+      - name: Validate remote media unit contracts
+        run: plugin/wla-inmo/vendor/bin/phpunit -c phpunit.xml.dist --filter ImportRemoteMedia
+
+      - name: PHPStan domain gate
+        run: plugin/wla-inmo/vendor/bin/phpstan analyse -c phpstan.neon.dist --no-progress
+
+      - name: Source contract smoke
+        run: |
+          grep -F 'FILTER_FLAG_NO_PRIV_RANGE' plugin/wla-inmo/src/Import/NetworkAddressPolicy.php
+          grep -F "array('http', 'https')" plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
+          grep -F 'blocked_media_address' plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
+          grep -F 'DnsResolverInterface' plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
