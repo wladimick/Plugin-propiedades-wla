@@ -9,9 +9,11 @@ final class Workspace
 	private const MAX_UPLOAD_BYTES = 10485760;
 	private const MAX_ROWS = 10000;
 	private const PREVIEW_ROWS = 5;
+	private const FORMAT_CSV = 'csv';
+	private const FORMAT_JSON = 'json';
 
 	/**
-	 * Store a real HTTP upload in a server-controlled temporary path and return
+	 * Store a real HTTP CSV upload in a server-controlled temporary path and return
 	 * only metadata required by the wizard. Source row payloads are never stored
 	 * in the transient state.
 	 *
@@ -20,42 +22,15 @@ final class Workspace
 	 */
 	public static function storeUploadedCsv(array $file, int $createdBy): array
 	{
-		if ($createdBy < 1) {
-			return self::failure('invalid_user');
+		$validated = self::validateUpload($file, $createdBy, self::FORMAT_CSV);
+		if (empty($validated['ok'])) {
+			return self::failure((string) $validated['code']);
 		}
 
-		self::cleanupExpiredDraftFiles();
-
-		$error = isset($file['error']) && is_scalar($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
-		if ($error !== UPLOAD_ERR_OK) {
-			return self::failure('upload_failed');
-		}
-
-		$size = isset($file['size']) && is_scalar($file['size']) ? (int) $file['size'] : 0;
-		if ($size < 1) {
-			return self::failure('empty_file');
-		}
-		if ($size > self::MAX_UPLOAD_BYTES) {
-			return self::failure('file_too_large');
-		}
-
-		$name = isset($file['name']) && is_scalar($file['name']) ? sanitize_file_name((string) $file['name']) : '';
-		if (strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) !== 'csv') {
-			return self::failure('invalid_extension');
-		}
-
-		$tmpName = isset($file['tmp_name']) && is_scalar($file['tmp_name']) ? (string) $file['tmp_name'] : '';
-		if ($tmpName === '' || !is_uploaded_file($tmpName)) {
-			return self::failure('invalid_upload_source');
-		}
-
-		$mime = self::detectMime($tmpName);
-		if ($mime !== '' && !in_array($mime, self::allowedMimes(), true)) {
-			return self::failure('invalid_mime');
-		}
-
-		$token = self::uuid4();
-		$path = self::draftPath($token);
+		$token = (string) $validated['token'];
+		$name = (string) $validated['name'];
+		$tmpName = (string) $validated['tmp_name'];
+		$path = self::draftPath($token, self::FORMAT_CSV);
 		if ($path === null || file_exists($path) || !move_uploaded_file($tmpName, $path)) {
 			return self::failure('upload_store_failed');
 		}
@@ -63,7 +38,7 @@ final class Workspace
 		@chmod($path, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening; host may not permit chmod.
 
 		try {
-			$inspection = self::inspect($path);
+			$inspection = self::inspectCsv($path);
 		} catch (CsvException $exception) {
 			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup after validation failure.
 			return self::failure($exception->reason());
@@ -76,29 +51,91 @@ final class Workspace
 		}
 
 		$state = array(
-			'token'         => $token,
-			'created_by'    => $createdBy,
-			'original_name' => $name,
-			'source_hash'   => $hash,
-			'total_rows'    => (int) $inspection['total_rows'],
-			'headers'       => $inspection['headers'],
-			'profile_json'  => '',
-			'dry_run'       => array(),
-			'created_at'    => time(),
-			'updated_at'    => time(),
+			'token'             => $token,
+			'created_by'        => $createdBy,
+			'original_name'     => $name,
+			'source_format'     => self::FORMAT_CSV,
+			'source_hash'       => $hash,
+			'original_hash'     => $hash,
+			'total_rows'        => (int) $inspection['total_rows'],
+			'headers'           => $inspection['headers'],
+			'canonical_mapping' => array(),
+			'profile_json'      => '',
+			'dry_run'           => array(),
+			'created_at'        => time(),
+			'updated_at'        => time(),
 		);
 
-		if (!self::saveDraft($token, $state)) {
-			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup after transient failure.
-			return self::failure('draft_store_failed');
+		return self::persistNewDraft($token, $state, $path);
+	}
+
+	/**
+	 * Validate a WLA JSON v1 upload and materialize a private NDJSON source.
+	 * The original JSON is deleted after validation; only its SHA-256 metadata
+	 * and the normalized, resumable source remain in the workspace.
+	 *
+	 * @param array<string,mixed> $file `$_FILES` entry.
+	 * @return array{ok:bool,code:string,token?:string,state?:array<string,mixed>}
+	 */
+	public static function storeUploadedJson(array $file, int $createdBy): array
+	{
+		$validated = self::validateUpload($file, $createdBy, self::FORMAT_JSON);
+		if (empty($validated['ok'])) {
+			return self::failure((string) $validated['code']);
 		}
 
-		return array(
-			'ok'    => true,
-			'code'  => 'uploaded',
-			'token' => $token,
-			'state' => $state,
+		$token = (string) $validated['token'];
+		$name = (string) $validated['name'];
+		$tmpName = (string) $validated['tmp_name'];
+		$uploadPath = self::jsonUploadPath($token);
+		$normalizedPath = self::draftPath($token, self::FORMAT_JSON);
+		if (
+			$uploadPath === null
+			|| $normalizedPath === null
+			|| file_exists($uploadPath)
+			|| file_exists($normalizedPath)
+			|| !move_uploaded_file($tmpName, $uploadPath)
+		) {
+			return self::failure('upload_store_failed');
+		}
+
+		@chmod($uploadPath, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening.
+
+		try {
+			$inspection = (new JsonDocumentReader(self::MAX_UPLOAD_BYTES, self::MAX_ROWS))->normalizeToNdjson($uploadPath, $normalizedPath);
+		} catch (JsonException $exception) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup invalid upload.
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup incomplete normalized source.
+			return self::failure($exception->reason());
+		} catch (\Throwable) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected validation failure.
+			@unlink($normalizedPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup unexpected validation failure.
+			return self::failure('json_validation_failed');
+		}
+
+		@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Original JSON is no longer needed after safe normalization.
+		@chmod($normalizedPath, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening.
+
+		$state = array(
+			'token'             => $token,
+			'created_by'        => $createdBy,
+			'original_name'     => $name,
+			'source_format'     => self::FORMAT_JSON,
+			'format_version'    => (int) $inspection['format_version'],
+			'source_key'        => (string) $inspection['source_key'],
+			'source_hash'       => (string) $inspection['source_hash'],
+			'original_hash'     => (string) $inspection['original_hash'],
+			'exported_at'       => (string) $inspection['exported_at'],
+			'total_rows'        => (int) $inspection['total_rows'],
+			'headers'           => $inspection['headers'],
+			'canonical_mapping' => $inspection['mapping'],
+			'profile_json'      => '',
+			'dry_run'           => array(),
+			'created_at'        => time(),
+			'updated_at'        => time(),
 		);
+
+		return self::persistNewDraft($token, $state, $normalizedPath);
 	}
 
 	/**
@@ -120,7 +157,8 @@ final class Workspace
 			return null;
 		}
 
-		$path = self::draftPath($token);
+		$format = self::stateFormat($state);
+		$path = self::draftPath($token, $format);
 		if ($path === null || !is_file($path) || !is_readable($path)) {
 			self::deleteDraft($token);
 			return null;
@@ -135,7 +173,7 @@ final class Workspace
 	public static function saveDraft(string $token, array $state): bool
 	{
 		$token = strtolower(trim($token));
-		if (!self::isUuid($token)) {
+		if (!self::isUuid($token) || !self::isSupportedFormat(self::stateFormat($state))) {
 			return false;
 		}
 
@@ -168,27 +206,31 @@ final class Workspace
 			return null;
 		}
 
-		$path = self::draftPath($token);
+		$format = self::stateFormat($state);
+		$path = self::draftPath($token, $format);
 		if ($path === null) {
 			return null;
 		}
 
 		$limit = max(1, min(self::PREVIEW_ROWS, $limit));
 		$rows = array();
-		$reader = new CsvReader(self::MAX_ROWS);
 
 		try {
-			foreach ($reader->rows($path) as $row) {
+			$sourceRows = $format === self::FORMAT_JSON
+				? (new JsonLinesReader(self::MAX_ROWS))->verifiedRows($path, (string) ($state['source_hash'] ?? ''))
+				: (new CsvReader(self::MAX_ROWS))->rows($path);
+
+			foreach ($sourceRows as $row) {
 				$clean = array();
 				foreach ($row['data'] as $header => $value) {
-					$clean[(string) $header] = (string) $value;
+					$clean[(string) $header] = self::previewValue($value);
 				}
 				$rows[] = $clean;
 				if (count($rows) >= $limit) {
 					break;
 				}
 			}
-		} catch (CsvException) {
+		} catch (CsvException|JsonException) {
 			return null;
 		}
 
@@ -201,7 +243,12 @@ final class Workspace
 
 	public static function draftSourcePath(string $token, int $userId): ?string
 	{
-		return self::loadDraft($token, $userId) === null ? null : self::draftPath($token);
+		$state = self::loadDraft($token, $userId);
+		if ($state === null) {
+			return null;
+		}
+
+		return self::draftPath($token, self::stateFormat($state));
 	}
 
 	/**
@@ -210,12 +257,14 @@ final class Workspace
 	 */
 	public static function promoteDraft(string $token, string $batchUuid, int $userId): ?string
 	{
-		if (self::loadDraft($token, $userId) === null) {
+		$state = self::loadDraft($token, $userId);
+		if ($state === null) {
 			return null;
 		}
 
-		$source = self::draftPath($token);
-		$target = self::batchPath($batchUuid);
+		$format = self::stateFormat($state);
+		$source = self::draftPath($token, $format);
+		$target = self::batchPath($batchUuid, $format);
 		if ($source === null || $target === null || file_exists($target)) {
 			return null;
 		}
@@ -231,8 +280,10 @@ final class Workspace
 
 	public static function restorePromoted(string $token, string $batchUuid): bool
 	{
-		$source = self::batchPath($batchUuid);
-		$target = self::draftPath($token);
+		$state = get_transient(self::transientKey(strtolower(trim($token))));
+		$format = is_array($state) ? self::stateFormat($state) : self::FORMAT_CSV;
+		$source = self::batchPath($batchUuid, $format);
+		$target = self::draftPath($token, $format);
 		if ($source === null || $target === null || !is_file($source) || file_exists($target)) {
 			return false;
 		}
@@ -240,16 +291,16 @@ final class Workspace
 		return rename($source, $target);
 	}
 
-	public static function batchSourcePath(string $batchUuid): ?string
+	public static function batchSourcePath(string $batchUuid, string $sourceFormat = self::FORMAT_CSV): ?string
 	{
-		$path = self::batchPath($batchUuid);
+		$path = self::batchPath($batchUuid, $sourceFormat);
 
 		return $path !== null && is_file($path) && is_readable($path) ? $path : null;
 	}
 
-	public static function deleteBatchSource(string $batchUuid): void
+	public static function deleteBatchSource(string $batchUuid, string $sourceFormat = self::FORMAT_CSV): void
 	{
-		$path = self::batchPath($batchUuid);
+		$path = self::batchPath($batchUuid, $sourceFormat);
 		if ($path !== null && is_file($path)) {
 			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort temporary-file cleanup.
 		}
@@ -266,20 +317,30 @@ final class Workspace
 	}
 
 	/**
+	 * @param array<string,mixed> $state Draft state.
+	 */
+	public static function sourceFormat(array $state): string
+	{
+		return self::stateFormat($state);
+	}
+
+	/**
 	 * Delete only abandoned draft files. Batch files are never deleted by age,
 	 * because paused or failed imports must remain resumable until an explicit
 	 * terminal action removes their source.
 	 */
 	private static function cleanupExpiredDraftFiles(): void
 	{
-		$pattern = self::tempRoot() . 'wla-inmo-import-draft-*.csv';
-		$files = glob($pattern);
-		if (!is_array($files)) {
-			return;
+		$files = array();
+		foreach (array('*.csv', '*.ndjson', '*.json') as $suffix) {
+			$matches = glob(self::tempRoot() . 'wla-inmo-import-draft-' . $suffix);
+			if (is_array($matches)) {
+				$files = array_merge($files, $matches);
+			}
 		}
 
 		$cutoff = time() - (self::DRAFT_TTL * 2);
-		foreach ($files as $path) {
+		foreach (array_values(array_unique($files)) as $path) {
 			if (!is_file($path)) {
 				continue;
 			}
@@ -292,16 +353,23 @@ final class Workspace
 
 	private static function deleteDraftFileOnly(string $token): void
 	{
-		$path = self::draftPath($token);
-		if ($path !== null && is_file($path)) {
-			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort plugin-owned draft cleanup.
+		foreach (array(self::FORMAT_CSV, self::FORMAT_JSON) as $format) {
+			$path = self::draftPath($token, $format);
+			if ($path !== null && is_file($path)) {
+				@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort plugin-owned draft cleanup.
+			}
+		}
+
+		$uploadPath = self::jsonUploadPath($token);
+		if ($uploadPath !== null && is_file($uploadPath)) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an interrupted JSON normalization.
 		}
 	}
 
 	/**
 	 * @return array{headers:array<int,string>,total_rows:int}
 	 */
-	private static function inspect(string $path): array
+	private static function inspectCsv(string $path): array
 	{
 		$reader = new CsvReader(self::MAX_ROWS);
 		$headers = array();
@@ -321,21 +389,127 @@ final class Workspace
 		return array('headers' => $headers, 'total_rows' => $totalRows);
 	}
 
-	private static function draftPath(string $token): ?string
+	/**
+	 * @param array<string,mixed> $file Uploaded file metadata.
+	 * @return array{ok:bool,code:string,token?:string,name?:string,tmp_name?:string}
+	 */
+	private static function validateUpload(array $file, int $createdBy, string $format): array
+	{
+		if ($createdBy < 1 || !self::isSupportedFormat($format)) {
+			return self::failure('invalid_user');
+		}
+
+		self::cleanupExpiredDraftFiles();
+
+		$error = isset($file['error']) && is_scalar($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		if ($error !== UPLOAD_ERR_OK) {
+			return self::failure('upload_failed');
+		}
+
+		$size = isset($file['size']) && is_scalar($file['size']) ? (int) $file['size'] : 0;
+		if ($size < 1) {
+			return self::failure('empty_file');
+		}
+		if ($size > self::MAX_UPLOAD_BYTES) {
+			return self::failure('file_too_large');
+		}
+
+		$name = isset($file['name']) && is_scalar($file['name']) ? sanitize_file_name((string) $file['name']) : '';
+		if (strtolower((string) pathinfo($name, PATHINFO_EXTENSION)) !== $format) {
+			return self::failure('invalid_extension');
+		}
+
+		$tmpName = isset($file['tmp_name']) && is_scalar($file['tmp_name']) ? (string) $file['tmp_name'] : '';
+		if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+			return self::failure('invalid_upload_source');
+		}
+
+		$mime = self::detectMime($tmpName);
+		if ($mime !== '' && !in_array($mime, self::allowedMimes($format), true)) {
+			return self::failure('invalid_mime');
+		}
+
+		return array(
+			'ok'       => true,
+			'code'     => 'upload_valid',
+			'token'    => self::uuid4(),
+			'name'     => $name,
+			'tmp_name' => $tmpName,
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $state Draft metadata.
+	 * @return array{ok:bool,code:string,token?:string,state?:array<string,mixed>}
+	 */
+	private static function persistNewDraft(string $token, array $state, string $path): array
+	{
+		if (!self::saveDraft($token, $state)) {
+			@unlink($path); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Cleanup after transient failure.
+			return self::failure('draft_store_failed');
+		}
+
+		return array(
+			'ok'    => true,
+			'code'  => 'uploaded',
+			'token' => $token,
+			'state' => $state,
+		);
+	}
+
+	private static function previewValue(mixed $value): string
+	{
+		if (is_array($value)) {
+			$encoded = wp_json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			return is_string($encoded) ? $encoded : '';
+		}
+		if (is_scalar($value) || $value === null) {
+			return (string) $value;
+		}
+
+		return '';
+	}
+
+	/** @param array<string,mixed> $state Draft metadata. */
+	private static function stateFormat(array $state): string
+	{
+		$format = strtolower(trim((string) ($state['source_format'] ?? self::FORMAT_CSV)));
+		return self::isSupportedFormat($format) ? $format : self::FORMAT_CSV;
+	}
+
+	private static function draftPath(string $token, string $format = self::FORMAT_CSV): ?string
+	{
+		$token = strtolower(trim($token));
+		if (!self::isUuid($token) || !self::isSupportedFormat($format)) {
+			return null;
+		}
+
+		if ($format === self::FORMAT_JSON) {
+			return self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.ndjson';
+		}
+
+		return self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.csv';
+	}
+
+	private static function jsonUploadPath(string $token): ?string
 	{
 		$token = strtolower(trim($token));
 		if (!self::isUuid($token)) {
 			return null;
 		}
 
-		return self::tempRoot() . 'wla-inmo-import-draft-' . $token . '.csv';
+		return self::tempRoot() . 'wla-inmo-import-upload-' . $token . '.json';
 	}
 
-	private static function batchPath(string $batchUuid): ?string
+	private static function batchPath(string $batchUuid, string $format = self::FORMAT_CSV): ?string
 	{
 		$batchUuid = strtolower(trim($batchUuid));
-		if (!self::isUuid($batchUuid)) {
+		if (!self::isUuid($batchUuid) || !self::isSupportedFormat($format)) {
 			return null;
+		}
+
+		if ($format === self::FORMAT_JSON) {
+			return self::tempRoot() . 'wla-inmo-import-batch-' . $batchUuid . '.ndjson';
 		}
 
 		return self::tempRoot() . 'wla-inmo-import-batch-' . $batchUuid . '.csv';
@@ -366,8 +540,17 @@ final class Workspace
 	}
 
 	/** @return array<int,string> */
-	private static function allowedMimes(): array
+	private static function allowedMimes(string $format): array
 	{
+		if ($format === self::FORMAT_JSON) {
+			return array(
+				'application/json',
+				'text/json',
+				'text/plain',
+				'application/octet-stream',
+			);
+		}
+
 		return array(
 			'text/plain',
 			'text/csv',
@@ -376,6 +559,11 @@ final class Workspace
 			'application/vnd.ms-excel',
 			'application/octet-stream',
 		);
+	}
+
+	private static function isSupportedFormat(string $format): bool
+	{
+		return in_array(strtolower(trim($format)), array(self::FORMAT_CSV, self::FORMAT_JSON), true);
 	}
 
 	/** @return array{ok:false,code:string} */
