@@ -5,6 +5,17 @@
  * This file is parsed by PHPStan only and is never shipped as runtime code.
  */
 
+class WP_Query
+{
+	/** @var mixed */
+	public $posts = array();
+
+	/** @param array<string,mixed> $args */
+	public function __construct(array $args = array())
+	{
+	}
+}
+
 function add_action(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool
 {
 	return true;
@@ -126,6 +137,11 @@ function delete_transient(string $transient): bool
 function trailingslashit(string $value): string
 {
 	return rtrim($value, '/\\') . '/';
+}
+
+function wp_json_encode(mixed $value, int $flags = 0, int $depth = 512): string|false
+{
+	return json_encode($value, $flags, $depth);
 }
 
 /**
