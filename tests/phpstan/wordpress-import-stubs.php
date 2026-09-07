@@ -47,9 +47,7 @@ function get_post_modified_time(string $format = 'U', bool $gmt = false, int $po
 	return false;
 }
 
-/**
- * @param array<string,mixed> $args
- */
+/** @param array<string,mixed> $args */
 function register_post_meta(string $post_type, string $meta_key, array $args): bool
 {
 	return true;
@@ -64,19 +62,13 @@ function do_action(string $hook_name, mixed ...$args): void
 {
 }
 
-/**
- * @param array<string,mixed> $postarr
- * @return mixed
- */
+/** @param array<string,mixed> $postarr @return mixed */
 function wp_insert_post(array $postarr, bool $wp_error = false)
 {
 	return 1;
 }
 
-/**
- * @param array<string,mixed> $postarr
- * @return mixed
- */
+/** @param array<string,mixed> $postarr @return mixed */
 function wp_update_post(array $postarr, bool $wp_error = false)
 {
 	return 1;
@@ -144,10 +136,7 @@ function wp_json_encode(mixed $value, int $flags = 0, int $depth = 512): string|
 	return json_encode($value, $flags, $depth);
 }
 
-/**
- * @param array<string,mixed> $args
- * @return mixed
- */
+/** @param array<string,mixed> $args @return mixed */
 function get_terms(array $args = array())
 {
 	return array();
@@ -159,10 +148,7 @@ function term_exists(int|string $term, string $taxonomy = '', ?int $parent_term 
 	return array('term_id' => 1, 'term_taxonomy_id' => 1);
 }
 
-/**
- * @param int|array<int,int|string>|string $terms
- * @return mixed
- */
+/** @param int|array<int,int|string>|string $terms @return mixed */
 function wp_set_object_terms(int $object_id, int|array|string $terms, string $taxonomy, bool $append = false)
 {
 	return array();
@@ -174,8 +160,7 @@ function update_post_meta(int $post_id, string $meta_key, mixed $meta_value, mix
 	return 1;
 }
 
-/** @return bool */
-function delete_post_meta(int $post_id, string $meta_key, mixed $meta_value = '')
+function delete_post_meta(int $post_id, string $meta_key, mixed $meta_value = ''): bool
 {
 	return true;
 }
@@ -191,10 +176,7 @@ function get_post(int $post_id)
 	return null;
 }
 
-/**
- * @param array<string,mixed> $args
- * @return mixed
- */
+/** @param array<string,mixed> $args @return mixed */
 function wp_get_object_terms(int|array $object_ids, string|array $taxonomies, array $args = array())
 {
 	return array();
@@ -218,3 +200,24 @@ function wp_clear_scheduled_hook(string $hook, array $args = array(), bool $wp_e
 	return 0;
 }
 
+/** @param array<string,mixed> $args @return mixed */
+function wp_safe_remote_get(string $url, array $args = array())
+{
+	return array();
+}
+
+function wp_remote_retrieve_response_code(mixed $response): int
+{
+	return 200;
+}
+
+/** @return mixed */
+function wp_remote_retrieve_header(mixed $response, string $header)
+{
+	return '';
+}
+
+function wp_tempnam(string $filename = '', ?string $dir = null): string|false
+{
+	return false;
+}

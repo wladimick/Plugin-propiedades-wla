@@ -8,6 +8,7 @@ on:
       - 'plugin/wla-inmo/src/Import/DnsResolverInterface.php'
       - 'plugin/wla-inmo/src/Import/SystemDnsResolver.php'
       - 'tests/unit/ImportRemoteMedia*.php'
+      - 'tests/phpstan/wordpress-import-stubs.php'
       - '.github/workflows/remote-media-integration.yml'
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   remote-media:
-    name: PHP ${{ matrix.php }} / SSRF foundation
+    name: PHP ${{ matrix.php }} / SSRF + bounded transport
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -50,3 +51,8 @@ jobs:
           grep -F "array('http', 'https')" plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
           grep -F 'blocked_media_address' plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
           grep -F 'DnsResolverInterface' plugin/wla-inmo/src/Import/RemoteMediaUrlPolicy.php
+          grep -F 'wp_safe_remote_get' plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'stream'              => true" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'limit_response_size' => \$maxBytes + 1" plugin/wla-inmo/src/Import/RemoteMediaWordPressHttpClient.php
+          grep -F "'image/webp'" plugin/wla-inmo/src/Import/RemoteMediaImageInspector.php
+          grep -F 'chmod($path, 0600)' plugin/wla-inmo/src/Import/RemoteMediaDownloader.php
