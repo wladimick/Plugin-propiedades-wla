@@ -253,7 +253,7 @@ final class BatchRunner
 		}
 
 		$format = strtolower(trim((string) ($batch['source_format'] ?? 'csv')));
-		if ($format === 'json') {
+		if (in_array($format, array('json', 'xlsx'), true)) {
 			return new JsonLinesReader(max(10000, $totalRows + 1));
 		}
 

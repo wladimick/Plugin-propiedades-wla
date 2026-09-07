@@ -10,6 +10,8 @@ use WLA\Inmo\Import\BatchRunner;
 use WLA\Inmo\Import\BatchStatus;
 use WLA\Inmo\Import\CsvException;
 use WLA\Inmo\Import\CsvReader;
+use WLA\Inmo\Import\JsonException;
+use WLA\Inmo\Import\JsonLinesReader;
 use WLA\Inmo\Import\DryRunEngine;
 use WLA\Inmo\Import\DryRunResult;
 use WLA\Inmo\Import\IdentityRepository;
@@ -23,12 +25,14 @@ use WLA\Inmo\Import\Workspace;
 final class ImportExportPage
 {
 	private const UPLOAD_ACTION = 'wla_inmo_import_upload';
+	private const SHEET_ACTION = 'wla_inmo_import_xlsx_sheet';
 	private const MAP_ACTION = 'wla_inmo_import_map';
 	private const CONFIRM_ACTION = 'wla_inmo_import_confirm';
 	private const RUN_ACTION = 'wla_inmo_import_run';
 	private const CANCEL_ACTION = 'wla_inmo_import_cancel';
 	private const DISCARD_ACTION = 'wla_inmo_import_discard';
 	private const NONCE_UPLOAD = 'wla_inmo_import_upload';
+	private const NONCE_SHEET = 'wla_inmo_import_xlsx_sheet';
 	private const NONCE_MAP = 'wla_inmo_import_map';
 	private const NONCE_CONFIRM = 'wla_inmo_import_confirm';
 	private const NONCE_RUN = 'wla_inmo_import_run';
@@ -41,6 +45,7 @@ final class ImportExportPage
 	public static function register(): void
 	{
 		add_action('admin_post_' . self::UPLOAD_ACTION, array(self::class, 'handleUpload'));
+		add_action('admin_post_' . self::SHEET_ACTION, array(self::class, 'handleSheet'));
 		add_action('admin_post_' . self::MAP_ACTION, array(self::class, 'handleMap'));
 		add_action('admin_post_' . self::CONFIRM_ACTION, array(self::class, 'handleConfirm'));
 		add_action('admin_post_' . self::RUN_ACTION, array(self::class, 'handleRun'));
@@ -48,9 +53,10 @@ final class ImportExportPage
 		add_action('admin_post_' . self::DISCARD_ACTION, array(self::class, 'handleDiscard'));
 	}
 
-	public static function render(): void
+	public static function render(string $requestedFormat = 'csv'): void
 	{
 		self::authorize();
+		$requestedFormat = $requestedFormat === 'xlsx' ? 'xlsx' : 'csv';
 		self::renderNotice();
 
 		$draftToken = self::queryArg('draft');
@@ -62,6 +68,12 @@ final class ImportExportPage
 		if ($batch !== null && !self::canAccessBatch($batch)) {
 			$batch = null;
 		}
+		if ($draft !== null && Workspace::sourceFormat($draft) === 'xlsx') {
+			$requestedFormat = 'xlsx';
+		}
+		if ($batch !== null && (string) ($batch['source_format'] ?? '') === 'xlsx') {
+			$requestedFormat = 'xlsx';
+		}
 
 		self::renderSteps($draft, $batch);
 
@@ -70,7 +82,7 @@ final class ImportExportPage
 		} elseif ($draft !== null) {
 			self::renderDraft($draft);
 		} else {
-			self::renderUpload();
+			self::renderUpload($requestedFormat);
 		}
 
 		self::renderHistory();
@@ -82,7 +94,10 @@ final class ImportExportPage
 		check_admin_referer(self::NONCE_UPLOAD);
 
 		$file = ImportRequest::uploadedFile('wla_import_file');
-		$result = Workspace::storeUploadedCsv($file, get_current_user_id());
+		$sourceFormat = self::postScalar('wla_source_format');
+		$result = $sourceFormat === 'xlsx'
+			? Workspace::storeUploadedXlsx($file, get_current_user_id())
+			: Workspace::storeUploadedCsv($file, get_current_user_id());
 		if (empty($result['ok'])) {
 			self::redirect(array('wla_import_error' => (string) $result['code']));
 		}
@@ -93,6 +108,22 @@ final class ImportExportPage
 				'wla_import_notice' => 'upload_ready',
 			)
 		);
+	}
+
+
+	public static function handleSheet(): void
+	{
+		self::authorize();
+		check_admin_referer(self::NONCE_SHEET);
+
+		$token = self::postScalar('draft_token');
+		$sheetName = self::postScalar('sheet_name');
+		$result = Workspace::selectUploadedXlsxSheet($token, get_current_user_id(), $sheetName);
+		if (empty($result['ok'])) {
+			self::redirect(array('draft' => $token, 'wla_import_error' => (string) $result['code'], 'wla_format' => 'xlsx'));
+		}
+
+		self::redirect(array('draft' => $token, 'wla_import_notice' => 'sheet_ready', 'wla_format' => 'xlsx'));
 	}
 
 	public static function handleMap(): void
@@ -170,7 +201,12 @@ final class ImportExportPage
 		$issues = array();
 		$issueCount = 0;
 		$processed = 0;
-		$rowFactory = static function () use ($path): iterable {
+		$sourceFormat = Workspace::sourceFormat($state);
+		$rowFactory = static function () use ($path, $sourceHash, $sourceFormat): iterable {
+			if ($sourceFormat === 'xlsx') {
+				return (new JsonLinesReader(Workspace::maxRows()))->verifiedRows($path, $sourceHash);
+			}
+
 			return (new CsvReader(Workspace::maxRows()))->rows($path);
 		};
 
@@ -192,7 +228,7 @@ final class ImportExportPage
 				self::collectIssues($issues, $issueCount, $result, 'warning', $result->warnings());
 				self::collectIssues($issues, $issueCount, $result, 'error', $result->errors());
 			}
-		} catch (CsvException $exception) {
+		} catch (CsvException|JsonException $exception) {
 			self::redirect(array('draft' => $token, 'wla_import_error' => $exception->reason()));
 		} catch (\Throwable) {
 			self::redirect(array('draft' => $token, 'wla_import_error' => 'dry_run_failed'));
@@ -273,7 +309,8 @@ final class ImportExportPage
 			$profileJson,
 			(int) ($state['total_rows'] ?? 0),
 			$userId,
-			$batchUuid
+			$batchUuid,
+			Workspace::sourceFormat($state)
 		);
 
 		if ($created === null) {
@@ -309,14 +346,15 @@ final class ImportExportPage
 			self::redirect(array('batch' => $batchUuid, 'wla_import_error' => 'batch_not_runnable'));
 		}
 
-		$path = Workspace::batchSourcePath($batchUuid);
+		$sourceFormat = (string) ($batch['source_format'] ?? 'csv');
+		$path = Workspace::batchSourcePath($batchUuid, $sourceFormat);
 		if ($path === null) {
 			self::redirect(array('batch' => $batchUuid, 'wla_import_error' => 'source_unreadable'));
 		}
 
 		$result = (new BatchRunner())->run($batchUuid, $path, 25, 4.0);
 		if (in_array($result->status(), array(BatchRunResult::STATUS_COMPLETED, BatchRunResult::STATUS_ALREADY_COMPLETED), true)) {
-			Workspace::deleteBatchSource($batchUuid);
+			Workspace::deleteBatchSource($batchUuid, $sourceFormat);
 		}
 
 		$args = array(
@@ -351,7 +389,7 @@ final class ImportExportPage
 			self::redirect(array('batch' => $batchUuid, 'wla_import_error' => 'cancel_conflict'));
 		}
 
-		Workspace::deleteBatchSource($batchUuid);
+		Workspace::deleteBatchSource($batchUuid, (string) ($batch['source_format'] ?? 'csv'));
 		self::redirect(array('batch' => $batchUuid, 'wla_import_notice' => 'batch_cancelled'));
 	}
 
@@ -388,17 +426,26 @@ final class ImportExportPage
 		echo '</ol>';
 	}
 
-	private static function renderUpload(): void
+	private static function renderUpload(string $format = 'csv'): void
 	{
+		$isXlsx = $format === 'xlsx';
+		$title = $isXlsx ? __('Nueva importación XLSX', 'wla-inmo') : __('Nueva importación CSV', 'wla-inmo');
+		$description = $isXlsx
+			? __('Sube un XLSX. Primero se inspecciona el contenedor, luego eliges la hoja y recién después se normaliza y simula. Ninguna propiedad se modifica antes de confirmar.', 'wla-inmo')
+			: __('Sube un CSV UTF-8. Primero se revisa y simula: ninguna propiedad se crea o modifica hasta que confirmes un dry-run sin errores.', 'wla-inmo');
+		$label = $isXlsx ? __('Archivo XLSX', 'wla-inmo') : __('Archivo CSV', 'wla-inmo');
+		$accept = $isXlsx ? '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : '.csv,text/csv';
+
 		echo '<section class="wla-inmo-admin__panel wla-inmo-import__panel">';
-		echo '<h2>' . esc_html__('Nueva importación CSV', 'wla-inmo') . '</h2>';
-		echo '<p>' . esc_html__('Sube un CSV UTF-8. Primero se revisa y simula: ninguna propiedad se crea o modifica hasta que confirmes un dry-run sin errores.', 'wla-inmo') . '</p>';
+		echo '<h2>' . esc_html($title) . '</h2>';
+		echo '<p>' . esc_html($description) . '</p>';
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url(admin_url('admin-post.php')) . '">';
 		echo '<input type="hidden" name="action" value="' . esc_attr(self::UPLOAD_ACTION) . '">';
+		echo '<input type="hidden" name="wla_source_format" value="' . esc_attr($isXlsx ? 'xlsx' : 'csv') . '">';
 		wp_nonce_field(self::NONCE_UPLOAD);
-		echo '<p><label for="wla-import-file"><strong>' . esc_html__('Archivo CSV', 'wla-inmo') . '</strong></label><br>';
-		echo '<input id="wla-import-file" type="file" name="wla_import_file" accept=".csv,text/csv" required></p>';
-		echo '<p class="description">' . esc_html(sprintf(__('Máximo %1$s MB y %2$s filas en esta etapa.', 'wla-inmo'), number_format_i18n(Workspace::maxUploadBytes() / 1048576, 0), number_format_i18n(Workspace::maxRows()))) . '</p>';
+		echo '<p><label for="wla-import-file"><strong>' . esc_html($label) . '</strong></label><br>';
+		echo '<input id="wla-import-file" type="file" name="wla_import_file" accept="' . esc_attr($accept) . '" required></p>';
+		echo '<p class="description">' . esc_html(sprintf(__('Máximo %1$s MB y %2$s filas importables por hoja.', 'wla-inmo'), number_format_i18n(Workspace::maxUploadBytes() / 1048576, 0), number_format_i18n(Workspace::maxRows()))) . '</p>';
 		echo '<button type="submit" class="button button-primary">' . esc_html__('Subir y revisar', 'wla-inmo') . '</button>';
 		echo '</form></section>';
 	}
@@ -407,6 +454,16 @@ final class ImportExportPage
 	private static function renderDraft(array $state): void
 	{
 		$token = (string) $state['token'];
+		if (Workspace::sourceFormat($state) === 'xlsx' && empty($state['selected_sheet'])) {
+			self::renderXlsxSheetSelection($state);
+			echo '<section class="wla-inmo-import__secondary"><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+			echo '<input type="hidden" name="action" value="' . esc_attr(self::DISCARD_ACTION) . '">';
+			echo '<input type="hidden" name="draft_token" value="' . esc_attr($token) . '">';
+			wp_nonce_field(self::NONCE_DISCARD);
+			echo '<button type="submit" class="button">' . esc_html__('Descartar carga', 'wla-inmo') . '</button></form></section>';
+			return;
+		}
+
 		$preview = Workspace::preview($token, get_current_user_id());
 		$profile = null;
 		if (!empty($state['profile_json']) && is_string($state['profile_json'])) {
@@ -438,6 +495,36 @@ final class ImportExportPage
 		echo '<input type="hidden" name="draft_token" value="' . esc_attr($token) . '">';
 		wp_nonce_field(self::NONCE_DISCARD);
 		echo '<button type="submit" class="button">' . esc_html__('Descartar carga', 'wla-inmo') . '</button>';
+		echo '</form></section>';
+	}
+
+
+	/** @param array<string,mixed> $state */
+	private static function renderXlsxSheetSelection(array $state): void
+	{
+		$sheets = isset($state['xlsx_sheets']) && is_array($state['xlsx_sheets']) ? $state['xlsx_sheets'] : array();
+		echo '<section class="wla-inmo-admin__panel wla-inmo-import__panel">';
+		echo '<h2>' . esc_html__('Seleccionar hoja del XLSX', 'wla-inmo') . '</h2>';
+		echo '<p>' . esc_html__('El archivo ya pasó la inspección ZIP/OOXML. Elige explícitamente qué hoja se normalizará; las demás no se leerán para la importación.', 'wla-inmo') . '</p>';
+		echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr(self::SHEET_ACTION) . '">';
+		echo '<input type="hidden" name="draft_token" value="' . esc_attr((string) ($state['token'] ?? '')) . '">';
+		echo '<input type="hidden" name="wla_source_format" value="xlsx">';
+		wp_nonce_field(self::NONCE_SHEET);
+		echo '<p><label for="wla-xlsx-sheet"><strong>' . esc_html__('Hoja a importar', 'wla-inmo') . '</strong></label><br><select id="wla-xlsx-sheet" name="sheet_name" required>';
+		echo '<option value="">' . esc_html__('Selecciona una hoja', 'wla-inmo') . '</option>';
+		foreach ($sheets as $sheet) {
+			if (!is_array($sheet) || !isset($sheet['name'])) {
+				continue;
+			}
+			$name = (string) $sheet['name'];
+			$rows = max(0, (int) ($sheet['importable_rows'] ?? 0));
+			$columns = max(0, (int) ($sheet['total_columns'] ?? 0));
+			$label = sprintf(__('%1$s — %2$s filas · %3$s columnas', 'wla-inmo'), $name, number_format_i18n($rows), number_format_i18n($columns));
+			echo '<option value="' . esc_attr($name) . '">' . esc_html($label) . '</option>';
+		}
+		echo '</select></p>';
+		echo '<button type="submit" class="button button-primary">' . esc_html__('Usar esta hoja', 'wla-inmo') . '</button>';
 		echo '</form></section>';
 	}
 
@@ -486,7 +573,7 @@ final class ImportExportPage
 		echo '<option value="clear"' . selected($emptyPolicy, MappingProfile::EMPTY_CLEAR, false) . '>' . esc_html__('Borrar el valor existente', 'wla-inmo') . '</option>';
 		echo '</select></p></div>';
 
-		echo '<div class="table-responsive"><table class="widefat striped wla-inmo-import__mapping"><thead><tr><th>' . esc_html__('Columna CSV', 'wla-inmo') . '</th><th>' . esc_html__('Campo WLA Inmo', 'wla-inmo') . '</th><th>' . esc_html__('Separador múltiple', 'wla-inmo') . '</th></tr></thead><tbody>';
+		echo '<div class="table-responsive"><table class="widefat striped wla-inmo-import__mapping"><thead><tr><th>' . esc_html__('Columna de origen', 'wla-inmo') . '</th><th>' . esc_html__('Campo WLA Inmo', 'wla-inmo') . '</th><th>' . esc_html__('Separador múltiple', 'wla-inmo') . '</th></tr></thead><tbody>';
 		foreach ($headers as $index => $header) {
 			$current = $currentMapping[$header] ?? self::suggestTarget($header);
 			echo '<tr><th scope="row">' . esc_html($header) . '</th><td><select name="wla_mapping[' . esc_attr((string) $index) . ']" aria-label="' . esc_attr(sprintf(__('Campo WLA Inmo para %s', 'wla-inmo'), $header)) . '">';
@@ -690,6 +777,23 @@ final class ImportExportPage
 	/** @param array<string,string> $args */
 	private static function redirect(array $args): never
 	{
+		if (!isset($args['wla_format'])) {
+			$requestFormat = ImportRequest::postScalar('wla_source_format');
+			if ($requestFormat === 'xlsx') {
+				$args['wla_format'] = 'xlsx';
+			} elseif (isset($args['draft'])) {
+				$draft = Workspace::loadDraft((string) $args['draft'], get_current_user_id());
+				if ($draft !== null && Workspace::sourceFormat($draft) === 'xlsx') {
+					$args['wla_format'] = 'xlsx';
+				}
+			} elseif (isset($args['batch'])) {
+				$batch = (new BatchRepository())->find((string) $args['batch']);
+				if ($batch !== null && (string) ($batch['source_format'] ?? '') === 'xlsx') {
+					$args['wla_format'] = 'xlsx';
+				}
+			}
+		}
+
 		$url = add_query_arg(array_merge(array('page' => 'wla-inmo-import-export'), $args), admin_url('admin.php'));
 		wp_safe_redirect($url);
 		exit;
@@ -844,7 +948,8 @@ final class ImportExportPage
 	private static function message(string $code): string
 	{
 		$messages = array(
-			'upload_ready' => __('Archivo recibido. Revisa columnas y mapping antes de simular.', 'wla-inmo'),
+			'upload_ready' => __('Archivo recibido y validado para continuar.', 'wla-inmo'),
+			'sheet_ready' => __('Hoja seleccionada y normalizada. Revisa columnas y mapping antes de simular.', 'wla-inmo'),
 			'dry_run_ready' => __('Simulación actualizada.', 'wla-inmo'),
 			'batch_confirmed' => __('Importación confirmada. Ya puedes iniciar el procesamiento por lotes.', 'wla-inmo'),
 			'run_paused' => __('Se procesó un lote y el batch quedó pausado en un checkpoint seguro.', 'wla-inmo'),
@@ -853,10 +958,18 @@ final class ImportExportPage
 			'batch_cancelled' => __('Importación cancelada en un checkpoint seguro.', 'wla-inmo'),
 			'draft_discarded' => __('Carga descartada y archivo temporal eliminado.', 'wla-inmo'),
 			'file_too_large' => __('El archivo supera el tamaño permitido para esta etapa.', 'wla-inmo'),
-			'invalid_extension' => __('Solo se aceptan archivos CSV en esta etapa.', 'wla-inmo'),
-			'invalid_mime' => __('El tipo de archivo no coincide con un CSV permitido.', 'wla-inmo'),
+			'invalid_extension' => __('La extensión del archivo no corresponde al formato seleccionado.', 'wla-inmo'),
+			'invalid_mime' => __('El tipo MIME del archivo no corresponde al formato seleccionado.', 'wla-inmo'),
+			'invalid_zip' => __('El XLSX no es un contenedor ZIP válido.', 'wla-inmo'),
+			'unsafe_entry_path' => __('El XLSX contiene una ruta interna insegura y fue bloqueado.', 'wla-inmo'),
+			'unsupported_executable_part' => __('El XLSX contiene macros, binarios o contenido ejecutable no permitido.', 'wla-inmo'),
+			'external_relationship' => __('El XLSX contiene relaciones externas y fue bloqueado.', 'wla-inmo'),
+			'macro_enabled_workbook' => __('Los libros con macros no están permitidos.', 'wla-inmo'),
+			'unknown_sheet' => __('La hoja seleccionada no existe o ya no coincide con el archivo revisado.', 'wla-inmo'),
+			'xlsx_validation_failed' => __('No fue posible validar el XLSX de forma segura.', 'wla-inmo'),
+			'xlsx_normalization_failed' => __('No fue posible normalizar la hoja XLSX seleccionada.', 'wla-inmo'),
 			'empty_csv' => __('El CSV debe contener encabezados y al menos una fila de datos.', 'wla-inmo'),
-			'draft_expired' => __('La carga temporal venció o ya no está disponible. Vuelve a subir el CSV.', 'wla-inmo'),
+			'draft_expired' => __('La carga temporal venció o ya no está disponible. Vuelve a subir el archivo.', 'wla-inmo'),
 			'dry_run_expired' => __('La simulación venció. Vuelve a validar antes de confirmar.', 'wla-inmo'),
 			'dry_run_has_errors' => __('La simulación contiene errores bloqueantes y no puede confirmarse.', 'wla-inmo'),
 			'source_hash_mismatch' => __('El archivo cambió después de ser revisado. La operación fue bloqueada.', 'wla-inmo'),

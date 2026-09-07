@@ -39,6 +39,47 @@ final class XlsxDocumentReader
 		$this->maxCellBytes = $maxCellBytes;
 	}
 
+
+	/**
+	 * Inspect workbook sheets after archive preflight, without materializing rows.
+	 *
+	 * @return array{
+	 *   original_hash:string,
+	 *   source_bytes:int,
+	 *   archive_entries:int,
+	 *   sheets:array<int,array{name:string,total_rows:int,total_columns:int,importable_rows:int}>
+	 * }
+	 */
+	public function worksheets(string $xlsxPath): array
+	{
+		$inspection = $this->inspector->inspect($xlsxPath);
+		$info = $this->worksheetInfo($xlsxPath);
+		$sheets = array();
+
+		foreach ($info as $worksheet) {
+			$name = (string) ($worksheet['worksheetName'] ?? '');
+			if ($name === '') {
+				throw new XlsxException('invalid_sheet_name', 'XLSX workbook contains an invalid worksheet name.');
+			}
+
+			$totalRows = max(0, (int) ($worksheet['totalRows'] ?? 0));
+			$totalColumns = max(0, (int) ($worksheet['totalColumns'] ?? 0));
+			$sheets[] = array(
+				'name'            => $name,
+				'total_rows'      => $totalRows,
+				'total_columns'   => $totalColumns,
+				'importable_rows' => max(0, $totalRows - 1),
+			);
+		}
+
+		return array(
+			'original_hash'   => $inspection['source_hash'],
+			'source_bytes'    => $inspection['source_bytes'],
+			'archive_entries' => $inspection['entries'],
+			'sheets'          => $sheets,
+		);
+	}
+
 	/**
 	 * Normalize one selected worksheet to private NDJSON rows.
 	 *
