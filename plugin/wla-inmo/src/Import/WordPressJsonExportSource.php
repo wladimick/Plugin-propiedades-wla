@@ -2,6 +2,7 @@
 
 namespace WLA\Inmo\Import;
 
+use WLA\Inmo\Properties\MetaSchema;
 use WLA\Inmo\Properties\PostType;
 use WLA\Inmo\Taxonomies\Registry as TaxonomyRegistry;
 
@@ -74,6 +75,10 @@ final class WordPressJsonExportSource implements JsonExportSourceInterface
 			if (isset($terms[$id]) && $terms[$id] !== array()) {
 				$property['taxonomies'] = $terms[$id];
 			}
+			$media = $this->portableMedia($id);
+			if ($media !== array()) {
+				$property['media'] = $media;
+			}
 
 			$properties[] = $property;
 		}
@@ -104,6 +109,40 @@ final class WordPressJsonExportSource implements JsonExportSourceInterface
 		}
 
 		return $meta;
+	}
+
+	/** @return array<string,mixed> */
+	private function portableMedia(int $postId): array
+	{
+		$media = array();
+		$definitions = MetaSchema::definitions();
+		$galleryDefinition = $definitions['gallery_ids'] ?? null;
+		$galleryKey = is_array($galleryDefinition) ? (string) ($galleryDefinition['meta_key'] ?? '') : '';
+		$galleryIds = $galleryKey !== '' ? get_post_meta($postId, $galleryKey, true) : array();
+		$galleryUrls = array();
+
+		if (is_array($galleryIds)) {
+			foreach ($galleryIds as $attachmentId) {
+				$url = wp_get_attachment_url((int) $attachmentId);
+				if (self::isPortableHttpUrl($url)) {
+					$galleryUrls[] = (string) $url;
+				}
+			}
+		}
+		$galleryUrls = array_values(array_unique($galleryUrls));
+		if ($galleryUrls !== array()) {
+			$media['gallery_urls'] = $galleryUrls;
+		}
+
+		$featuredId = (int) get_post_thumbnail_id($postId);
+		if ($featuredId > 0) {
+			$featuredUrl = wp_get_attachment_url($featuredId);
+			if (self::isPortableHttpUrl($featuredUrl)) {
+				$media['featured_image_url'] = (string) $featuredUrl;
+			}
+		}
+
+		return $media;
 	}
 
 	/**
@@ -166,5 +205,14 @@ final class WordPressJsonExportSource implements JsonExportSourceInterface
 		}
 
 		return true;
+	}
+
+	private static function isPortableHttpUrl(mixed $url): bool
+	{
+		if (!is_string($url) || $url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+			return false;
+		}
+		$scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+		return in_array($scheme, array('http', 'https'), true);
 	}
 }
