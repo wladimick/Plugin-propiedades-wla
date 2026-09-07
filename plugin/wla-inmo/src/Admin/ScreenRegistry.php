@@ -52,7 +52,7 @@ final class ScreenRegistry
 				__('Importar / Exportar', 'wla-inmo'),
 				__('Importar / Exportar', 'wla-inmo'),
 				AccessCapabilities::IMPORT_PROPERTIES,
-				__('Importación CSV guiada con simulación obligatoria, procesamiento reanudable e historial de batches.', 'wla-inmo')
+				__('Importación CSV o JSON WLA con simulación obligatoria, procesamiento reanudable, respaldo JSON versionado e historial de batches.', 'wla-inmo')
 			),
 			'leads' => self::page(
 				'wla-inmo-leads',
@@ -134,9 +134,7 @@ final class ScreenRegistry
 		);
 	}
 
-	/**
-	 * @return array<string, string>|null
-	 */
+	/** @return array<string, string>|null */
 	public static function findBySlug(string $slug): ?array
 	{
 		foreach (self::definitions() as $definition) {
@@ -155,9 +153,7 @@ final class ScreenRegistry
 		return $screen !== null && $screen['kind'] === 'page';
 	}
 
-	/**
-	 * @return array<string, string>
-	 */
+	/** @return array<string, string> */
 	private static function page(string $slug, string $menuTitle, string $pageTitle, string $capability, string $description): array
 	{
 		return array(
@@ -170,9 +166,7 @@ final class ScreenRegistry
 		);
 	}
 
-	/**
-	 * @return array<string, string>
-	 */
+	/** @return array<string, string> */
 	private static function native(string $slug, string $menuTitle, string $capability): array
 	{
 		return array(
