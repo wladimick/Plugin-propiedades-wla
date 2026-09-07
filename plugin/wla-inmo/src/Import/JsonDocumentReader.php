@@ -47,8 +47,9 @@ final class JsonDocumentReader
 	/**
 	 * Validate a WLA JSON document and materialize a server-controlled NDJSON source.
 	 *
-	 * The generated source contains one flattened canonical property per line and
-	 * can therefore be resumed by byte offset without reparsing the original JSON.
+	 * Source headers in NDJSON are normalized independently from canonical WLA
+	 * targets. The returned mapping is therefore ready for MappingProfile without
+	 * bypassing HeaderNormalizer or TargetRegistry.
 	 *
 	 * @return array{
 	 *   format_version:int,
@@ -67,6 +68,7 @@ final class JsonDocumentReader
 		$document = $this->decodeDocument($payload);
 		$sourceKey = $this->sourceKey($document);
 		$properties = $this->properties($document);
+		$exportedAt = $this->exportedAt($document);
 		$mapping = array();
 		$handle = $this->openOutput($ndjsonPath);
 		$written = 0;
@@ -74,17 +76,32 @@ final class JsonDocumentReader
 		try {
 			foreach ($properties as $index => $property) {
 				$rowNumber = $index + 1;
-				$row = $this->flattenProperty($property, $rowNumber);
-				foreach (array_keys($row) as $target) {
-					$mapping[$target] = $target;
+				$canonicalRow = $this->flattenProperty($property, $rowNumber);
+				$sourceRow = array();
+
+				foreach ($canonicalRow as $target => $value) {
+					$header = HeaderNormalizer::normalize($target);
+					if ($header === '') {
+						throw new JsonException('invalid_source_header', 'JSON target could not be normalized to a source header.', $rowNumber);
+					}
+					if (isset($mapping[$header]) && $mapping[$header] !== $target) {
+						throw new JsonException('source_header_collision', 'JSON targets collide after source-header normalization.', $rowNumber);
+					}
+
+					$mapping[$header] = $target;
+					$sourceRow[$header] = $value;
 				}
 
 				try {
-					$line = json_encode($row, self::ENCODE_FLAGS) . "\n";
+					$encoded = json_encode($sourceRow, self::ENCODE_FLAGS);
 				} catch (NativeJsonException) {
 					throw new JsonException('normalized_encode_failed', 'Normalized JSON row could not be encoded.', $rowNumber);
 				}
+				if (!is_string($encoded)) {
+					throw new JsonException('normalized_encode_failed', 'Normalized JSON row could not be encoded.', $rowNumber);
+				}
 
+				$line = $encoded . "\n";
 				if (fwrite($handle, $line) !== strlen($line)) {
 					throw new JsonException('normalized_write_failed', 'Normalized JSON source could not be written.', $rowNumber);
 				}
@@ -122,7 +139,7 @@ final class JsonDocumentReader
 			'total_rows'     => $written,
 			'mapping'        => $mapping,
 			'headers'        => array_keys($mapping),
-			'exported_at'    => $this->exportedAt($document),
+			'exported_at'    => $exportedAt,
 		);
 	}
 
@@ -149,7 +166,12 @@ final class JsonDocumentReader
 			$payload = '';
 
 			while (!feof($handle)) {
-				$chunk = fread($handle, min(1048576, ($this->maxBytes + 1) - strlen($payload)));
+				$remaining = ($this->maxBytes + 1) - strlen($payload);
+				if ($remaining < 1) {
+					throw new JsonException('file_too_large', 'JSON file exceeds the allowed byte limit.');
+				}
+
+				$chunk = fread($handle, min(1048576, $remaining));
 				if ($chunk === false) {
 					throw new JsonException('source_read_failed', 'JSON source could not be read.');
 				}
@@ -167,7 +189,6 @@ final class JsonDocumentReader
 			if (!$this->sameFileState($before, $after)) {
 				throw new JsonException('source_changed_during_validation', 'JSON source changed during validation.');
 			}
-
 			if ($payload === '') {
 				throw new JsonException('empty_file', 'JSON file is empty.');
 			}
@@ -179,9 +200,7 @@ final class JsonDocumentReader
 		}
 	}
 
-	/**
-	 * @return array<string,mixed>
-	 */
+	/** @return array<string,mixed> */
 	private function decodeDocument(string $payload): array
 	{
 		try {
@@ -211,9 +230,7 @@ final class JsonDocumentReader
 		return $document;
 	}
 
-	/**
-	 * @param array<string,mixed> $document Decoded document.
-	 */
+	/** @param array<string,mixed> $document Decoded document. */
 	private function sourceKey(array $document): string
 	{
 		$value = $document['source_key'] ?? null;
@@ -282,7 +299,7 @@ final class JsonDocumentReader
 	}
 
 	/**
-	 * @param array<string,mixed> $row Flattened row being built.
+	 * @param array<string,mixed> $row Flattened canonical row being built.
 	 * @param mixed               $section Raw JSON section.
 	 */
 	private function flattenSection(array &$row, mixed $section, string $prefix, int $rowNumber): void
@@ -327,9 +344,7 @@ final class JsonDocumentReader
 		}
 	}
 
-	/**
-	 * @param array<string,mixed> $document Decoded document.
-	 */
+	/** @param array<string,mixed> $document Decoded document. */
 	private function exportedAt(array $document): string
 	{
 		$value = $document['exported_at'] ?? '';
