@@ -151,6 +151,74 @@ final class ImportJsonFoundationTest extends TestCase
 		self::assertFileDoesNotExist($output);
 	}
 
+	public function testNormalizedSourceIsCreatedWithPrivatePermissions(): void
+	{
+		if (DIRECTORY_SEPARATOR === '\\') {
+			self::markTestSkipped('POSIX file mode assertion is not portable to Windows.');
+		}
+
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_privado',
+			'properties' => array(array('post' => array('title' => 'Casa Privada'))),
+		));
+		$output = $this->newOutputPath();
+
+		$this->documentReader()->normalizeToNdjson($input, $output);
+		$permissions = fileperms($output);
+		self::assertNotFalse($permissions);
+		self::assertSame(0600, $permissions & 0777);
+	}
+
+	public function testOversizedNormalizedRowIsRejectedAndRemoved(): void
+	{
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_grande',
+			'properties' => array(
+				array(
+					'post' => array(
+						'title' => 'Casa Grande',
+						'content' => str_repeat('x', JsonLinesReader::DEFAULT_MAX_LINE_BYTES + 128),
+					),
+				),
+			),
+		));
+		$output = $this->newOutputPath();
+		$allowed = static fn (string $target): bool => in_array($target, array('post.title', 'post.content'), true);
+		$reader = new JsonDocumentReader(4194304, 10, 16, $allowed, static fn (string $target): bool => false);
+
+		try {
+			$reader->normalizeToNdjson($input, $output);
+			self::fail('Expected normalized row limit exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('line_limit_exceeded', $exception->reason());
+			self::assertSame(1, $exception->rowNumber());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
+	public function testInvalidExportedAtIsRejectedBeforeCreatingNormalizedSource(): void
+	{
+		$input = $this->writeDocument(array(
+			'format_version' => 1,
+			'source_key' => 'portal_a',
+			'exported_at' => str_repeat('x', 65),
+			'properties' => array(array('post' => array('title' => 'Casa'))),
+		));
+		$output = $this->newOutputPath();
+
+		try {
+			$this->documentReader()->normalizeToNdjson($input, $output);
+			self::fail('Expected exported_at validation exception.');
+		} catch (JsonException $exception) {
+			self::assertSame('invalid_exported_at', $exception->reason());
+		}
+
+		self::assertFileDoesNotExist($output);
+	}
+
 	public function testNormalizedSourceHashDetectsTampering(): void
 	{
 		$input = $this->writeDocument(array(
