@@ -1,8 +1,9 @@
 # ADR-014 — Dependencia XLSX para WLA Inmo
 
-Estado: `PROPOSED / DECISION_PENDING`  
+Estado: `ACCEPTED / IMPLEMENTS D31`  
 Fecha: 2026-09-07  
 Issue: #61  
+PR: #62  
 Fase: 3.8
 
 ## Contexto
@@ -11,152 +12,154 @@ WLA Inmo debe importar XLSX sin crear un segundo pipeline de escritura. El lecto
 
 El plugin declara `php >=8.1`. Cambiar ese mínimo es una decisión de producto/plataforma y no puede ocurrir de forma implícita para incorporar XLSX.
 
-El ZIP instalable medido antes de 3.8 pesa **214.103 bytes**. La dependencia elegida debe medirse también por el aumento real de tamaño del release.
+La Fase 0 ya aprobó explícitamente **D31: `PhpSpreadsheet` encapsulada en Import/Export**. Por tanto, adoptar OpenSpout habría requerido reemplazar una decisión estructural aceptada. Este ADR no reemplaza D31: selecciona una versión/estrategia concreta dentro de ella después de medir alternativas.
+
+El ZIP instalable medido antes de 3.8 pesa **214.103 bytes**.
 
 ## Restricciones
 
-- PHP 8.1 debe seguir funcionando salvo decisión explícita posterior.
-- WordPress mínimo soportado debe seguir pasando en CI.
-- lectura bounded/streaming cuando sea viable;
+- PHP 8.1 debe seguir funcionando;
+- WordPress mínimo debe seguir pasando en CI;
+- lectura bounded por chunks;
 - dry-run obligatorio;
 - sin requests HTTP ni media remota;
+- inspección ZIP/OOXML previa al reader;
 - Zip Slip/path traversal bloqueado;
 - límites de bytes comprimidos/descomprimidos, entries, sheets, rows, columns y cell bytes;
 - fórmulas tratadas como datos, nunca ejecutadas;
 - temporales server-generated y privados;
-- dependencia MIT/BSD/Apache o licencia compatible con GPL-2.0-or-later del plugin;
-- artifact/checksum y benchmark antes de aceptar la decisión.
+- dependencia con licencia compatible con GPL-2.0-or-later;
+- artifact/checksum y benchmark reproducible.
 
-## Candidatos
+## Candidatos medidos
 
-### A. OpenSpout
+Todos fueron instalados en un proyecto Composer aislado bajo PHP **8.1.34**, sin modificar el `composer.json` productivo. Los tres resolvieron con `composer audit` sin advisories ni paquetes abandoned en las corridas registradas.
 
-Proyecto: `openspout/openspout` — MIT.
+| Candidato | Runtime packages | Vendor bytes | Vendor ZIP bytes | Estado PHP 8.1 |
+|---|---:|---:|---:|---|
+| OpenSpout 4.24.5 | 1 | 517.303 | 199.057 | compatible, release 26-07-2024 |
+| PhpSpreadsheet 3.10.7 | 6 | 5.326.110 | 1.506.360 | compatible, security release 12-07-2026 |
+| PhpSpreadsheet 5.8.1 | 6 | 5.713.713 | 1.552.135 | última general con PHP 8.1, 12-07-2026 |
 
-Situación actual observada:
+## Metodología reproducible
 
-- versión actual consultada: 5.11.3;
-- la línea actual exige PHP 8.4/8.5;
-- OpenSpout v4 permite cambiar versiones PHP soportadas en releases menores;
-- v4.28.5 ya exige PHP 8.2–8.4;
-- **v4.24.5** exige PHP 8.1–8.3 y es la línea evaluable para nuestro mínimo actual;
-- v4.24.5 fue publicada el 26-07-2024;
-- sus runtime requirements son principalmente extensiones (`dom`, `fileinfo`, `filter`, `libxml`, `xmlreader`, `zip`) y no añade un árbol de paquetes Composer de runtime;
-- el proyecto está orientado explícitamente a procesamiento streaming/scalable de CSV/XLSX/ODS y declara bajo uso de memoria.
+El laboratorio usa un generador OOXML neutral que no depende de ninguna candidata. Los timestamps internos del ZIP se fijan para producir fixtures byte-deterministas.
 
-Ventajas esperadas:
+Fixtures finales compartidos por las tres candidatas:
 
-- arquitectura alineada con nuestro objetivo bounded/streaming;
-- dependencia pequeña;
-- menor presión de memoria;
-- API centrada en iterar filas.
+- 1.000 filas / 6 columnas: `32.281 B`, SHA-256 `71a895edfec8d4748d80321c3ecc190db0045f263b7fe3557fcbd1826f668855`;
+- 5.000 filas / 6 columnas: `153.182 B`, SHA-256 `83e53f3533350e2d1978d31895a048c0128fe72af57142158fa8ee343650cdc9`.
 
-Riesgos:
+Los checksums de valores leídos coinciden entre candidatos y modos:
 
-- preservar PHP 8.1 obliga a fijar una versión de julio de 2024;
-- la política del proyecto retira PHP EOL en versiones menores, por lo que no existe una línea moderna de OpenSpout compatible con PHP 8.1;
-- pinning prolongado aumenta deuda de actualización/seguridad;
-- antes de usarlo debe demostrarse que podemos envolver la lectura con nuestras propias protecciones ZIP/OOXML sin depender de supuestos internos.
+- 1k: `e78cb661eac298c4fbaa74493e4c62e4b18590631c56f7469ea2c36b3375b2f2`;
+- 5k: `a261c6c9d2af976c9b110540d8be4bbbb24c25e21f2d43aefad67272727f1e6a`.
 
-Fuentes primarias:
+## Benchmark final — PHP 8.1.34
 
-- https://github.com/openspout/openspout
-- https://github.com/openspout/openspout/blob/v4.24.5/composer.json
-- https://github.com/openspout/openspout/releases/tag/v4.24.5
-- https://github.com/openspout/openspout/blob/5.x/UPGRADE.md
+Los tiempos son evidencia sintética de CI, no SLA.
 
-### B. PhpSpreadsheet 5.8.1
+### OpenSpout 4.24.5 — streaming nativo
 
-Proyecto: `phpoffice/phpspreadsheet` — MIT.
+| Dataset | Tiempo | Delta memoria observado |
+|---|---:|---:|
+| 1k | 88,21 ms en corrida determinista inicial | 0 B sobre bloque baseline |
+| 5k | 431,92 ms en corrida determinista inicial | 0 B sobre bloque baseline |
 
-Situación actual observada:
+OpenSpout es claramente el candidato de menor footprint y mejor rendimiento bruto.
 
-- versión actual consultada: 5.9.0, que exige PHP 8.2+;
-- **5.8.1** fue publicada el 12-07-2026 y su release se declara explícitamente como la última con PHP 8.1;
-- requiere PHP `^8.1`;
-- añade varias extensiones (`gd`, `mbstring`, `simplexml`, `xml*`, `zip`, etc.) y paquetes runtime (`composer/pcre`, `zipstream`, `markbaker/complex`, `markbaker/matrix`, `psr/simple-cache`);
-- PhpSpreadsheet mantiene un modelo de spreadsheet en memoria; su propia documentación advierte que puede ser exigente en memoria y ofrece caching/read filters para mitigarlo.
+### PhpSpreadsheet 3.10.7
 
-Ventajas esperadas:
+| Dataset | Modo | Tiempo | Delta memoria observado |
+|---|---|---:|---:|
+| 1k | native | 187,96 ms | 8 MiB |
+| 5k | native | 841,35 ms | 20 MiB |
+| 1k | chunked 500 | 258,55 ms | 6 MiB |
+| 5k | chunked 500 | 2.610,68 ms | 8 MiB |
 
-- release PHP 8.1 muy reciente;
-- ecosistema grande y soporte amplio de Excel/OOXML;
-- muchas validaciones y casos de formato ya resueltos por la librería.
+### PhpSpreadsheet 5.8.1
 
-Riesgos:
+| Dataset | Modo | Tiempo | Delta memoria observado |
+|---|---|---:|---:|
+| 1k | native | 219,71 ms | 8 MiB |
+| 5k | native | 960,75 ms | 22 MiB |
+| 1k | chunked 500 | 297,88 ms | 6 MiB |
+| 5k | chunked 500 | 2.853,63 ms | 10 MiB |
 
-- árbol de dependencias y requisitos de extensiones significativamente mayor;
-- modelo in-memory menos alineado con imports grandes;
-- puede aumentar de forma importante el ZIP instalable;
-- 5.8.1 es el fin de soporte general de PHP 8.1 en la línea principal, por lo que requiere política clara de actualización.
+## Decisión
 
-Fuentes primarias:
+Se selecciona **`phpoffice/phpspreadsheet` 3.10.7 exacta**, encapsulada exclusivamente dentro del subsistema Import/Export XLSX.
 
-- https://github.com/PHPOffice/PhpSpreadsheet/releases/tag/5.8.1
-- https://github.com/PHPOffice/PhpSpreadsheet/blob/5.8.1/composer.json
-- https://phpspreadsheet.readthedocs.io/
+Estrategia obligatoria para imports:
 
-### C. PhpSpreadsheet 3.10.7 — línea de mantenimiento PHP 8.1
+1. inspección ZIP/OOXML propia y bounded antes de entregar el archivo a PhpSpreadsheet;
+2. selección controlada de sheet;
+3. `setReadDataOnly(true)` y `setReadEmptyCells(false)`;
+4. `IReadFilter` por chunks de **500 filas** como punto de partida;
+5. normalización a una fuente interna reanudable controlada por servidor;
+6. mapping, dry-run, identidad, `BatchRunner` y `RowExecutor` permanecen compartidos con CSV/JSON;
+7. ningún workbook completo queda vivo durante el procesamiento del batch confirmado.
 
-También se medirá `3.10.7` porque:
+El tamaño de chunk puede refinarse con evidencia posterior sin cambiar esta decisión.
 
-- exige PHP `^8.1`;
-- fue publicada el 12-07-2026 con security patches;
-- conserva el mismo perfil general de extensiones/dependencias que PhpSpreadsheet;
-- puede resultar una opción más conservadora para PHP 8.1 si demuestra mejor encaje de mantenimiento que 5.8.1.
+## Por qué 3.10.7 y no 5.8.1
 
-No se asume que esta rama recibirá soporte indefinido; el ADR solo registrará hechos verificables al momento de la decisión.
+- ambas son compatibles con PHP 8.1;
+- ambas tienen `composer audit` limpio en el laboratorio;
+- 3.10.7 fue publicada el 12-07-2026 específicamente con **security patches**;
+- 3.10.7 tiene menor footprint;
+- en el benchmark final fue más rápida y usó menos peak memory en 5k, tanto native como chunked;
+- WLA Inmo no necesita las capacidades adicionales de spreadsheet engine de 5.8.1 para este importador.
 
-Fuente primaria:
+## Por qué no OpenSpout 4.24.5
 
-- https://github.com/PHPOffice/PhpSpreadsheet/blob/3.10.7/composer.json
+OpenSpout ganó claramente en tamaño, memoria y tiempo. Sin embargo:
 
-## Laboratorio obligatorio antes de decidir
+- usarlo reemplazaría D31 ya aprobada en Fase 0;
+- conservar PHP 8.1 obliga a fijar una release del 26-07-2024;
+- versiones v4 posteriores ya eliminaron PHP 8.1 de su rango soportado;
+- el beneficio de memoria puede obtenerse en un nivel aceptable usando PhpSpreadsheet 3.10.7 por chunks;
+- la ventaja de OpenSpout no justifica por sí sola introducir una excepción de gobierno y una dependencia antigua.
 
-El PR 3.8 ejecutará un benchmark aislado en PHP 8.1 para los tres candidatos:
+OpenSpout queda documentado como alternativa futura a reevaluar cuando cambie el mínimo PHP o si los benchmarks reales de producción invalidan el presupuesto actual.
 
-1. instalar cada candidato en un proyecto Composer temporal, sin modificar el `composer.json` productivo;
-2. registrar cantidad de paquetes, bytes del directorio vendor y ZIP comprimido de vendor;
-3. leer el **mismo** XLSX sintético de 1.000 y 5.000 filas;
-4. registrar tiempo, memoria baseline, peak y delta;
-5. conservar resultados como artifact de GitHub Actions;
-6. después de seleccionar candidato, repetir el build real del plugin y comparar contra baseline 214.103 B.
+## Reproducibilidad / artifacts
 
-Los resultados de laboratorio son comparativos, no SLA.
+XLSX Dependency Lab run `34151473724`: `SUCCESS`.
 
-## Opciones de decisión
+Artifacts:
 
-### Opción 1 — OpenSpout 4.24.5
+- OpenSpout 4.24.5: `sha256:c7aee599f336077c3588728c1f0b59539a14e9a5b33663f85482d2c803c1eb1e`;
+- PhpSpreadsheet 3.10.7: `sha256:9d0d85b9f17aa44241e157a01474bde898859acd965ba45343298df1aeb2018f`;
+- PhpSpreadsheet 5.8.1: `sha256:a70a89f8861dde9a17dea4c0f8cf1dc4e40218d12ae6a6d8f1cfe64c8c3305a6`.
 
-Elegir solo si el ahorro de memoria/tamaño es material y se acepta explícitamente la deuda de pinning PHP 8.1 en una release 2024.
+## Consecuencias
 
-### Opción 2 — PhpSpreadsheet compatible con PHP 8.1
+### Positivas
 
-Elegir la línea que presente el mejor balance de mantenimiento/seguridad y cuyo costo de memoria/tamaño sea aceptable con nuestros límites y estrategia de normalización.
+- respeta D31 y PHP 8.1;
+- dependencia con security release reciente;
+- memoria bounded demostrada en 5k mediante chunks;
+- integración aislada y reemplazable detrás de contratos WLA;
+- no se crea un pipeline paralelo.
 
-### Opción 3 — No agregar librería todavía
+### Trade-offs
 
-Mantener XLSX fuera de alcance hasta elevar el mínimo PHP o implementar una capa OOXML propia bounded. Esta opción evita pinning pero retrasa 3.8; una implementación OOXML propia aumenta superficie de seguridad/mantenimiento y no es la recomendación inicial.
+- vendor aumenta aproximadamente 5,3 MB sin comprimir antes del build final;
+- lectura chunked de 5k es aproximadamente 3 veces más lenta que native en el laboratorio;
+- PhpSpreadsheet exige más extensiones/runtime packages que OpenSpout;
+- PHP 8.1 está al final de la ventana de soporte de varias librerías y deberá revisarse antes de Beta/1.0.
 
-## Recomendación preliminar
+## Revisión futura
 
-`PENDING BENCHMARK`.
+Reevaluar esta decisión cuando ocurra cualquiera de estos eventos:
 
-Con la información previa al benchmark:
+- WLA Inmo eleve PHP mínimo a 8.2+;
+- PhpSpreadsheet 3.10.x deje de recibir security backports relevantes;
+- un `composer audit` reporte advisory no mitigable;
+- datasets reales excedan de forma material los budgets de memoria/tiempo;
+- una MAJOR release permita reemplazar D31 explícitamente.
 
-- no se recomienda adoptar OpenSpout 4.24.5 únicamente por rendimiento, porque conservar PHP 8.1 obliga a una release de 2024;
-- no se recomienda adoptar PhpSpreadsheet únicamente por mantenimiento, porque su modelo in-memory y su árbol de dependencias deben cuantificarse;
-- la decisión definitiva requiere los artifacts de laboratorio y aprobación explícita.
+## Trazabilidad
 
-## Criterio de cierre
-
-Este ADR pasa a `ACCEPTED` solo cuando:
-
-- laboratorio comparativo está verde y documentado;
-- compatibilidad PHP 8.1 está demostrada en CI;
-- tamaño y memoria están registrados;
-- riesgos ZIP/OOXML tienen mitigación de diseño;
-- existe recomendación final;
-- Wladimick aprueba explícitamente la dependencia/versión o una alternativa.
-
-Hasta entonces **no se agrega ninguna dependencia XLSX al `composer.json` productivo**.
+Este ADR **implementa D31 y no la reemplaza**. Por tanto no modifica D01–D75; concreta la versión y estrategia después del benchmark obligatorio de Fase 3.8.
