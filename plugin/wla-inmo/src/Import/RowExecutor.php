@@ -43,9 +43,6 @@ final class RowExecutor
 		}
 
 		$mediaValues = $this->extractMediaValues($values);
-		if ($mediaValues !== array() && $this->remoteMediaProcessor === null) {
-			return $this->error($rowNumber, 'media_processor_unavailable', 'media', null, $warnings);
-		}
 
 		$externalId = $this->identityValue($values, 'meta.external_id');
 		$propertyCode = $this->identityValue($values, 'meta.property_code');
@@ -207,12 +204,12 @@ final class RowExecutor
 		if ($mediaValues === array()) {
 			return null;
 		}
-		if ($this->remoteMediaProcessor === null) {
-			return array('code' => 'media_processor_unavailable', 'target' => 'media');
-		}
 
 		try {
-			$warnings = array_values(array_merge($warnings, $this->remoteMediaProcessor->process($propertyId, $mediaValues)));
+			if ($this->remoteMediaProcessor === null) {
+				$this->remoteMediaProcessor = self::defaultRemoteMediaProcessor();
+			}
+			$warnings = array_merge($warnings, $this->remoteMediaProcessor->process($propertyId, $mediaValues));
 		} catch (RemoteMediaException $exception) {
 			return array('code' => $exception->reason(), 'target' => 'media');
 		} catch (Throwable) {
@@ -220,6 +217,20 @@ final class RowExecutor
 		}
 
 		return null;
+	}
+
+	private static function defaultRemoteMediaProcessor(): RemoteMediaRowProcessorInterface
+	{
+		return new RemoteMediaRowProcessor(
+			new RemoteMediaDownloader(
+				new RemoteMediaUrlPolicy(),
+				new RemoteMediaWordPressHttpClient(),
+				new RemoteMediaWordPressTempFileFactory(),
+				new RemoteMediaImageInspector()
+			),
+			new RemoteMediaLibrary(new WordPressRemoteMediaAttachmentStore()),
+			new WordPressRemoteMediaPropertyStore()
+		);
 	}
 
 	/** @return array{code:string,target:string}|null */
