@@ -5,6 +5,7 @@ namespace WLA\Inmo\Core;
 use WLA\Inmo\Activity\Schema as ActivitySchema;
 use WLA\Inmo\Import\BatchSchema;
 use WLA\Inmo\Import\IdentitySchema;
+use WLA\Inmo\Import\RollbackJournalSchema;
 use WLA\Inmo\Quality\Schema as QualitySchema;
 use WLA\Inmo\Search\IndexSchema;
 
@@ -27,11 +28,13 @@ final class Installer
 		dbDelta(ActivitySchema::sql($wpdb));
 		dbDelta(IdentitySchema::sql($wpdb));
 		dbDelta(BatchSchema::sql($wpdb));
+		dbDelta(RollbackJournalSchema::sql($wpdb));
 		update_option(IndexSchema::DB_VERSION_OPTION, IndexSchema::DB_VERSION, false);
 		update_option(QualitySchema::DB_VERSION_OPTION, QualitySchema::DB_VERSION, false);
 		update_option(ActivitySchema::DB_VERSION_OPTION, ActivitySchema::DB_VERSION, false);
 		update_option(IdentitySchema::DB_VERSION_OPTION, IdentitySchema::DB_VERSION, false);
 		update_option(BatchSchema::DB_VERSION_OPTION, BatchSchema::DB_VERSION, false);
+		update_option(RollbackJournalSchema::DB_VERSION_OPTION, RollbackJournalSchema::DB_VERSION, false);
 	}
 
 	/**
@@ -45,6 +48,7 @@ final class Installer
 		$currentActivity = (string) get_option(ActivitySchema::DB_VERSION_OPTION, '0');
 		$currentIdentity = (string) get_option(IdentitySchema::DB_VERSION_OPTION, '0');
 		$currentBatch = (string) get_option(BatchSchema::DB_VERSION_OPTION, '0');
+		$currentRollback = (string) get_option(RollbackJournalSchema::DB_VERSION_OPTION, '0');
 
 		if (
 			$currentIndex === IndexSchema::DB_VERSION
@@ -52,6 +56,7 @@ final class Installer
 			&& $currentActivity === ActivitySchema::DB_VERSION
 			&& $currentIdentity === IdentitySchema::DB_VERSION
 			&& $currentBatch === BatchSchema::DB_VERSION
+			&& $currentRollback === RollbackJournalSchema::DB_VERSION
 		) {
 			return;
 		}
