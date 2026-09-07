@@ -30,7 +30,7 @@ final class PageRenderer
 		} elseif ($definition['slug'] === 'wla-inmo-activity') {
 			ActivityPage::render();
 		} elseif ($definition['slug'] === 'wla-inmo-import-export') {
-			ImportExportPage::render();
+			ImportExportHub::render();
 		} else {
 			self::renderPlaceholder($definition);
 		}
