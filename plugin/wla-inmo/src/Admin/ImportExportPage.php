@@ -416,7 +416,8 @@ final class ImportExportPage
 			$active = in_array((string) $batch['status'], array(BatchStatus::COMPLETED, BatchStatus::CANCELLED), true) ? 7 : 6;
 		}
 
-		$steps = array('Subir', 'Mapear', 'Validar', 'Simular', 'Confirmar', 'Procesar', 'Informe');
+		$secondStep = $draft !== null && Workspace::sourceFormat($draft) === 'xlsx' && empty($draft['selected_sheet']) ? 'Elegir hoja' : 'Mapear';
+		$steps = array('Subir', $secondStep, 'Validar', 'Simular', 'Confirmar', 'Procesar', 'Informe');
 		echo '<ol class="wla-inmo-import__steps" aria-label="' . esc_attr__('Etapas de importación', 'wla-inmo') . '">';
 		foreach ($steps as $index => $label) {
 			$number = $index + 1;
@@ -696,15 +697,20 @@ final class ImportExportPage
 		if ($status !== '' && !BatchStatus::isValid($status)) {
 			$status = '';
 		}
+		$sourceFormat = self::queryArg('wla_format') === 'xlsx' ? 'xlsx' : 'csv';
 		$page = max(1, absint(self::queryArg('wla_history_page')));
 		$offset = ($page - 1) * self::HISTORY_PAGE_SIZE;
 		$history = new BatchHistoryRepository();
-		$rows = $history->recent(self::HISTORY_PAGE_SIZE, $offset, $createdBy, $status !== '' ? $status : null);
-		$total = $history->count($createdBy, $status !== '' ? $status : null);
+		$rows = $history->recent(self::HISTORY_PAGE_SIZE, $offset, $createdBy, $status !== '' ? $status : null, $sourceFormat);
+		$total = $history->count($createdBy, $status !== '' ? $status : null, $sourceFormat);
 
 		echo '<section class="wla-inmo-admin__panel wla-inmo-import__panel">';
 		echo '<h2>' . esc_html__('Historial de importaciones', 'wla-inmo') . '</h2>';
-		echo '<form class="wla-inmo-import__filters" method="get" action="' . esc_url(admin_url('admin.php')) . '"><input type="hidden" name="page" value="wla-inmo-import-export"><label for="wla-batch-status">' . esc_html__('Estado', 'wla-inmo') . '</label><select id="wla-batch-status" name="wla_batch_status"><option value="">' . esc_html__('Todos', 'wla-inmo') . '</option>';
+		echo '<form class="wla-inmo-import__filters" method="get" action="' . esc_url(admin_url('admin.php')) . '"><input type="hidden" name="page" value="wla-inmo-import-export">';
+		if ($sourceFormat === 'xlsx') {
+			echo '<input type="hidden" name="wla_format" value="xlsx">';
+		}
+		echo '<label for="wla-batch-status">' . esc_html__('Estado', 'wla-inmo') . '</label><select id="wla-batch-status" name="wla_batch_status"><option value="">' . esc_html__('Todos', 'wla-inmo') . '</option>';
 		foreach (BatchStatus::all() as $candidate) {
 			echo '<option value="' . esc_attr($candidate) . '"' . selected($status, $candidate, false) . '>' . esc_html(self::statusLabel($candidate)) . '</option>';
 		}
@@ -717,7 +723,11 @@ final class ImportExportPage
 			foreach ($rows as $row) {
 				$totalRows = max(0, (int) $row['total_rows']);
 				$processed = max(0, (int) $row['processed_rows']);
-				$url = add_query_arg(array('page' => 'wla-inmo-import-export', 'batch' => (string) $row['batch_uuid']), admin_url('admin.php'));
+				$batchArgs = array('page' => 'wla-inmo-import-export', 'batch' => (string) $row['batch_uuid']);
+				if ((string) ($row['source_format'] ?? '') === 'xlsx') {
+					$batchArgs['wla_format'] = 'xlsx';
+				}
+				$url = add_query_arg($batchArgs, admin_url('admin.php'));
 				echo '<tr><td>' . esc_html(self::displayDate((string) $row['created_at'])) . '</td><td><code>' . esc_html((string) $row['source_key']) . '</code></td><td>' . esc_html(self::statusLabel((string) $row['status'])) . '</td><td>' . esc_html(number_format_i18n($processed) . ' / ' . number_format_i18n($totalRows)) . '</td><td>' . esc_html(sprintf(__('C:%1$d · A:%2$d · E:%3$d', 'wla-inmo'), (int) $row['created_count'], (int) $row['updated_count'], (int) $row['error_count'])) . '</td><td><a class="button button-small" href="' . esc_url($url) . '">' . esc_html__('Ver', 'wla-inmo') . '</a></td></tr>';
 			}
 			echo '</tbody></table></div>';
@@ -925,6 +935,9 @@ final class ImportExportPage
 	private static function historyUrl(int $page, string $status): string
 	{
 		$args = array('page' => 'wla-inmo-import-export', 'wla_history_page' => max(1, $page));
+		if (self::queryArg('wla_format') === 'xlsx') {
+			$args['wla_format'] = 'xlsx';
+		}
 		if ($status !== '') {
 			$args['wla_batch_status'] = $status;
 		}
@@ -968,6 +981,7 @@ final class ImportExportPage
 			'unknown_sheet' => __('La hoja seleccionada no existe o ya no coincide con el archivo revisado.', 'wla-inmo'),
 			'xlsx_validation_failed' => __('No fue posible validar el XLSX de forma segura.', 'wla-inmo'),
 			'xlsx_normalization_failed' => __('No fue posible normalizar la hoja XLSX seleccionada.', 'wla-inmo'),
+			'upload_permissions_failed' => __('No fue posible restringir el archivo temporal XLSX a permisos privados. La carga fue descartada.', 'wla-inmo'),
 			'empty_csv' => __('El CSV debe contener encabezados y al menos una fila de datos.', 'wla-inmo'),
 			'draft_expired' => __('La carga temporal venció o ya no está disponible. Vuelve a subir el archivo.', 'wla-inmo'),
 			'dry_run_expired' => __('La simulación venció. Vuelve a validar antes de confirmar.', 'wla-inmo'),

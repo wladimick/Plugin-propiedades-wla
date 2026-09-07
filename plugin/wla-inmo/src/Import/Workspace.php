@@ -161,7 +161,10 @@ final class Workspace
 		if ($uploadPath === null || file_exists($uploadPath) || !move_uploaded_file($tmpName, $uploadPath)) {
 			return self::failure('upload_store_failed');
 		}
-		@chmod($uploadPath, 0600); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort hardening.
+		if (!chmod($uploadPath, 0600)) {
+			@unlink($uploadPath); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Fail-closed cleanup when private permissions cannot be enforced.
+			return self::failure('upload_permissions_failed');
+		}
 
 		try {
 			$inspection = (new XlsxDocumentReader())->worksheets($uploadPath);
