@@ -16,6 +16,7 @@ on:
       - 'plugin/wla-inmo/src/Import/BatchRunner.php'
       - 'tests/fixtures/json/**'
       - 'tests/integration/assert-json-wla.php'
+      - 'tests/integration/assert-json-security.php'
       - 'tests/integration/measure-json-wla.php'
       - 'tests/unit/ImportJson*.php'
       - 'tests/smoke/json-*.php'
@@ -104,6 +105,11 @@ jobs:
         run: |
           cd /tmp/wla-json-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-wla.php" --allow-root
+
+      - name: Validate JSON capability and nonce negatives
+        run: |
+          cd /tmp/wla-json-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-json-security.php" --allow-root
 
       - name: Measure JSON datasets 100 / 1k / 5k
         run: |
