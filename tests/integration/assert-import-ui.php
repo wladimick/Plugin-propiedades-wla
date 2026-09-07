@@ -46,6 +46,10 @@ wlaImportUiIntegrationAssert(
 	'Upload admin-post handler is not registered.'
 );
 wlaImportUiIntegrationAssert(
+	has_action('admin_post_wla_inmo_import_xlsx_sheet', array(ImportExportPage::class, 'handleSheet')) !== false,
+	'XLSX worksheet selection handler is not registered.'
+);
+wlaImportUiIntegrationAssert(
 	has_action('admin_post_wla_inmo_import_map', array(ImportExportPage::class, 'handleMap')) !== false,
 	'Mapping admin-post handler is not registered.'
 );
@@ -72,16 +76,21 @@ WorkspaceJanitor::schedule();
 wlaImportUiIntegrationAssert(wp_next_scheduled('wla_inmo_import_workspace_cleanup') !== false, 'Workspace cleanup cron was not scheduled.');
 
 $draftUuid = strtolower((string) wp_generate_uuid4());
+$xlsxUploadUuid = strtolower((string) wp_generate_uuid4());
 $batchFileUuid = strtolower((string) wp_generate_uuid4());
 $tempRoot = trailingslashit(get_temp_dir());
 $staleDraftPath = $tempRoot . 'wla-inmo-import-draft-' . $draftUuid . '.csv';
+$staleXlsxUploadPath = $tempRoot . 'wla-inmo-import-upload-' . $xlsxUploadUuid . '.xlsx';
 $staleBatchPath = $tempRoot . 'wla-inmo-import-batch-' . $batchFileUuid . '.csv';
 file_put_contents($staleDraftPath, "codigo,titulo\nDRAFT-1,Temporal\n");
+file_put_contents($staleXlsxUploadPath, 'stale-xlsx-upload');
 file_put_contents($staleBatchPath, "codigo,titulo\nBATCH-1,Reanudable\n");
 touch($staleDraftPath, time() - 8000);
+touch($staleXlsxUploadPath, time() - 8000);
 touch($staleBatchPath, time() - 8000);
 WorkspaceJanitor::cleanup();
 wlaImportUiIntegrationAssert(!file_exists($staleDraftPath), 'Stale draft source was not removed by the janitor.');
+wlaImportUiIntegrationAssert(!file_exists($staleXlsxUploadPath), 'Stale staged XLSX upload was not removed by the janitor.');
 wlaImportUiIntegrationAssert(file_exists($staleBatchPath), 'Janitor age-deleted a resumable batch source.');
 unlink($staleBatchPath);
 WorkspaceJanitor::unschedule();
@@ -101,13 +110,15 @@ $created = array();
 
 for ($index = 1; $index <= 5; ++$index) {
 	$uuid = strtolower((string) wp_generate_uuid4());
+	$sourceFormat = $index === 5 ? 'xlsx' : 'csv';
 	$batch = $repository->create(
 		'integration_ui',
 		hash('sha256', 'source-' . $index),
 		$profileJson,
 		$index * 10,
 		(int) $admin->ID,
-		$uuid
+		$uuid,
+		$sourceFormat
 	);
 	wlaImportUiIntegrationAssert($batch === $uuid, 'Could not create batch ' . $index . '.');
 
@@ -127,6 +138,7 @@ wlaImportUiIntegrationAssert($history->count((int) $admin->ID) === 5, 'History c
 $page = $history->recent(2, 0, (int) $admin->ID);
 wlaImportUiIntegrationAssert(count($page) === 2, 'History page is not bounded by limit.');
 wlaImportUiIntegrationAssert(($page[0]['batch_uuid'] ?? '') === $created[4], 'History is not ordered newest first.');
+wlaImportUiIntegrationAssert(($page[0]['source_format'] ?? '') === 'xlsx', 'History did not preserve source_format=xlsx.');
 wlaImportUiIntegrationAssert(!array_key_exists('profile_json', $page[0]), 'History leaked profile_json.');
 wlaImportUiIntegrationAssert(!array_key_exists('source_hash', $page[0]), 'History leaked source_hash.');
 
@@ -138,6 +150,13 @@ $confirmed = $history->recent(20, 0, (int) $admin->ID, BatchStatus::CONFIRMED);
 wlaImportUiIntegrationAssert(count($confirmed) === 3, 'Status filter did not return the confirmed batches.');
 wlaImportUiIntegrationAssert($history->count((int) $admin->ID, BatchStatus::CONFIRMED) === 3, 'Status count does not match filtered history.');
 wlaImportUiIntegrationAssert($history->recent(20, 0, (int) $admin->ID, 'not-a-status') === array(), 'Invalid status filter was not rejected.');
+
+$xlsxHistory = $history->recent(20, 0, (int) $admin->ID, null, 'xlsx');
+wlaImportUiIntegrationAssert(count($xlsxHistory) === 1, 'XLSX source-format filter did not return the XLSX batch.');
+wlaImportUiIntegrationAssert(($xlsxHistory[0]['batch_uuid'] ?? '') === $created[4], 'XLSX history filter returned the wrong batch.');
+wlaImportUiIntegrationAssert($history->count((int) $admin->ID, null, 'xlsx') === 1, 'XLSX source-format count is inconsistent.');
+wlaImportUiIntegrationAssert($history->recent(20, 0, (int) $admin->ID, null, 'unsupported') === array(), 'Invalid source-format filter was not rejected.');
+wlaImportUiIntegrationAssert($history->count((int) $admin->ID, null, 'unsupported') === 0, 'Invalid source-format count was not rejected.');
 
 $other = wp_create_user('import-ui-other', wp_generate_password(32, true, true), 'import-ui-other@example.test');
 wlaImportUiIntegrationAssert(!is_wp_error($other), 'Could not create secondary user.');
