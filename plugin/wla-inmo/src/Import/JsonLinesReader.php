@@ -10,7 +10,7 @@ final class JsonLinesReader
 {
 	private const HASH_CHUNK_BYTES = 1048576;
 	private const DEFAULT_MAX_ROWS = 10000;
-	private const DEFAULT_MAX_LINE_BYTES = 2097152;
+	public const DEFAULT_MAX_LINE_BYTES = 2097152;
 	private const DECODE_DEPTH = 8;
 
 	private int $maxRows;
@@ -96,7 +96,7 @@ final class JsonLinesReader
 					throw new JsonException('source_parse_failed', 'Normalized JSON row is malformed.', $dataRows);
 				}
 
-				if (!is_array($row) || array_is_list($row) || $row === array()) {
+				if (!is_array($row) || array_is_list($row)) {
 					throw new JsonException('source_row_invalid', 'Normalized JSON row must be a non-empty object.', $dataRows);
 				}
 				if ((int) $nextOffset <= (int) $offsetBefore) {
