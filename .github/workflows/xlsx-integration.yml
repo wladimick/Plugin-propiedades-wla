@@ -6,15 +6,65 @@ on:
       - 'plugin/wla-inmo/composer.json'
       - 'plugin/wla-inmo/composer.lock'
       - 'plugin/wla-inmo/src/Import/Xlsx*.php'
+      - 'plugin/wla-inmo/src/Import/Workspace.php'
+      - 'plugin/wla-inmo/src/Import/BatchRepository.php'
+      - 'plugin/wla-inmo/src/Import/BatchRunner.php'
+      - 'plugin/wla-inmo/src/Admin/ImportExportHub.php'
+      - 'plugin/wla-inmo/src/Admin/ImportExportPage.php'
       - 'tests/unit/ImportXlsx*.php'
       - 'bin/build-plugin.sh'
       - '.github/workflows/xlsx-integration.yml'
+      - '.github/workflows/phase3-xlsx-wire.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  wire:
+    name: One-shot XLSX wizard wiring
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply deterministic wiring if pending
+        run: |
+          if grep -Fq "FORMAT_XLSX = 'xlsx'" plugin/wla-inmo/src/Import/Workspace.php; then
+            echo 'XLSX wizard already wired.'
+            exit 0
+          fi
+          python - <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/phase3-xlsx-wire.yml').read_text().splitlines()
+          start = source.index('      - name: Apply deterministic XLSX wiring')
+          run_line = next(i for i in range(start + 1, len(source)) if source[i] == '        run: |')
+          end = next(i for i in range(run_line + 1, len(source)) if source[i].startswith('      - name: '))
+          code = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[run_line + 1:end])
+          exec(compile(code, 'phase3-xlsx-wire.yml', 'exec'), {'__name__': '__main__'})
+          PY
+
+      - name: Commit wiring if changed
+        run: |
+          if git diff --quiet; then
+            echo 'No wiring changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add plugin/wla-inmo/src/Import/XlsxDocumentReader.php \
+                  plugin/wla-inmo/src/Import/Workspace.php \
+                  plugin/wla-inmo/src/Import/BatchRepository.php \
+                  plugin/wla-inmo/src/Import/BatchRunner.php \
+                  plugin/wla-inmo/src/Admin/ImportExportHub.php \
+                  plugin/wla-inmo/src/Admin/ImportExportPage.php \
+                  .github/workflows/xlsx-integration.yml
+          git commit -m 'feat(import): wire XLSX through canonical wizard'
+          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
+
   xlsx:
     name: PHP ${{ matrix.php }} / bounded XLSX
     runs-on: ubuntu-latest
