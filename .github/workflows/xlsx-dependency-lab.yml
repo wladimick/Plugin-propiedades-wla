@@ -97,13 +97,19 @@ jobs:
           CANDIDATE: ${{ matrix.id }}
         run: |
           : > "$RUNNER_TEMP/reader-metrics.jsonl"
-          for ROWS in 1000 5000; do
-            WLA_XLSX_VENDOR="$LAB_DIR/vendor" \
-              php tests/benchmarks/read-xlsx-candidate.php "$CANDIDATE" "$RUNNER_TEMP/wla-$ROWS.xlsx" \
-              | tee -a "$RUNNER_TEMP/reader-metrics.jsonl"
-            ACTUAL="$(tail -n1 "$RUNNER_TEMP/reader-metrics.jsonl" | jq -r '.rows_read')"
-            EXPECTED="$((ROWS + 1))"
-            test "$ACTUAL" -eq "$EXPECTED"
+          MODES="native"
+          if [[ "$CANDIDATE" == phpspreadsheet-* ]]; then
+            MODES="native chunked"
+          fi
+          for MODE in $MODES; do
+            for ROWS in 1000 5000; do
+              WLA_XLSX_VENDOR="$LAB_DIR/vendor" \
+                php tests/benchmarks/read-xlsx-candidate.php "$CANDIDATE" "$RUNNER_TEMP/wla-$ROWS.xlsx" "$MODE" \
+                | tee -a "$RUNNER_TEMP/reader-metrics.jsonl"
+              ACTUAL="$(tail -n1 "$RUNNER_TEMP/reader-metrics.jsonl" | jq -r '.rows_read')"
+              EXPECTED="$((ROWS + 1))"
+              test "$ACTUAL" -eq "$EXPECTED"
+            done
           done
 
       - name: Build lab evidence bundle
