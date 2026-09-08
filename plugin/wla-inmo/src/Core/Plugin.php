@@ -5,6 +5,7 @@ namespace WLA\Inmo\Core;
 use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Activity\Observer as ActivityObserver;
 use WLA\Inmo\Activity\Retention as ActivityRetention;
+use WLA\Inmo\Activity\RollbackObserver;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
 use WLA\Inmo\Import\IdentityIndexer;
 use WLA\Inmo\Import\IdentityMeta;
@@ -55,6 +56,7 @@ final class Plugin
 
 		RewriteManager::register();
 		ActivityObserver::register();
+		RollbackObserver::register();
 		ActivityRetention::register();
 		WorkspaceJanitor::register();
 		Indexer::register();
