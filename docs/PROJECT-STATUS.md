@@ -17,8 +17,8 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 - Registro de decisiones: `docs/decisions/DECISION-REGISTER.md`
 - PR 3.1–3.9: `DONE`
 - PR 3.10: `OMITTED / OUT_OF_SCOPE`
-- PR 3.11: `QA_PASSED / READY_TO_MERGE` — PR #67 / Issue #66
-- Siguiente hito después del merge: **PR 3.12 — Quality Gate Fase 3**
+- PR 3.11: `DONE` — PR #67 / Issue #66 / squash `4e53a89af1f3fd1a20d139ed5894552b223bf0f5`
+- Hito activo siguiente: **PR 3.12 — Quality Gate Fase 3**
 
 ## Fases
 
@@ -87,8 +87,8 @@ Evidencia: `docs/evidence/phase-3/`
 | 3.8 | XLSX streaming | #62 / #61 | DONE | `PR-3.8-XLSX.md` |
 | 3.9 | Media remota segura | #64 / #63 | DONE | `PR-3.9-REMOTE-MEDIA.md` |
 | 3.10 | Export CSV/XLSX | — | OMITTED / OUT_OF_SCOPE | `PHASE-3-SCOPE-2026-09-07.md` |
-| 3.11 | Rollback seguro best-effort | #67 / #66 | QA_PASSED / READY_TO_MERGE | `PR-3.11-ROLLBACK.md` |
-| 3.12 | Quality Gate Fase 3 | pendiente | PLANNED | pendiente |
+| 3.11 | Rollback seguro best-effort | #67 / #66 | DONE | `PR-3.11-ROLLBACK.md` + `PR-3.11-CLOSURE.md` |
+| 3.12 | Quality Gate Fase 3 | pendiente | NEXT | pendiente |
 
 ### PR 3.7 — JSON WLA
 
@@ -114,7 +114,7 @@ Estado `OMITTED / OUT_OF_SCOPE` por decisión aprobada el 2026-09-07. La importa
 
 ### PR 3.11 — Rollback seguro best-effort
 
-Estado: `QA_PASSED / READY_TO_MERGE`. PR #67 / Issue #66.
+Estado: `DONE`. PR #67 / Issue #66. Squash `4e53a89af1f3fd1a20d139ed5894552b223bf0f5`.
 
 Implementado:
 
@@ -134,32 +134,30 @@ Implementado:
 - crash recovery create-before-checkpoint;
 - schema MySQL 8 portable.
 
-QA final pre-merge:
+QA final:
 
-- head funcional: `f9dab169d02ee700417dbe375d03f585d9bb1075`;
+- head final de PR: `ec8b7b5cb30667af36eab28aad1241df2c0d6fbe`;
 - 16/16 workflows: SUCCESS;
 - rollback WP 6.6.2 / PHP 8.1: SUCCESS;
 - rollback WP latest / PHP 8.3: SUCCESS;
 - artifact: `wla-inmo-0.1.0-alpha-quality`;
 - digest: `sha256:67a33a0584146041e3ecc777cc77240e61259eebea9e2ca5d5449719d38c6347`;
-- review comments: 0;
-- reviews: 0;
-- inline threads: 0;
-- P0/P1 abiertos conocidos: 0.
+- comments/reviews/threads: 0;
+- P0/P1 abiertos conocidos: 0;
+- Issue #66: `closed / completed`.
 
-Evidencia: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.
-
-`DONE` se registrará solo después del merge y del cierre de Issue #66.
+Evidencia QA: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.  
+Cierre post-merge: `docs/evidence/phase-3/PR-3.11-CLOSURE.md`.
 
 ### PR 3.12 — Quality Gate Fase 3
 
-Estado: `PLANNED`.
+Estado: `NEXT`.
 
 Será el cierre transversal de todo Import/Export: CSV/JSON/XLSX/media/rollback, regresiones Core/Admin, seguridad, performance 100/1k/5k, accesibilidad/responsive, artifact/checksum y review final.
 
 ## Findings / deuda no bloqueante
 
-No existen findings críticos/altos abiertos conocidos de Fase 1, Fase 2 o PR 3.1–3.11 listo para merge.
+No existen findings críticos/altos abiertos conocidos de Fase 1, Fase 2 o PR 3.1–3.11.
 
 Deuda baja conocida:
 
