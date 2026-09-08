@@ -11,14 +11,15 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 - Fase 0: `DONE`
 - Fase 1: `DONE`
 - Fase 2: `DONE`
-- Fase 3: `IN_PROGRESS`
+- Fase 3: `IN_PROGRESS` — cierre 3.12 `QA_PASSED / READY_TO_MERGE`
 - Producción: `NO AFECTADA`
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro de decisiones: `docs/decisions/DECISION-REGISTER.md`
 - PR 3.1–3.9: `DONE`
 - PR 3.10: `OMITTED / OUT_OF_SCOPE`
 - PR 3.11: `DONE` — PR #67 / Issue #66 / squash `4e53a89af1f3fd1a20d139ed5894552b223bf0f5`
-- Hito activo siguiente: **PR 3.12 — Quality Gate Fase 3**
+- PR 3.12: `QA_PASSED / READY_TO_MERGE` — PR #70 / Issue #69
+- Próxima transición: merge de PR #70 y cierre post-merge de Fase 3; recién entonces Fase 3 pasa a `DONE`.
 
 ## Fases
 
@@ -27,7 +28,7 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 | 0 | Gobierno y diseño | DONE | `/docs`, PR #1, ADR-001–ADR-014 |
 | 1 | Core del plugin | DONE | `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | `docs/evidence/phase-2/` |
-| 3 | Import/Export | IN_PROGRESS | `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/` |
+| 3 | Import/Export | IN_PROGRESS / QA_PASSED | `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md` |
 | 4 | Frontend agnóstico al tema | PLANNED | pendiente |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
@@ -69,7 +70,7 @@ Cierre de Fase 2: Administration Gate, Playwright, WordPress mínimo/latest, seg
 
 ## Fase 3 — Import/Export
 
-Estado: `IN_PROGRESS`.
+Estado: `IN_PROGRESS`; PR 3.12 está `QA_PASSED / READY_TO_MERGE`.
 
 Backlog: `docs/PHASE-3-BACKLOG.md`  
 Contrato: `docs/IMPORT-EXPORT.md`  
@@ -88,82 +89,38 @@ Evidencia: `docs/evidence/phase-3/`
 | 3.9 | Media remota segura | #64 / #63 | DONE | `PR-3.9-REMOTE-MEDIA.md` |
 | 3.10 | Export CSV/XLSX | — | OMITTED / OUT_OF_SCOPE | `PHASE-3-SCOPE-2026-09-07.md` |
 | 3.11 | Rollback seguro best-effort | #67 / #66 | DONE | `PR-3.11-ROLLBACK.md` + `PR-3.11-CLOSURE.md` |
-| 3.12 | Quality Gate Fase 3 | pendiente | NEXT | pendiente |
-
-### PR 3.7 — JSON WLA
-
-Estado `DONE`.
-
-JSON v1 se valida y normaliza a NDJSON privado server-side, conserva un único `BatchRunner`/`RowExecutor`, exporta bounded sin privados por defecto, soporta round-trip y tiene benchmark 100/1k/5k.
-
-### PR 3.8 — XLSX
-
-Estado `DONE`. Squash `a51cb361f4534935f13c94c72b5d961a88f7a743`.
-
-PhpSpreadsheet 3.10.7 exacta, preflight ZIP/OOXML, límites/archive hardening, selección de hoja, chunks de 500 filas y normalización a NDJSON privado.
-
-### PR 3.9 — Media remota
-
-Estado `DONE`. Squash `1067d227ac0dea5b1a8a248b57cd217490e4031e`.
-
-SSRF hardening, streaming bounded, validación real de imágenes, deduplicación SHA-256, galería/featured canónicos y retry/checkpoint seguro.
-
-### PR 3.10 — Exportación CSV/XLSX
-
-Estado `OMITTED / OUT_OF_SCOPE` por decisión aprobada el 2026-09-07. La importación CSV/XLSX y export JSON WLA permanecen. No se renumeran 3.11/3.12.
-
-### PR 3.11 — Rollback seguro best-effort
-
-Estado: `DONE`. PR #67 / Issue #66. Squash `4e53a89af1f3fd1a20d139ed5894552b223bf0f5`.
-
-Implementado:
-
-- journal persistente por fila;
-- intent antes de mutación y `after` antes del checkpoint;
-- snapshots mínimos por scope para updates;
-- fingerprint conservador para creates;
-- preview read-only + stale protection;
-- `rollback_processing` reanudable;
-- lock TTL y revalidación por fila;
-- rollback de updates sin pisar campos fuera del scope;
-- creates solo se eliminan si el fingerprint sigue coincidiendo;
-- media restaura referencias y preserva attachments;
-- capability `rollback_wla_imports`, admin-only por defecto;
-- nonces separados e IDOR protegido;
-- Activity sanitizada;
-- crash recovery create-before-checkpoint;
-- schema MySQL 8 portable.
-
-QA final:
-
-- head final de PR: `ec8b7b5cb30667af36eab28aad1241df2c0d6fbe`;
-- 16/16 workflows: SUCCESS;
-- rollback WP 6.6.2 / PHP 8.1: SUCCESS;
-- rollback WP latest / PHP 8.3: SUCCESS;
-- artifact: `wla-inmo-0.1.0-alpha-quality`;
-- digest: `sha256:67a33a0584146041e3ecc777cc77240e61259eebea9e2ca5d5449719d38c6347`;
-- comments/reviews/threads: 0;
-- P0/P1 abiertos conocidos: 0;
-- Issue #66: `closed / completed`.
-
-Evidencia QA: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.  
-Cierre post-merge: `docs/evidence/phase-3/PR-3.11-CLOSURE.md`.
+| 3.12 | Quality Gate Fase 3 | #70 / #69 | QA_PASSED / READY_TO_MERGE | `PR-3.12-PHASE-3-QUALITY-GATE.md` |
 
 ### PR 3.12 — Quality Gate Fase 3
 
-Estado: `NEXT`.
+El gate maestro compone 16 suites reales mediante `workflow_call`; no duplica la lógica de los tests y genera un manifest auditable que exige `success` en todas las suites.
 
-Será el cierre transversal de todo Import/Export: CSV/JSON/XLSX/media/rollback, regresiones Core/Admin, seguridad, performance 100/1k/5k, accesibilidad/responsive, artifact/checksum y review final.
+QA pre-merge validada en run `34276667461` sobre head `aec897f658cbe382cd3667108e3d0026721bd36c`:
+
+- 16/16 child gates `SUCCESS`;
+- WPCS / PHPStan / PHPUnit / smoke / build `SUCCESS`;
+- WP 6.6.2/PHP 8.1/MySQL 8 y WP latest/PHP 8.3/MySQL 8 `SUCCESS`;
+- CSV/JSON/XLSX/media/rollback/Core/Admin `SUCCESS`;
+- Playwright 14/14;
+- responsive 1440/1024/768/390/360;
+- axe WCAG 2.2 AA sin findings serious/critical cubiertos;
+- comments/reviews/threads: 0/0/0;
+- P0/P1 abiertos conocidos: 0.
+
+Artifact summary: `10076114220`, digest `sha256:e2ac168091fe7a9732db6d6e70fbbc998f12416f9e550b815cee63a3a064da7d`.
+
+La Fase 3 no se declara `DONE` en una rama pre-merge. El cierre definitivo se registra después de integrar PR #70 en `main`.
 
 ## Findings / deuda no bloqueante
 
-No existen findings críticos/altos abiertos conocidos de Fase 1, Fase 2 o PR 3.1–3.11.
+No existen findings críticos/altos abiertos conocidos de Fase 1, Fase 2 o PR 3.1–3.12.
 
 Deuda baja conocida:
 
 - ampliar progresivamente PHPStan fuera de los dominios hoy gated;
 - reevaluar PHP 8.1 antes de Beta/1.0 según soporte de dependencias;
-- performance sintético de CI no constituye SLA productivo.
+- performance sintético de CI no constituye SLA productivo;
+- warnings de transición Node 20 → Node 24 emitidos por acciones oficiales de GitHub; no bloquearon el gate y deben revisarse como mantenimiento de CI.
 
 ## Regla de producción
 
