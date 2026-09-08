@@ -95,6 +95,14 @@ $begin = static function (string $uuid) use ($expect): void {
 	$expect($result->status() === RollbackRunResult::STARTED, 'Checkpoint fixture rollback did not start.');
 };
 
+$sourceRowForBatch = static function (RollbackJournalRepository $journal, string $uuid) use ($expect): int {
+	$rows = $journal->page($uuid, 10, 0);
+	$expect(count($rows) === 1, 'Checkpoint fixture must contain exactly one journal row.');
+	$rowNumber = (int) ($rows[0]['row_number'] ?? 0);
+	$expect($rowNumber >= 2, 'Checkpoint fixture did not preserve physical CSV source row number.');
+	return $rowNumber;
+};
+
 $suffix = strtolower(substr(str_replace('-', '', wp_generate_uuid4()), 0, 10));
 $sourceKey = 'rb_checkpoint_' . $suffix;
 $profile = new MappingProfile(
@@ -138,14 +146,15 @@ $updateUuid = $runOne(
 	array('Checkpoint Después', $updateExternal, $updateCode, '222000000')
 );
 $begin($updateUuid);
-$updateJournal = $journal->findRow($updateUuid, 1);
+$updateRowNumber = $sourceRowForBatch($journal, $updateUuid);
+$updateJournal = $journal->findRow($updateUuid, $updateRowNumber);
 $expect(is_array($updateJournal), 'Checkpoint update journal row missing.');
 $expect((string) $updateJournal['rollback_status'] === RollbackJournalState::ROLLBACK_PENDING, 'Checkpoint update row is not pending.');
 
 $restorer->restore($updateJournal);
 $expect(get_the_title($propertyId) === 'Checkpoint Antes', 'Manual checkpoint simulation did not restore update title.');
 $expect((int) get_post_meta($propertyId, $priceKey, true) === 111000000, 'Manual checkpoint simulation did not restore update price.');
-$stillPending = $journal->findRow($updateUuid, 1);
+$stillPending = $journal->findRow($updateUuid, $updateRowNumber);
 $expect(is_array($stillPending) && (string) $stillPending['rollback_status'] === RollbackJournalState::ROLLBACK_PENDING, 'Manual checkpoint simulation unexpectedly committed journal.');
 $inspection = $inspector->inspect($stillPending);
 $expect($inspection->status() === RollbackInspection::NOOP, 'Already-restored update was not recognized as NOOP.');
@@ -153,7 +162,7 @@ $expect($inspection->reason() === 'rollback_update_already_restored', 'Already-r
 
 $recoveredUpdate = (new RollbackService())->run($updateUuid, 10, 10.0);
 $expect($recoveredUpdate->status() === RollbackRunResult::ROLLED_BACK, 'Update checkpoint recovery did not finish rolled_back.');
-$updateJournalAfter = $journal->findRow($updateUuid, 1);
+$updateJournalAfter = $journal->findRow($updateUuid, $updateRowNumber);
 $expect(is_array($updateJournalAfter) && (string) $updateJournalAfter['rollback_status'] === RollbackJournalState::ROLLBACK_ROLLED_BACK, 'Recovered update journal was not committed.');
 $expect($identity->findPropertyIdByCode($updateCode) === $propertyId, 'Recovered update lost identity projection.');
 $expect(get_the_title($propertyId) === 'Checkpoint Antes', 'Recovery mutated already-restored update again.');
@@ -172,18 +181,19 @@ $createUuid = $runOne(
 $createdId = $identity->findPropertyIdByCode($createCode);
 $expect(is_int($createdId) && $createdId > 0, 'Checkpoint create property missing.');
 $begin($createUuid);
-$createJournal = $journal->findRow($createUuid, 1);
+$createRowNumber = $sourceRowForBatch($journal, $createUuid);
+$createJournal = $journal->findRow($createUuid, $createRowNumber);
 $expect(is_array($createJournal), 'Checkpoint create journal row missing.');
 $restorer->restore($createJournal);
 $expect(get_post($createdId) === null, 'Manual checkpoint simulation did not delete created property.');
-$createPending = $journal->findRow($createUuid, 1);
+$createPending = $journal->findRow($createUuid, $createRowNumber);
 $expect(is_array($createPending) && (string) $createPending['rollback_status'] === RollbackJournalState::ROLLBACK_PENDING, 'Create checkpoint simulation unexpectedly committed journal.');
 $createInspection = $inspector->inspect($createPending);
 $expect($createInspection->status() === RollbackInspection::NOOP, 'Absent created property was not recognized as NOOP.');
 
 $recoveredCreate = (new RollbackService())->run($createUuid, 10, 10.0);
 $expect($recoveredCreate->status() === RollbackRunResult::ROLLED_BACK, 'Create checkpoint recovery did not finish rolled_back.');
-$createJournalAfter = $journal->findRow($createUuid, 1);
+$createJournalAfter = $journal->findRow($createUuid, $createRowNumber);
 $expect(is_array($createJournalAfter) && (string) $createJournalAfter['rollback_status'] === RollbackJournalState::ROLLBACK_ROLLED_BACK, 'Recovered create journal was not committed.');
 $expect($identity->findPropertyIdByCode($createCode) === null, 'Recovered create identity projection survived.');
 
