@@ -13,6 +13,7 @@ on:
       - 'plugin/wla-inmo/src/Quality/**'
       - 'bin/**'
       - 'tests/integration/assert-import-rollback.php'
+      - 'tests/integration/assert-import-rollback-media.php'
       - 'tests/smoke/rollback.php'
       - '.github/workflows/import-rollback-integration.yml'
   workflow_dispatch:
@@ -99,6 +100,11 @@ jobs:
         run: |
           cd /tmp/wla-import-rollback-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-rollback.php" --allow-root
+
+      - name: Validate media rollback preserves attachments
+        run: |
+          cd /tmp/wla-import-rollback-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-rollback-media.php" --allow-root
 
       - name: Validate rollback source contracts
         run: php tests/smoke/rollback.php
