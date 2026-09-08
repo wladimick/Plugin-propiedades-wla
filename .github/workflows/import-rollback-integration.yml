@@ -16,6 +16,7 @@ on:
       - 'tests/integration/assert-import-rollback-media.php'
       - 'tests/integration/assert-import-rollback-crash.php'
       - 'tests/integration/assert-import-rollback-lock.php'
+      - 'tests/integration/assert-import-rollback-checkpoint-recovery.php'
       - 'tests/integration/assert-rollback-admin-access.php'
       - 'tests/smoke/rollback.php'
       - '.github/workflows/import-rollback-integration.yml'
@@ -99,6 +100,11 @@ jobs:
         run: |
           cd /tmp/wla-import-rollback-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-rollback-crash.php" --allow-root
+
+      - name: Validate rollback journal checkpoint recovery
+        run: |
+          cd /tmp/wla-import-rollback-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-import-rollback-checkpoint-recovery.php" --allow-root
 
       - name: Validate media rollback preserves attachments
         run: |
