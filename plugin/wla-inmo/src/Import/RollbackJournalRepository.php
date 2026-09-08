@@ -33,8 +33,9 @@ final class RollbackJournalRepository
 			return false;
 		}
 
-		if ($this->findRow($batchUuid, $rowNumber) !== null) {
-			return true;
+		$existing = $this->findRow($batchUuid, $rowNumber);
+		if ($existing !== null) {
+			return $this->intentMatches($existing, $action, $targetsJson, $beforeJson);
 		}
 
 		$now = gmdate('Y-m-d H:i:s');
@@ -64,7 +65,8 @@ final class RollbackJournalRepository
 			return true;
 		}
 
-		return $this->findRow($batchUuid, $rowNumber) !== null;
+		$existing = $this->findRow($batchUuid, $rowNumber);
+		return $existing !== null && $this->intentMatches($existing, $action, $targetsJson, $beforeJson);
 	}
 
 	public function finalize(
@@ -91,6 +93,12 @@ final class RollbackJournalRepository
 		if ($current === null || (string) $current['rollback_status'] !== RollbackJournalState::ROLLBACK_PENDING) {
 			return false;
 		}
+		if ((string) $current['journal_state'] === RollbackJournalState::READY) {
+			return $this->isFinalizedAs($batchUuid, $rowNumber, $propertyId, $afterHash, $createdObjectHash);
+		}
+		if ((string) $current['journal_state'] !== RollbackJournalState::PREPARED) {
+			return false;
+		}
 
 		$updated = $this->wpdb->update(
 			RollbackJournalSchema::tableName($this->wpdb),
@@ -103,11 +111,13 @@ final class RollbackJournalRepository
 				'updated_at'          => gmdate('Y-m-d H:i:s'),
 			),
 			array(
-				'batch_uuid' => strtolower($batchUuid),
-				'source_row' => $rowNumber,
+				'batch_uuid'      => strtolower($batchUuid),
+				'source_row'      => $rowNumber,
+				'journal_state'   => RollbackJournalState::PREPARED,
+				'rollback_status' => RollbackJournalState::ROLLBACK_PENDING,
 			),
 			array('%d', '%s', '%s', '%s', '%s', '%s'),
-			array('%s', '%d')
+			array('%s', '%d', '%s', '%s')
 		);
 
 		return $updated === 1 || ($updated === 0 && $this->isFinalizedAs($batchUuid, $rowNumber, $propertyId, $afterHash, $createdObjectHash));
@@ -277,11 +287,22 @@ final class RollbackJournalRepository
 		return max(0, (int) $this->wpdb->get_var($sql));
 	}
 
+	/** @param array<string,mixed> $row */
+	private function intentMatches(array $row, string $action, string $targetsJson, ?string $beforeJson): bool
+	{
+		return (string) ($row['original_action'] ?? '') === $action
+			&& (string) ($row['targets_json'] ?? '') === $targetsJson
+			&& ($row['before_json'] ?? null) === $beforeJson
+			&& (string) ($row['journal_state'] ?? '') === RollbackJournalState::PREPARED
+			&& (string) ($row['rollback_status'] ?? '') === RollbackJournalState::ROLLBACK_PENDING;
+	}
+
 	private function isFinalizedAs(string $batchUuid, int $rowNumber, int $propertyId, string $afterHash, string $createdObjectHash): bool
 	{
 		$row = $this->findRow($batchUuid, $rowNumber);
 		return $row !== null
 			&& (string) $row['journal_state'] === RollbackJournalState::READY
+			&& (string) $row['rollback_status'] === RollbackJournalState::ROLLBACK_PENDING
 			&& (int) $row['property_id'] === $propertyId
 			&& hash_equals((string) $row['after_hash'], strtolower($afterHash))
 			&& (string) $row['created_object_hash'] === strtolower($createdObjectHash);
