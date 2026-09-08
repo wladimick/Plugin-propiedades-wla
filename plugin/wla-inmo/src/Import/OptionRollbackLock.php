@@ -23,7 +23,9 @@ final class OptionRollbackLock implements RollbackLockInterface
 			return null;
 		}
 
-		delete_option($key);
+		if (!$this->deleteIfCurrent($key, $current)) {
+			return null;
+		}
 
 		return add_option($key, $value, '', false) ? $token : null;
 	}
@@ -40,7 +42,39 @@ final class OptionRollbackLock implements RollbackLockInterface
 			return;
 		}
 
-		delete_option($key);
+		$this->deleteIfCurrent($key, $current);
+	}
+
+	/**
+	 * Compare-and-delete avoids deleting a newer lock if an expired owner races
+	 * with a replacement between reading and releasing the option.
+	 *
+	 * @param array<string,mixed> $expected Exact option value previously read.
+	 */
+	private function deleteIfCurrent(string $key, array $expected): bool
+	{
+		global $wpdb;
+		if (!isset($wpdb) || !isset($wpdb->options)) {
+			return false;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- WordPress Options API has no compare-and-delete primitive; exact option_value match is required for lock safety and cache is invalidated below.
+		$deleted = $wpdb->delete(
+			$wpdb->options,
+			array(
+				'option_name'  => $key,
+				'option_value' => maybe_serialize($expected),
+			),
+			array('%s', '%s')
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		if ($deleted !== 1) {
+			return false;
+		}
+
+		wp_cache_delete($key, 'options');
+		return true;
 	}
 
 	private static function key(string $batchUuid): string
