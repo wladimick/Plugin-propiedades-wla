@@ -24,9 +24,22 @@ final class RollbackRestorer
 	public function restore(array $journalRow): void
 	{
 		$inspection = $this->inspector->inspect($journalRow);
+		$action = (string) ($journalRow['original_action'] ?? '');
+		$propertyId = (int) ($journalRow['property_id'] ?? 0);
+
 		if ($inspection->status() === RollbackInspection::NOOP) {
-			$this->cleanupDeletedProperty((int) ($journalRow['property_id'] ?? 0));
-			return;
+			if ($action === RollbackJournalState::ACTION_CREATED) {
+				$this->cleanupDeletedProperty($propertyId);
+				return;
+			}
+			if ($action === RollbackJournalState::ACTION_UPDATED) {
+				if ($propertyId < 1 || get_post_type($propertyId) !== PostType::POST_TYPE) {
+					throw new RollbackException('rollback_updated_property_missing', 'Already-restored rollback property is unavailable.');
+				}
+				$this->syncProjections($propertyId);
+				return;
+			}
+			throw new RollbackException('rollback_journal_invalid', 'Rollback journal action is invalid.');
 		}
 		if (!$inspection->isSafe()) {
 			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal reason code; no output occurs here.
@@ -37,7 +50,6 @@ final class RollbackRestorer
 			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
-		$action = (string) ($journalRow['original_action'] ?? '');
 		if ($action === RollbackJournalState::ACTION_CREATED) {
 			$this->deleteCreatedProperty($journalRow);
 			return;
