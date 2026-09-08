@@ -42,7 +42,7 @@ final class RollbackJournalRepository
 			RollbackJournalSchema::tableName($this->wpdb),
 			array(
 				'batch_uuid'          => strtolower($batchUuid),
-				'row_number'          => $rowNumber,
+				'source_row'          => $rowNumber,
 				'property_id'         => 0,
 				'original_action'     => $action,
 				'targets_json'        => $targetsJson,
@@ -104,7 +104,7 @@ final class RollbackJournalRepository
 			),
 			array(
 				'batch_uuid' => strtolower($batchUuid),
-				'row_number' => $rowNumber,
+				'source_row' => $rowNumber,
 			),
 			array('%d', '%s', '%s', '%s', '%s', '%s'),
 			array('%s', '%d')
@@ -122,7 +122,7 @@ final class RollbackJournalRepository
 
 		$table = RollbackJournalSchema::tableName($this->wpdb);
 		$sql = $this->wpdb->prepare(
-			"SELECT * FROM {$table} WHERE batch_uuid = %s AND row_number = %d LIMIT 1",
+			"SELECT * FROM {$table} WHERE batch_uuid = %s AND source_row = %d LIMIT 1",
 			strtolower($batchUuid),
 			$rowNumber
 		);
@@ -202,7 +202,7 @@ final class RollbackJournalRepository
 			$data,
 			array(
 				'batch_uuid'      => strtolower($batchUuid),
-				'row_number'      => $rowNumber,
+				'source_row'      => $rowNumber,
 				'rollback_status' => RollbackJournalState::ROLLBACK_PENDING,
 			),
 			$formats,
@@ -234,14 +234,14 @@ final class RollbackJournalRepository
 		$table = RollbackJournalSchema::tableName($this->wpdb);
 		if ($rollbackStatus === null) {
 			$sql = $this->wpdb->prepare(
-				"SELECT * FROM {$table} WHERE batch_uuid = %s ORDER BY row_number {$direction} LIMIT %d OFFSET %d",
+				"SELECT * FROM {$table} WHERE batch_uuid = %s ORDER BY source_row {$direction} LIMIT %d OFFSET %d",
 				strtolower($batchUuid),
 				$limit,
 				$offset
 			);
 		} else {
 			$sql = $this->wpdb->prepare(
-				"SELECT * FROM {$table} WHERE batch_uuid = %s AND rollback_status = %s ORDER BY row_number {$direction} LIMIT %d OFFSET %d",
+				"SELECT * FROM {$table} WHERE batch_uuid = %s AND rollback_status = %s ORDER BY source_row {$direction} LIMIT %d OFFSET %d",
 				strtolower($batchUuid),
 				$rollbackStatus,
 				$limit,
@@ -304,12 +304,18 @@ final class RollbackJournalRepository
 	}
 
 	/**
+	 * Normalize the physical source_row column to the public row_number key used
+	 * by the import domain, so SQL portability stays isolated in this repository.
+	 *
 	 * @param array<string,mixed> $row Database row.
 	 * @return array<string,mixed>
 	 */
 	private static function normalizeRow(array $row): array
 	{
-		foreach (array('id', 'row_number', 'property_id') as $field) {
+		$row['row_number'] = (int) ($row['source_row'] ?? 0);
+		unset($row['source_row']);
+
+		foreach (array('id', 'property_id') as $field) {
 			$row[$field] = (int) ($row[$field] ?? 0);
 		}
 		foreach (array('batch_uuid', 'original_action', 'targets_json', 'before_json', 'after_json', 'after_hash', 'created_object_hash', 'journal_state', 'rollback_status', 'rollback_reason', 'created_at', 'updated_at', 'rolled_back_at') as $field) {
