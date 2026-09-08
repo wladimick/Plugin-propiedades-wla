@@ -45,6 +45,7 @@ final class RollbackPreviewService
 		$errors = 0;
 		$createdToDelete = 0;
 		$updatesToRestore = 0;
+		/** @var array<string,int> $reasons */
 		$reasons = array();
 		$offset = 0;
 		$seen = 0;
