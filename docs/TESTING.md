@@ -98,6 +98,8 @@ Verificar:
 
 Objetivo: WCAG 2.2 AA.
 
+Para gates automatizados de administración/importador, axe bloquea findings `serious`/`critical` en las superficies propias cubiertas. La ausencia de findings automatizados no sustituye QA manual de accesibilidad cuando una fase introduce nuevas superficies UI.
+
 ### 6. Performance
 
 Medir:
@@ -120,7 +122,7 @@ Datasets mínimos sugeridos:
 - 1.000;
 - 5.000 para pruebas de búsqueda/importación cuando el entorno lo permita.
 
-No aceptar regresiones significativas sin justificación documentada.
+No aceptar regresiones significativas sin justificación documentada. Las mediciones sintéticas de CI son evidencia comparativa, no un SLA productivo.
 
 ### 7. Seguridad
 
@@ -135,7 +137,7 @@ Casos mínimos:
 - subida de archivo no permitido;
 - MIME falso;
 - path traversal;
-- fórmula peligrosa en CSV exportado;
+- fórmula peligrosa en CSV exportado cuando exista ese formato;
 - SSRF mediante URL de imagen;
 - importación con payload malicioso;
 - abuso de formulario público;
@@ -240,6 +242,42 @@ Toda PR funcional debe verificar como mínimo:
 
 Antes de una release candidata se ejecutará la suite de regresión completa de todos los módulos terminados.
 
+### Phase 3 Quality Gate
+
+Desde PR 3.12 existe `.github/workflows/phase3-quality-gate.yml` como señal transversal de cierre de Import/Export.
+
+El gate maestro reutiliza 16 suites mediante `workflow_call` y exige `success` en todas:
+
+- Phase 1 CI;
+- Administration Quality Gate;
+- Bootstrap Smoke;
+- Catalogue Quality;
+- Dashboard;
+- Help Center;
+- Settings;
+- Activity;
+- Import Persistence;
+- Row Executor;
+- Batch Runner;
+- Import UI;
+- JSON WLA;
+- XLSX;
+- Remote Media;
+- Safe Rollback.
+
+El job final genera un manifest con el **PR head real**, base, checkout SHA, run ID y resultados. La ejecución debe cubrir las matrices mínimas compatibles WordPress 6.6.2/PHP 8.1/MySQL 8 y WordPress latest/PHP 8.3/MySQL 8.
+
+Criterio de cierre de Fase 3:
+
+1. gate maestro verde sobre el head final;
+2. 16/16 child gates `success`;
+3. artifact/checksum del mismo run;
+4. performance 100/1k/5k registrada;
+5. responsive 360/390/768/1024/1440 y axe en superficies cubiertas;
+6. review sin P0/P1 abiertos;
+7. evidencia `docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md` actualizada;
+8. Fase 3 solo pasa a `DONE` después del merge.
+
 ## Evidencia
 
 Cada PR debe incluir una tabla como:
@@ -262,6 +300,7 @@ Formato recomendado:
 - `CORE-T001`
 - `ADMIN-T001`
 - `IMPORT-T001`
+- `PHASE3-T001`
 - `FRONT-T001`
 - `SEO-T001`
 - `SEC-T001`
@@ -280,4 +319,5 @@ No se puede hacer merge cuando:
 - se rompe migración de datos;
 - el cambio contradice documentación sin actualizarla;
 - no existen criterios de aceptación verificables;
-- existen regresiones críticas conocidas sin aprobación explícita.
+- existen regresiones críticas conocidas sin aprobación explícita;
+- el Phase 3 Quality Gate requerido para el cierre de Fase 3 no termina completamente verde.

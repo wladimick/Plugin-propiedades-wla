@@ -167,6 +167,38 @@ Evidencia canónica: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.
 | ROLLBACK-T024 | Activity no expone snapshots, UUID crudo ni payload privado | Security/Integration | DONE |
 | ROLLBACK-T025 | Matriz WP 6.6.2/PHP 8.1 + latest/PHP 8.3 sobre MySQL 8 | CI/Compatibility | DONE |
 
+### Fase 3.12 — Quality Gate final
+
+Evidencia canónica: `docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md`.
+
+| ID | Caso | Tipo | Estado |
+|---|---|---|---|
+| PHASE3-T001 | Gate maestro invoca las 16 suites reales mediante `workflow_call` | CI/Architecture | DONE |
+| PHASE3-T002 | Summary falla si un child gate no termina en `success` | CI/Negative | DONE |
+| PHASE3-T003 | Manifest registra PR head real, base, checkout SHA y run | CI/Audit | DONE |
+| PHASE3-T004 | Phase 1 WPCS/PHPStan/PHPUnit/smoke/build sin regresión | CI/Regression | DONE |
+| PHASE3-T005 | Administración/Core Fase 1–2 sin regresión | CI/E2E | DONE |
+| PHASE3-T006 | CSV mapping/dry-run/confirm/run/resume cubierto | Integration/E2E | DONE |
+| PHASE3-T007 | Identity/idempotencia/checkpoints cubiertos | Integration/Resilience | DONE |
+| PHASE3-T008 | JSON WLA v1 round-trip/privacy/tampering cubierto | Integration/Security | DONE |
+| PHASE3-T009 | XLSX preflight/normalización bounded/build cubierto | Integration/Security | DONE |
+| PHASE3-T010 | Media remota SSRF/MIME/retry/persistencia cubierta | Security/Integration | DONE |
+| PHASE3-T011 | Rollback safe/blocked/stale/crash/media/lock cubierto | Security/Resilience | DONE |
+| PHASE3-T012 | Capabilities/nonces/IDOR cubiertos | Security | DONE |
+| PHASE3-T013 | WP 6.6.2/PHP 8.1/MySQL 8 | CI/Compatibility | DONE |
+| PHASE3-T014 | WP latest/PHP 8.3/MySQL 8 | CI/Compatibility | DONE |
+| PHASE3-T015 | JSON 100/1k/5k con peak memory registrado | Performance | DONE |
+| PHASE3-T016 | Administración 100/1k/5k con queries/timing registrado | Performance | DONE |
+| PHASE3-T017 | Playwright Admin/Import UI 14/14 | E2E | DONE |
+| PHASE3-T018 | Responsive 1440/1024/768/390/360 | Visual/E2E | DONE |
+| PHASE3-T019 | axe WCAG 2.2 AA sin serious/critical en superficies cubiertas | Accessibility | DONE |
+| PHASE3-T020 | Artifact summary + ZIPs + SHA-256 asociados al mismo run | CI/Audit | DONE |
+| PHASE3-T021 | Review comments/reviews/threads = 0 y P0/P1 = 0 | Review/Security | DONE |
+| PHASE3-T022 | Producción no se usa como entorno de QA | Operational | DONE |
+| PHASE3-T023 | Fase 3 no se marca DONE antes del merge | Governance | DONE |
+
+Run pre-documentación auditado: `34276667461`, head `aec897f658cbe382cd3667108e3d0026721bd36c`, 16/16 child gates `SUCCESS`. El head documental final debe repetir el gate completo antes del merge.
+
 ## Frontend / Templates
 
 | ID | Caso | Tipo | Estado |
