@@ -107,6 +107,11 @@ final class RollbackService
 		$processed = 0;
 		$startedAt = ($this->clock)();
 
+		$existingTerminal = $this->finishBlockedIfPresent($batchUuid, $revision, $processed);
+		if ($existingTerminal !== null) {
+			return $existingTerminal;
+		}
+
 		while ($processed < $maxRows && (($this->clock)() - $startedAt) < $maxSeconds) {
 			$rows = $this->journal->pendingPageDescending($batchUuid, 1);
 			if ($rows === array()) {
@@ -121,26 +126,30 @@ final class RollbackService
 				$markStatus = $inspection->status() === RollbackInspection::ERROR
 					? RollbackJournalState::ROLLBACK_ERROR
 					: RollbackJournalState::ROLLBACK_BLOCKED;
-				$this->journal->markRollback($batchUuid, $rowNumber, $markStatus, $reason);
-				$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision);
-				$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, $rowNumber, $reason);
-				return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, $reason);
+
+				return $this->commitBlockedRow($batchUuid, $rowNumber, $revision, $processed, $markStatus, $reason);
 			}
 
 			try {
 				$this->restorer->restore($row);
 			} catch (RollbackException $exception) {
-				$reason = $exception->reason();
-				$this->journal->markRollback($batchUuid, $rowNumber, RollbackJournalState::ROLLBACK_ERROR, $reason);
-				$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision);
-				$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, $rowNumber, $reason);
-				return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, $reason);
+				return $this->commitBlockedRow(
+					$batchUuid,
+					$rowNumber,
+					$revision,
+					$processed,
+					RollbackJournalState::ROLLBACK_ERROR,
+					$exception->reason()
+				);
 			} catch (Throwable) {
-				$reason = 'rollback_unexpected_restore_failure';
-				$this->journal->markRollback($batchUuid, $rowNumber, RollbackJournalState::ROLLBACK_ERROR, $reason);
-				$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision);
-				$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, $rowNumber, $reason);
-				return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, $reason);
+				return $this->commitBlockedRow(
+					$batchUuid,
+					$rowNumber,
+					$revision,
+					$processed,
+					RollbackJournalState::ROLLBACK_ERROR,
+					'rollback_unexpected_restore_failure'
+				);
 			}
 
 			if (!$this->journal->markRollback($batchUuid, $rowNumber, RollbackJournalState::ROLLBACK_ROLLED_BACK)) {
@@ -161,14 +170,52 @@ final class RollbackService
 		return new RollbackRunResult($batchUuid, RollbackRunResult::PROCESSING, $processed, 'rollback_budget_reached');
 	}
 
-	private function finish(string $batchUuid, int $revision, int $processed): RollbackRunResult
+	private function commitBlockedRow(
+		string $batchUuid,
+		int $rowNumber,
+		int $revision,
+		int $processed,
+		string $journalStatus,
+		string $reason
+	): RollbackRunResult {
+		if (!$this->journal->markRollback($batchUuid, $rowNumber, $journalStatus, $reason)) {
+			// No data mutation is performed for an unsafe row. Keep processing
+			// state so retry can reproduce the same inspection and persist its
+			// blocking evidence before the batch becomes terminal.
+			return new RollbackRunResult($batchUuid, RollbackRunResult::CONFLICT, $processed, 'rollback_block_journal_commit_failed');
+		}
+
+		if (!$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision)) {
+			// The durable row-level block remains authoritative. A retry checks
+			// existing blocked/error rows before considering pending work.
+			return new RollbackRunResult($batchUuid, RollbackRunResult::CONFLICT, $processed, 'rollback_block_transition_conflict');
+		}
+
+		$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, $rowNumber, $reason);
+		return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, $reason);
+	}
+
+	private function finishBlockedIfPresent(string $batchUuid, int $revision, int $processed): ?RollbackRunResult
 	{
 		$blocked = $this->journal->countRollbackStatus($batchUuid, RollbackJournalState::ROLLBACK_BLOCKED);
 		$errors = $this->journal->countRollbackStatus($batchUuid, RollbackJournalState::ROLLBACK_ERROR);
-		if ($blocked > 0 || $errors > 0) {
-			$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision);
-			$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, 0, 'rollback_rows_blocked');
-			return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, 'rollback_rows_blocked');
+		if ($blocked === 0 && $errors === 0) {
+			return null;
+		}
+
+		if (!$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision)) {
+			return new RollbackRunResult($batchUuid, RollbackRunResult::CONFLICT, $processed, 'rollback_block_transition_conflict');
+		}
+
+		$this->emit('wla_inmo_import_rollback_blocked', $batchUuid, 0, 'rollback_rows_blocked');
+		return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, 'rollback_rows_blocked');
+	}
+
+	private function finish(string $batchUuid, int $revision, int $processed): RollbackRunResult
+	{
+		$blockedResult = $this->finishBlockedIfPresent($batchUuid, $revision, $processed);
+		if ($blockedResult !== null) {
+			return $blockedResult;
 		}
 
 		if (!$this->batches->transition($batchUuid, BatchStatus::ROLLED_BACK, $revision)) {
