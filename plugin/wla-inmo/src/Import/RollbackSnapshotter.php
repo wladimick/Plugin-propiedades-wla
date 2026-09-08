@@ -99,17 +99,17 @@ final class RollbackSnapshotter
 		}
 
 		$postState = array(
-			'post_status'     => (string) ($post->post_status ?? ''),
-			'post_title'      => (string) ($post->post_title ?? ''),
-			'post_content'    => (string) ($post->post_content ?? ''),
-			'post_excerpt'    => (string) ($post->post_excerpt ?? ''),
-			'post_author'     => (int) ($post->post_author ?? 0),
-			'post_parent'     => (int) ($post->post_parent ?? 0),
-			'menu_order'      => (int) ($post->menu_order ?? 0),
-			'post_password'   => (string) ($post->post_password ?? ''),
-			'comment_status'  => (string) ($post->comment_status ?? ''),
-			'ping_status'     => (string) ($post->ping_status ?? ''),
-			'comment_count'   => (int) ($post->comment_count ?? 0),
+			'post_status'    => (string) ($post->post_status ?? ''),
+			'post_title'     => (string) ($post->post_title ?? ''),
+			'post_content'   => (string) ($post->post_content ?? ''),
+			'post_excerpt'   => (string) ($post->post_excerpt ?? ''),
+			'post_author'    => (int) ($post->post_author ?? 0),
+			'post_parent'    => (int) ($post->post_parent ?? 0),
+			'menu_order'     => (int) ($post->menu_order ?? 0),
+			'post_password'  => (string) ($post->post_password ?? ''),
+			'comment_status' => (string) ($post->comment_status ?? ''),
+			'ping_status'    => (string) ($post->ping_status ?? ''),
+			'comment_count'  => (int) ($post->comment_count ?? 0),
 		);
 
 		$meta = get_post_meta($propertyId);
@@ -170,6 +170,7 @@ final class RollbackSnapshotter
 				throw new RollbackException('rollback_media_schema_missing', 'Gallery schema is unavailable.');
 			}
 			return array(
+				'exists'      => metadata_exists('post', $propertyId, $galleryKey),
 				'gallery_ids' => Sanitizer::positiveIntegerArray(get_post_meta($propertyId, $galleryKey, true)),
 			);
 		}
