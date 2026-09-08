@@ -13,6 +13,7 @@ final class BatchStatus
 	public const PAUSED = 'paused';
 	public const FAILED = 'failed';
 	public const COMPLETED = 'completed';
+	public const ROLLBACK_PROCESSING = 'rollback_processing';
 	public const CANCELLED = 'cancelled';
 	public const ROLLED_BACK = 'rolled_back';
 	public const ROLLBACK_BLOCKED = 'rollback_blocked';
@@ -32,6 +33,7 @@ final class BatchStatus
 			self::PAUSED,
 			self::FAILED,
 			self::COMPLETED,
+			self::ROLLBACK_PROCESSING,
 			self::CANCELLED,
 			self::ROLLED_BACK,
 			self::ROLLBACK_BLOCKED,
@@ -66,7 +68,8 @@ final class BatchStatus
 			self::PROCESSING => array(self::PAUSED, self::FAILED, self::COMPLETED),
 			self::PAUSED => array(self::PROCESSING, self::CANCELLED),
 			self::FAILED => array(self::PROCESSING, self::CANCELLED),
-			self::COMPLETED => array(self::ROLLED_BACK, self::ROLLBACK_BLOCKED),
+			self::COMPLETED => array(self::ROLLBACK_PROCESSING, self::ROLLED_BACK, self::ROLLBACK_BLOCKED),
+			self::ROLLBACK_PROCESSING => array(self::ROLLED_BACK, self::ROLLBACK_BLOCKED),
 			self::CANCELLED => array(),
 			self::ROLLED_BACK => array(),
 			self::ROLLBACK_BLOCKED => array(),

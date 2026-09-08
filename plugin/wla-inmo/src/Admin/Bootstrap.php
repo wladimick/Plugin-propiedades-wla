@@ -22,6 +22,7 @@ final class Bootstrap
 		SettingsPage::register();
 		ImportExportPage::register();
 		JsonImportExportPage::register();
+		RollbackAdmin::register();
 		PropertyList::register();
 		PropertyQualityList::register();
 		PropertyEditor::register();

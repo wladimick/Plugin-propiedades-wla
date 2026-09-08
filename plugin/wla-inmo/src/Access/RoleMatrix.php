@@ -70,7 +70,10 @@ final class RoleMatrix
 		$moduleCaps = array_values(
 			array_diff(
 				Capabilities::all(),
-				array(Capabilities::MANAGE_TOOLS)
+				array(
+					Capabilities::MANAGE_TOOLS,
+					Capabilities::ROLLBACK_IMPORTS,
+				)
 			)
 		);
 

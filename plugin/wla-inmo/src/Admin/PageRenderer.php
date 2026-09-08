@@ -31,6 +31,7 @@ final class PageRenderer
 			ActivityPage::render();
 		} elseif ($definition['slug'] === 'wla-inmo-import-export') {
 			ImportExportHub::render();
+			RollbackAdmin::renderContextual();
 		} else {
 			self::renderPlaceholder($definition);
 		}

@@ -8,6 +8,7 @@ final class Capabilities
 	public const MANAGE_HOME = 'manage_wla_inmo_home';
 	public const IMPORT_PROPERTIES = 'import_wla_properties';
 	public const EXPORT_PROPERTIES = 'export_wla_properties';
+	public const ROLLBACK_IMPORTS = 'rollback_wla_imports';
 	public const VIEW_LEADS = 'view_wla_inmo_leads';
 	public const EDIT_LEADS = 'edit_wla_inmo_leads';
 	public const MANAGE_LEADS = 'manage_wla_inmo_leads';
@@ -31,6 +32,7 @@ final class Capabilities
 			self::MANAGE_HOME,
 			self::IMPORT_PROPERTIES,
 			self::EXPORT_PROPERTIES,
+			self::ROLLBACK_IMPORTS,
 			self::VIEW_LEADS,
 			self::EDIT_LEADS,
 			self::MANAGE_LEADS,

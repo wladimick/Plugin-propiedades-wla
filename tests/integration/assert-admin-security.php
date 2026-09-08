@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WLA\Inmo\Access\Capabilities as AccessCapabilities;
+use WLA\Inmo\Access\RoleManager;
 use WLA\Inmo\Access\RoleMatrix;
 use WLA\Inmo\Admin\PropertyEditor;
 use WLA\Inmo\Properties\Capabilities as PropertyCapabilities;
@@ -40,21 +41,37 @@ foreach (RoleMatrix::managedCapabilities() as $capability) {
 	$expect($roles['administrator']->has_cap($capability), "Administrator is missing managed capability {$capability}.");
 }
 
+$expect($roles['administrator']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Administrator must receive destructive rollback capability.');
 $expect($roles['manager']->has_cap(PropertyCapabilities::EDIT_POSTS), 'Inmo manager must edit properties.');
 $expect($roles['manager']->has_cap(AccessCapabilities::MANAGE_SETTINGS), 'Inmo manager must access WLA settings.');
 $expect($roles['manager']->has_cap(AccessCapabilities::VIEW_ACTIVITY), 'Inmo manager must view activity.');
 $expect(!$roles['manager']->has_cap(AccessCapabilities::MANAGE_TOOLS), 'Inmo manager must not receive technical tools capability.');
+$expect(!$roles['manager']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Inmo manager must not receive destructive rollback capability by default.');
 
 $expect($roles['editor']->has_cap(PropertyCapabilities::EDIT_POSTS), 'Property editor must edit own properties.');
 $expect($roles['editor']->has_cap(PropertyCapabilities::PUBLISH_POSTS), 'Property editor must publish own properties.');
 $expect(!$roles['editor']->has_cap(PropertyCapabilities::EDIT_OTHERS_POSTS), 'Property editor must not edit other authors properties.');
 $expect(!$roles['editor']->has_cap(AccessCapabilities::MANAGE_SETTINGS), 'Property editor must not manage settings.');
 $expect(!$roles['editor']->has_cap(AccessCapabilities::VIEW_ACTIVITY), 'Property editor must not receive activity access by default.');
+$expect(!$roles['editor']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Property editor must not receive destructive rollback capability.');
 
 $expect($roles['lead_manager']->has_cap(AccessCapabilities::VIEW_LEADS), 'Lead manager must view leads.');
 $expect($roles['lead_manager']->has_cap(AccessCapabilities::MANAGE_LEADS), 'Lead manager must manage leads.');
 $expect(!$roles['lead_manager']->has_cap(PropertyCapabilities::EDIT_POSTS), 'Lead manager must not edit properties.');
 $expect(!$roles['lead_manager']->has_cap(AccessCapabilities::MANAGE_SETTINGS), 'Lead manager must not manage settings.');
+$expect(!$roles['lead_manager']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Lead manager must not receive destructive rollback capability.');
+
+// Simulate an existing installation at the previous role schema version. The
+// upgrade must re-grant the new Administrator-only capability without leaking
+// it into plugin-owned roles.
+$roles['administrator']->remove_cap(AccessCapabilities::ROLLBACK_IMPORTS);
+update_option(RoleManager::VERSION_OPTION, '1', false);
+RoleManager::maybeUpgrade();
+$roles['administrator'] = get_role('administrator');
+$roles['manager'] = get_role(RoleMatrix::ROLE_MANAGER);
+$expect($roles['administrator'] instanceof WP_Role && $roles['administrator']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Role upgrade did not grant rollback capability to existing Administrator.');
+$expect($roles['manager'] instanceof WP_Role && !$roles['manager']->has_cap(AccessCapabilities::ROLLBACK_IMPORTS), 'Role upgrade leaked rollback capability to Inmo manager.');
+$expect((string) get_option(RoleManager::VERSION_OPTION, '0') === RoleManager::VERSION, 'Role upgrade version was not persisted.');
 
 wp_set_current_user($admin->ID);
 

@@ -11,6 +11,7 @@ final class BatchRunner
 	private IdentityResolver $identityResolver;
 	private RowExecutor $executor;
 	private CsvReader|JsonLinesReader|null $reader;
+	private ?RollbackJournalRecorderInterface $rollbackJournal;
 
 	/** @var callable(string,string):array<int,array<string,mixed>> */
 	private $taxonomyLookup;
@@ -29,7 +30,8 @@ final class BatchRunner
 		?RowExecutor $executor = null,
 		CsvReader|JsonLinesReader|null $reader = null,
 		?callable $taxonomyLookup = null,
-		?callable $clock = null
+		?callable $clock = null,
+		?RollbackJournalRecorderInterface $rollbackJournal = null
 	) {
 		$this->batches = $batches ?? new BatchRepository();
 		$this->checkpoint = $checkpoint ?? new BatchCheckpoint($this->batches);
@@ -42,6 +44,11 @@ final class BatchRunner
 		$this->reader = $reader;
 		$this->taxonomyLookup = $taxonomyLookup ?? array(WordPressTaxonomyLookup::class, 'lookup');
 		$this->clock = $clock ?? static fn (): float => microtime(true);
+		$this->rollbackJournal = $rollbackJournal;
+
+		if ($this->rollbackJournal === null && isset($GLOBALS['wpdb']) && function_exists('get_post')) {
+			$this->rollbackJournal = new RollbackJournalRecorder();
+		}
 	}
 
 	public function run(string $batchUuid, string $sourcePath, int $maxRows = 25, float $maxSeconds = 5.0): BatchRunResult
@@ -157,6 +164,17 @@ final class BatchRunner
 					);
 				}
 
+				if ($this->rollbackJournal !== null && !$this->rollbackJournal->prepare($batchUuid, $dryRun)) {
+					return $this->failProcessing(
+						$batchUuid,
+						$revision,
+						$processedThisRun,
+						$cursor,
+						'rollback_journal_prepare_failed',
+						$dryRun->rowNumber()
+					);
+				}
+
 				$execution = $this->executor->execute($dryRun, $profile->sourceKey());
 				if ($execution->status() === RowExecutionResult::STATUS_ERROR) {
 					return $this->failProcessing(
@@ -167,6 +185,17 @@ final class BatchRunner
 						'row_execution_failed',
 						$execution->rowNumber(),
 						self::codes($execution->errors())
+					);
+				}
+
+				if ($this->rollbackJournal !== null && !$this->rollbackJournal->finalize($batchUuid, $dryRun, $execution)) {
+					return $this->failProcessing(
+						$batchUuid,
+						$revision,
+						$processedThisRun,
+						$cursor,
+						'rollback_journal_finalize_failed',
+						$execution->rowNumber()
 					);
 				}
 

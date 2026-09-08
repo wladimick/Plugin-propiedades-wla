@@ -135,6 +135,38 @@ Evidencia canónica: `docs/evidence/phase-3/PR-3.7-JSON-WLA.md`.
 
 Resultados de performance del head funcional `0eaeda0f02da44ae25018b6ba167b8b1dddda5a4`: 5.000 filas <1 s en ambas matrices y peak delta observado de 8 MiB. Artifacts/checksums quedan registrados en la evidencia 3.7.
 
+### Fase 3.11 — Rollback seguro best-effort
+
+Evidencia canónica: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.
+
+| ID | Caso | Tipo | Estado |
+|---|---|---|---|
+| ROLLBACK-T001 | Snapshot determinista y hash estable | Unit | DONE |
+| ROLLBACK-T002 | Meta inexistente se distingue de meta existente vacía | Unit | DONE |
+| ROLLBACK-T003 | Journal único por batch + source row | Unit/Integration | DONE |
+| ROLLBACK-T004 | Intent se registra antes de `RowExecutor` | Static/Integration | DONE |
+| ROLLBACK-T005 | `after` se finaliza antes del checkpoint | Static/Integration | DONE |
+| ROLLBACK-T006 | Create seguro se elimina y limpia identidad/proyecciones | WP/MySQL Integration | DONE |
+| ROLLBACK-T007 | Update seguro restaura solo targets tocados | WP/MySQL Integration | DONE |
+| ROLLBACK-T008 | Cambio posterior en target tocado bloquea y conserva dato humano | WP/MySQL Integration | DONE |
+| ROLLBACK-T009 | Cambio posterior fuera de scope no bloquea ni se pisa | WP/MySQL Integration | DONE |
+| ROLLBACK-T010 | Create modificada después bloquea eliminación | WP/MySQL Integration | DONE |
+| ROLLBACK-T011 | Preview es read-only | Integration/Security | DONE |
+| ROLLBACK-T012 | Preview stale no puede iniciar rollback | WP/MySQL Integration | DONE |
+| ROLLBACK-T013 | Rollback repetido no vuelve a mutar | WP/MySQL Integration | DONE |
+| ROLLBACK-T014 | Batch no `completed` no puede iniciar rollback | Unit/Integration | DONE |
+| ROLLBACK-T015 | Journal incompleto/inconsistente falla cerrado | Unit/Integration | DONE |
+| ROLLBACK-T016 | Crash después de create y antes de checkpoint conserva semántica `created` | WP/MySQL Integration | DONE |
+| ROLLBACK-T017 | Galería anterior se restaura por IDs canónicos | WP/MySQL Integration | DONE |
+| ROLLBACK-T018 | Featured image anterior se restaura por attachment ID | WP/MySQL Integration | DONE |
+| ROLLBACK-T019 | Attachments ambiguos/nuevos no se eliminan | WP/MySQL Integration | DONE |
+| ROLLBACK-T020 | Lock impide dos runners simultáneos del mismo batch | WP/MySQL Integration | DONE |
+| ROLLBACK-T021 | Capability `rollback_wla_imports` separada y admin-only por defecto | Security/Integration | DONE |
+| ROLLBACK-T022 | Nonces preview/confirm/run son independientes | Security/Integration | DONE |
+| ROLLBACK-T023 | IDOR respeta ownership o `manage_tools` | Security/Integration | DONE |
+| ROLLBACK-T024 | Activity no expone snapshots, UUID crudo ni payload privado | Security/Integration | DONE |
+| ROLLBACK-T025 | Matriz WP 6.6.2/PHP 8.1 + latest/PHP 8.3 sobre MySQL 8 | CI/Compatibility | DONE |
+
 ## Frontend / Templates
 
 | ID | Caso | Tipo | Estado |
