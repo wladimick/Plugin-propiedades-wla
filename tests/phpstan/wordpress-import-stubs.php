@@ -35,6 +35,8 @@ function wp_update_post(array $postarr, bool $wp_error = false) { return 1; }
 function wp_delete_post(int $post_id, bool $force_delete = false) { return null; }
 function is_wp_error(mixed $thing): bool { return false; }
 function taxonomy_exists(string $taxonomy): bool { return true; }
+/** @return array<int,string> */
+function get_object_taxonomies(string|array|object $object_type, string $output = 'names'): array { return array(); }
 function sanitize_title(string $title): string { return strtolower(trim($title)); }
 function sanitize_file_name(string $filename): string { return $filename; }
 function sanitize_key(string $key): string { return strtolower($key); }
@@ -43,6 +45,12 @@ function absint(mixed $value): int { return abs((int) $value); }
 function get_transient(string $transient) { return false; }
 function set_transient(string $transient, mixed $value, int $expiration = 0): bool { return true; }
 function delete_transient(string $transient): bool { return true; }
+/** @return mixed */
+function get_option(string $option, mixed $default_value = false) { return $default_value; }
+function add_option(string $option, mixed $value = '', string $deprecated = '', bool|string $autoload = true): bool { return true; }
+function delete_option(string $option): bool { return true; }
+function maybe_serialize(mixed $data): mixed { return $data; }
+function wp_cache_delete(int|string $key, string $group = ''): bool { return true; }
 function trailingslashit(string $value): string { return rtrim($value, '/\\') . '/'; }
 function wp_json_encode(mixed $value, int $flags = 0, int $depth = 512): string|false { return json_encode($value, $flags, $depth); }
 /** @param array<string,mixed> $args @return mixed */
