@@ -111,6 +111,8 @@ jobs:
       - rollback
     runs-on: ubuntu-latest
     env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
       PHASE1_RESULT: ${{ needs.phase1.result }}
       ADMIN_RESULT: ${{ needs.admin.result }}
       BOOTSTRAP_RESULT: ${{ needs.bootstrap.result }}
@@ -135,7 +137,10 @@ jobs:
           cat > artifacts/phase3-quality-gate-summary.json <<EOF
           {
             "repository": "${GITHUB_REPOSITORY}",
-            "head_sha": "${GITHUB_SHA}",
+            "event": "${GITHUB_EVENT_NAME}",
+            "pr_head_sha": "${PR_HEAD_SHA}",
+            "pr_base_sha": "${PR_BASE_SHA}",
+            "checkout_sha": "${GITHUB_SHA}",
             "ref": "${GITHUB_REF}",
             "run_id": "${GITHUB_RUN_ID}",
             "run_attempt": "${GITHUB_RUN_ATTEMPT}",
