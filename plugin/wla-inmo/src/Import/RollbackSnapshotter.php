@@ -127,9 +127,6 @@ final class RollbackSnapshotter
 
 		$taxonomyState = array();
 		$taxonomies = get_object_taxonomies(PostType::POST_TYPE, 'names');
-		if (!is_array($taxonomies)) {
-			$taxonomies = array();
-		}
 		foreach ($taxonomies as $taxonomy) {
 			$taxonomy = (string) $taxonomy;
 			$terms = wp_get_object_terms($propertyId, $taxonomy, array('fields' => 'ids'));
