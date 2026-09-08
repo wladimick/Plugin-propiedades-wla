@@ -25,8 +25,8 @@ Contrato funcional: `docs/IMPORT-EXPORT.md`.
 | 3.8 | XLSX streaming + ADR/benchmark | #62 / #61 | DONE |
 | 3.9 | Media remota segura | #64 / #63 | DONE |
 | 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE |
-| 3.11 | Rollback seguro best-effort | #67 / #66 | QA_PASSED / READY_TO_MERGE |
-| 3.12 | Quality Gate Fase 3 | pendiente | PLANNED |
+| 3.11 | Rollback seguro best-effort | #67 / #66 | DONE |
+| 3.12 | Quality Gate Fase 3 | pendiente | NEXT |
 
 La exportación CSV/XLSX se retiró explícitamente del alcance de Fase 3 el 2026-09-07. El número 3.10 se mantiene para auditoría y no se renumeran los hitos siguientes.
 
@@ -166,7 +166,7 @@ JSON WLA export permanece disponible. Una eventual exportación CSV/XLSX requeri
 
 ## PR 3.11 — Rollback seguro best-effort
 
-Estado: `QA_PASSED / READY_TO_MERGE`. PR #67 / Issue #66.
+Estado: `DONE`. PR #67 / Issue #66. Squash `4e53a89af1f3fd1a20d139ed5894552b223bf0f5`.
 
 Implementa D38 con enfoque conservador:
 
@@ -191,24 +191,24 @@ Implementa D38 con enfoque conservador:
 - crash recovery después de create y antes del checkpoint;
 - schema MySQL 8 con `source_row` físico.
 
-QA final pre-merge:
+QA final:
 
-- head funcional `f9dab169d02ee700417dbe375d03f585d9bb1075`;
+- head final de PR `ec8b7b5cb30667af36eab28aad1241df2c0d6fbe`;
 - **16/16 workflows SUCCESS**;
 - rollback WP 6.6.2/PHP 8.1: SUCCESS;
 - rollback WP latest/PHP 8.3: SUCCESS;
 - CSV/JSON/XLSX/Remote Media/runner/admin/core: SUCCESS;
 - comments/reviews/threads: 0;
 - P0/P1 abiertos conocidos: 0;
-- artifact `wla-inmo-0.1.0-alpha-quality` con digest `sha256:67a33a0584146041e3ecc777cc77240e61259eebea9e2ca5d5449719d38c6347`.
+- artifact `wla-inmo-0.1.0-alpha-quality` con digest `sha256:67a33a0584146041e3ecc777cc77240e61259eebea9e2ca5d5449719d38c6347`;
+- Issue #66 cerrado como `completed` por el merge.
 
-Evidencia: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.
-
-El estado pasa a `DONE` solo después del merge y cierre de Issue #66.
+Evidencia QA: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.  
+Cierre post-merge: `docs/evidence/phase-3/PR-3.11-CLOSURE.md`.
 
 ## PR 3.12 — Quality Gate Fase 3
 
-Estado: `PLANNED`.
+Estado: `NEXT`.
 
 Debe cubrir como mínimo:
 
