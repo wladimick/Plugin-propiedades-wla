@@ -29,10 +29,12 @@ final class RollbackRestorer
 			return;
 		}
 		if (!$inspection->isSafe()) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal reason code; no output occurs here.
 			throw new RollbackException(
 				$inspection->reason() !== '' ? $inspection->reason() : 'rollback_not_safe',
 				'Rollback row is no longer safe to restore.'
 			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		$action = (string) ($journalRow['original_action'] ?? '');
@@ -103,17 +105,23 @@ final class RollbackRestorer
 				$this->syncProjections($propertyId);
 				$this->assertSnapshot($propertyId, $after);
 			} catch (Throwable $restoreException) {
+				// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Throwable chaining only; no output occurs here.
 				throw new RollbackException(
 					'rollback_restore_partial_failure',
 					'Rollback failed and the imported state could not be restored safely.',
 					$restoreException
 				);
+				// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 			}
 
 			if ($exception instanceof RollbackException) {
+				// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Rethrow preserves internal domain exception; no output occurs here.
 				throw $exception;
+				// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 			}
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Throwable chaining only; no output occurs here.
 			throw new RollbackException('rollback_restore_failed', 'Rollback target state could not be restored.', $exception);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
