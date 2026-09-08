@@ -14,7 +14,9 @@ final class RollbackSnapshotCodec
 				JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
 			);
 		} catch (JsonException $exception) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Throwable chaining only; no output occurs here.
 			throw new RollbackException('rollback_snapshot_encode_failed', 'Rollback snapshot could not be encoded.', $exception);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 	}
 
@@ -24,7 +26,9 @@ final class RollbackSnapshotCodec
 		try {
 			$decoded = json_decode($json, true, 64, JSON_THROW_ON_ERROR);
 		} catch (JsonException $exception) {
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Throwable chaining only; no output occurs here.
 			throw new RollbackException('rollback_snapshot_decode_failed', 'Rollback snapshot could not be decoded.', $exception);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		if (!is_array($decoded)) {
