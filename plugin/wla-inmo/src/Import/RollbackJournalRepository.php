@@ -41,21 +41,21 @@ final class RollbackJournalRepository
 		$inserted = $this->wpdb->insert(
 			RollbackJournalSchema::tableName($this->wpdb),
 			array(
-				'batch_uuid'         => strtolower($batchUuid),
-				'row_number'         => $rowNumber,
-				'property_id'        => 0,
-				'original_action'    => $action,
-				'targets_json'       => $targetsJson,
-				'before_json'        => $beforeJson,
-				'after_json'         => null,
-				'after_hash'         => '',
-				'created_object_hash'=> '',
-				'journal_state'      => RollbackJournalState::PREPARED,
-				'rollback_status'    => RollbackJournalState::ROLLBACK_PENDING,
-				'rollback_reason'    => '',
-				'created_at'         => $now,
-				'updated_at'         => $now,
-				'rolled_back_at'     => null,
+				'batch_uuid'          => strtolower($batchUuid),
+				'row_number'          => $rowNumber,
+				'property_id'         => 0,
+				'original_action'     => $action,
+				'targets_json'        => $targetsJson,
+				'before_json'         => $beforeJson,
+				'after_json'          => null,
+				'after_hash'          => '',
+				'created_object_hash' => '',
+				'journal_state'       => RollbackJournalState::PREPARED,
+				'rollback_status'     => RollbackJournalState::ROLLBACK_PENDING,
+				'rollback_reason'     => '',
+				'created_at'          => $now,
+				'updated_at'          => $now,
+				'rolled_back_at'      => null,
 			),
 			array('%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
 		);
@@ -103,8 +103,8 @@ final class RollbackJournalRepository
 				'updated_at'          => gmdate('Y-m-d H:i:s'),
 			),
 			array(
-				'batch_uuid'  => strtolower($batchUuid),
-				'row_number'  => $rowNumber,
+				'batch_uuid' => strtolower($batchUuid),
+				'row_number' => $rowNumber,
 			),
 			array('%d', '%s', '%s', '%s', '%s', '%s'),
 			array('%s', '%d')
@@ -134,37 +134,33 @@ final class RollbackJournalRepository
 	/** @return array<int,array<string,mixed>> */
 	public function page(string $batchUuid, int $limit = 50, int $offset = 0): array
 	{
-		if ($this->wpdb === null || !self::isUuid($batchUuid) || $limit < 1 || $limit > 250 || $offset < 0) {
-			return array();
-		}
+		return $this->queryPage($batchUuid, $limit, $offset, null, 'ASC');
+	}
 
-		$table = RollbackJournalSchema::tableName($this->wpdb);
-		$sql = $this->wpdb->prepare(
-			"SELECT * FROM {$table} WHERE batch_uuid = %s ORDER BY row_number ASC LIMIT %d OFFSET %d",
-			strtolower($batchUuid),
+	/** @return array<int,array<string,mixed>> */
+	public function pendingPageDescending(string $batchUuid, int $limit = 25): array
+	{
+		return $this->queryPage(
+			$batchUuid,
 			$limit,
-			$offset
+			0,
+			RollbackJournalState::ROLLBACK_PENDING,
+			'DESC'
 		);
-		$rows = $this->wpdb->get_results($sql, 'ARRAY_A');
-		if (!is_array($rows)) {
-			return array();
-		}
-
-		return array_values(array_map(array(self::class, 'normalizeRow'), $rows));
 	}
 
 	public function countReady(string $batchUuid): int
 	{
-		if ($this->wpdb === null || !self::isUuid($batchUuid)) {
+		return $this->countWhere($batchUuid, 'journal_state', RollbackJournalState::READY);
+	}
+
+	public function countRollbackStatus(string $batchUuid, string $status): int
+	{
+		if (!RollbackJournalState::isRollbackStatus($status)) {
 			return 0;
 		}
-		$table = RollbackJournalSchema::tableName($this->wpdb);
-		$sql = $this->wpdb->prepare(
-			"SELECT COUNT(*) FROM {$table} WHERE batch_uuid = %s AND journal_state = %s",
-			strtolower($batchUuid),
-			RollbackJournalState::READY
-		);
-		return max(0, (int) $this->wpdb->get_var($sql));
+
+		return $this->countWhere($batchUuid, 'rollback_status', $status);
 	}
 
 	public function markRollback(string $batchUuid, int $rowNumber, string $status, string $reason = ''): bool
@@ -176,6 +172,17 @@ final class RollbackJournalRepository
 			|| !RollbackJournalState::isRollbackStatus($status)
 			|| strlen($reason) > 64
 		) {
+			return false;
+		}
+
+		$current = $this->findRow($batchUuid, $rowNumber);
+		if ($current === null) {
+			return false;
+		}
+		if ((string) $current['rollback_status'] === $status && (string) $current['rollback_reason'] === $reason) {
+			return true;
+		}
+		if ((string) $current['rollback_status'] !== RollbackJournalState::ROLLBACK_PENDING) {
 			return false;
 		}
 
@@ -193,12 +200,81 @@ final class RollbackJournalRepository
 		$updated = $this->wpdb->update(
 			RollbackJournalSchema::tableName($this->wpdb),
 			$data,
-			array('batch_uuid' => strtolower($batchUuid), 'row_number' => $rowNumber),
+			array(
+				'batch_uuid'      => strtolower($batchUuid),
+				'row_number'      => $rowNumber,
+				'rollback_status' => RollbackJournalState::ROLLBACK_PENDING,
+			),
 			$formats,
-			array('%s', '%d')
+			array('%s', '%d', '%s')
 		);
 
 		return $updated === 1;
+	}
+
+	/** @return array<int,array<string,mixed>> */
+	private function queryPage(
+		string $batchUuid,
+		int $limit,
+		int $offset,
+		?string $rollbackStatus,
+		string $direction
+	): array {
+		if (
+			$this->wpdb === null
+			|| !self::isUuid($batchUuid)
+			|| $limit < 1
+			|| $limit > 250
+			|| $offset < 0
+			|| !in_array($direction, array('ASC', 'DESC'), true)
+		) {
+			return array();
+		}
+
+		$table = RollbackJournalSchema::tableName($this->wpdb);
+		if ($rollbackStatus === null) {
+			$sql = $this->wpdb->prepare(
+				"SELECT * FROM {$table} WHERE batch_uuid = %s ORDER BY row_number {$direction} LIMIT %d OFFSET %d",
+				strtolower($batchUuid),
+				$limit,
+				$offset
+			);
+		} else {
+			$sql = $this->wpdb->prepare(
+				"SELECT * FROM {$table} WHERE batch_uuid = %s AND rollback_status = %s ORDER BY row_number {$direction} LIMIT %d OFFSET %d",
+				strtolower($batchUuid),
+				$rollbackStatus,
+				$limit,
+				$offset
+			);
+		}
+
+		$rows = $this->wpdb->get_results($sql, 'ARRAY_A');
+		if (!is_array($rows)) {
+			return array();
+		}
+
+		return array_values(array_map(array(self::class, 'normalizeRow'), $rows));
+	}
+
+	private function countWhere(string $batchUuid, string $column, string $value): int
+	{
+		if (
+			$this->wpdb === null
+			|| !self::isUuid($batchUuid)
+			|| !in_array($column, array('journal_state', 'rollback_status'), true)
+		) {
+			return 0;
+		}
+
+		$table = RollbackJournalSchema::tableName($this->wpdb);
+		$sql = $this->wpdb->prepare(
+			"SELECT COUNT(*) FROM {$table} WHERE batch_uuid = %s AND {$column} = %s",
+			strtolower($batchUuid),
+			$value
+		);
+
+		return max(0, (int) $this->wpdb->get_var($sql));
 	}
 
 	private function isFinalizedAs(string $batchUuid, int $rowNumber, int $propertyId, string $afterHash, string $createdObjectHash): bool
@@ -227,7 +303,10 @@ final class RollbackJournalRepository
 		return preg_match('/^[a-f0-9]{64}$/', strtolower(trim($value))) === 1;
 	}
 
-	/** @param array<string,mixed> $row @return array<string,mixed> */
+	/**
+	 * @param array<string,mixed> $row Database row.
+	 * @return array<string,mixed>
+	 */
 	private static function normalizeRow(array $row): array
 	{
 		foreach (array('id', 'row_number', 'property_id') as $field) {
