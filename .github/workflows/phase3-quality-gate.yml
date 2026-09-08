@@ -1,0 +1,201 @@
+name: Phase 3 Quality Gate
+
+on:
+  pull_request:
+    paths:
+      - 'plugin/wla-inmo/**'
+      - 'bin/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.mjs'
+      - 'phpcs.xml.dist'
+      - 'phpstan.neon.dist'
+      - 'phpunit.xml.dist'
+      - '.github/workflows/**'
+      - 'docs/PHASE-3-BACKLOG.md'
+      - 'docs/PROJECT-STATUS.md'
+      - 'docs/TEST-CASE-CATALOG.md'
+      - 'docs/TESTING.md'
+      - 'docs/CI-CD.md'
+      - 'docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phase1:
+    name: Core / Phase 1
+    uses: ./.github/workflows/ci.yml
+
+  admin:
+    name: Administration E2E
+    uses: ./.github/workflows/admin-quality-gate.yml
+
+  bootstrap:
+    name: Bootstrap / Release Smoke
+    uses: ./.github/workflows/bootstrap-smoke.yml
+
+  catalogue:
+    name: Catalogue Quality
+    uses: ./.github/workflows/catalogue-quality-integration.yml
+
+  dashboard:
+    name: Dashboard
+    uses: ./.github/workflows/dashboard-integration.yml
+
+  help:
+    name: Help Center
+    uses: ./.github/workflows/help-center-integration.yml
+
+  settings:
+    name: Settings
+    uses: ./.github/workflows/settings-ui-integration.yml
+
+  activity:
+    name: Activity
+    uses: ./.github/workflows/activity-integration.yml
+
+  import-persistence:
+    name: Import Persistence
+    uses: ./.github/workflows/import-persistence-integration.yml
+
+  import-row-executor:
+    name: Import Row Executor
+    uses: ./.github/workflows/import-row-executor-integration.yml
+
+  import-batch-runner:
+    name: Import Batch Runner
+    uses: ./.github/workflows/import-batch-runner-integration.yml
+
+  import-ui:
+    name: Import UI
+    uses: ./.github/workflows/import-ui-integration.yml
+
+  json-wla:
+    name: JSON WLA
+    uses: ./.github/workflows/json-wla-integration.yml
+
+  xlsx:
+    name: XLSX
+    uses: ./.github/workflows/xlsx-integration.yml
+
+  remote-media:
+    name: Remote Media
+    uses: ./.github/workflows/remote-media-integration.yml
+
+  rollback:
+    name: Safe Rollback
+    uses: ./.github/workflows/import-rollback-integration.yml
+
+  phase3-summary:
+    name: Phase 3 Quality Gate / Summary
+    if: ${{ always() }}
+    needs:
+      - phase1
+      - admin
+      - bootstrap
+      - catalogue
+      - dashboard
+      - help
+      - settings
+      - activity
+      - import-persistence
+      - import-row-executor
+      - import-batch-runner
+      - import-ui
+      - json-wla
+      - xlsx
+      - remote-media
+      - rollback
+    runs-on: ubuntu-latest
+    env:
+      PHASE1_RESULT: ${{ needs.phase1.result }}
+      ADMIN_RESULT: ${{ needs.admin.result }}
+      BOOTSTRAP_RESULT: ${{ needs.bootstrap.result }}
+      CATALOGUE_RESULT: ${{ needs.catalogue.result }}
+      DASHBOARD_RESULT: ${{ needs.dashboard.result }}
+      HELP_RESULT: ${{ needs.help.result }}
+      SETTINGS_RESULT: ${{ needs.settings.result }}
+      ACTIVITY_RESULT: ${{ needs.activity.result }}
+      IMPORT_PERSISTENCE_RESULT: ${{ needs.import-persistence.result }}
+      IMPORT_ROW_EXECUTOR_RESULT: ${{ needs.import-row-executor.result }}
+      IMPORT_BATCH_RUNNER_RESULT: ${{ needs.import-batch-runner.result }}
+      IMPORT_UI_RESULT: ${{ needs.import-ui.result }}
+      JSON_WLA_RESULT: ${{ needs.json-wla.result }}
+      XLSX_RESULT: ${{ needs.xlsx.result }}
+      REMOTE_MEDIA_RESULT: ${{ needs.remote-media.result }}
+      ROLLBACK_RESULT: ${{ needs.rollback.result }}
+
+    steps:
+      - name: Write auditable phase summary
+        run: |
+          mkdir -p artifacts
+          cat > artifacts/phase3-quality-gate-summary.json <<EOF
+          {
+            "repository": "${GITHUB_REPOSITORY}",
+            "head_sha": "${GITHUB_SHA}",
+            "ref": "${GITHUB_REF}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_attempt": "${GITHUB_RUN_ATTEMPT}",
+            "results": {
+              "phase1": "${PHASE1_RESULT}",
+              "admin": "${ADMIN_RESULT}",
+              "bootstrap": "${BOOTSTRAP_RESULT}",
+              "catalogue": "${CATALOGUE_RESULT}",
+              "dashboard": "${DASHBOARD_RESULT}",
+              "help": "${HELP_RESULT}",
+              "settings": "${SETTINGS_RESULT}",
+              "activity": "${ACTIVITY_RESULT}",
+              "import_persistence": "${IMPORT_PERSISTENCE_RESULT}",
+              "import_row_executor": "${IMPORT_ROW_EXECUTOR_RESULT}",
+              "import_batch_runner": "${IMPORT_BATCH_RUNNER_RESULT}",
+              "import_ui": "${IMPORT_UI_RESULT}",
+              "json_wla": "${JSON_WLA_RESULT}",
+              "xlsx": "${XLSX_RESULT}",
+              "remote_media": "${REMOTE_MEDIA_RESULT}",
+              "rollback": "${ROLLBACK_RESULT}"
+            }
+          }
+          EOF
+          cat artifacts/phase3-quality-gate-summary.json
+
+      - name: Upload Phase 3 summary evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: wla-inmo-phase3-quality-gate-summary
+          path: artifacts/phase3-quality-gate-summary.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Enforce all Phase 3 gates
+        run: |
+          failed=0
+          for result in \
+            "$PHASE1_RESULT" \
+            "$ADMIN_RESULT" \
+            "$BOOTSTRAP_RESULT" \
+            "$CATALOGUE_RESULT" \
+            "$DASHBOARD_RESULT" \
+            "$HELP_RESULT" \
+            "$SETTINGS_RESULT" \
+            "$ACTIVITY_RESULT" \
+            "$IMPORT_PERSISTENCE_RESULT" \
+            "$IMPORT_ROW_EXECUTOR_RESULT" \
+            "$IMPORT_BATCH_RUNNER_RESULT" \
+            "$IMPORT_UI_RESULT" \
+            "$JSON_WLA_RESULT" \
+            "$XLSX_RESULT" \
+            "$REMOTE_MEDIA_RESULT" \
+            "$ROLLBACK_RESULT"; do
+            if [ "$result" != "success" ]; then
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo 'One or more Phase 3 gates did not succeed.' >&2
+            exit 1
+          fi
+          echo 'All Phase 3 gates succeeded.'
