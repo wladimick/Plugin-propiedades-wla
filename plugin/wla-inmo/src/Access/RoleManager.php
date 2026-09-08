@@ -4,7 +4,7 @@ namespace WLA\Inmo\Access;
 
 final class RoleManager
 {
-	public const VERSION = '1';
+	public const VERSION = '2';
 	public const VERSION_OPTION = 'wla_inmo_roles_version';
 
 	public static function install(): void
