@@ -15,6 +15,7 @@ on:
       - 'tests/integration/assert-import-rollback.php'
       - 'tests/integration/assert-import-rollback-media.php'
       - 'tests/integration/assert-import-rollback-crash.php'
+      - 'tests/integration/assert-rollback-admin-access.php'
       - 'tests/smoke/rollback.php'
       - '.github/workflows/import-rollback-integration.yml'
   workflow_dispatch:
@@ -82,6 +83,11 @@ jobs:
           cd /tmp/wla-import-rollback-wordpress
           wp plugin install "${{ steps.build.outputs.zip_path }}" --activate --allow-root
           wp plugin status wla-inmo --allow-root
+
+      - name: Validate rollback access and nonce contracts
+        run: |
+          cd /tmp/wla-import-rollback-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-rollback-admin-access.php" --allow-root
 
       - name: Validate safe best-effort rollback
         run: |
