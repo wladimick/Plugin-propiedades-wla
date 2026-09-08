@@ -81,7 +81,9 @@ final class RollbackInspector
 		try {
 			$after = RollbackSnapshotCodec::decode($afterJson);
 			$before = RollbackSnapshotCodec::decode($beforeJson);
-			if (!hash_equals($expectedHash, RollbackSnapshotCodec::hash($after))) {
+			$afterHash = RollbackSnapshotCodec::hash($after);
+			$beforeHash = RollbackSnapshotCodec::hash($before);
+			if (!hash_equals($expectedHash, $afterHash)) {
 				return new RollbackInspection(RollbackInspection::ERROR, 'rollback_after_snapshot_corrupt');
 			}
 			$targets = $after['targets'] ?? null;
@@ -95,6 +97,9 @@ final class RollbackInspector
 			return new RollbackInspection(RollbackInspection::BLOCKED, 'rollback_updated_property_missing');
 		}
 
+		if (hash_equals($beforeHash, $currentHash)) {
+			return new RollbackInspection(RollbackInspection::NOOP, 'rollback_update_already_restored', $currentHash);
+		}
 		if (!hash_equals($expectedHash, $currentHash)) {
 			return new RollbackInspection(RollbackInspection::BLOCKED, 'rollback_touched_scope_changed', $currentHash);
 		}
