@@ -101,11 +101,13 @@ $dry = iterator_to_array(
 );
 $expect(count($dry) === 1 && $dry[0] instanceof DryRunResult, 'Crash dry-run did not produce one row.');
 $expect($dry[0]->status() === DryRunResult::STATUS_NEW, 'Crash source was not originally classified NEW.');
+$sourceRowNumber = $dry[0]->rowNumber();
+$expect($sourceRowNumber >= 2, 'Crash fixture did not preserve physical CSV source row number.');
 
 $journal = new RollbackJournalRepository();
 $recorder = new RollbackJournalRecorder($journal);
 $expect($recorder->prepare($uuid, $dry[0]), 'Unable to persist pre-mutation rollback intent.');
-$prepared = $journal->findRow($uuid, $dry[0]->rowNumber());
+$prepared = $journal->findRow($uuid, $sourceRowNumber);
 $expect($prepared !== null, 'Prepared crash journal row is missing.');
 $expect((string) $prepared['original_action'] === RollbackJournalState::ACTION_CREATED, 'Prepared crash intent did not retain CREATED action.');
 $expect((string) $prepared['journal_state'] === RollbackJournalState::PREPARED, 'Crash journal was not left prepared before simulated crash.');
@@ -128,7 +130,7 @@ $expect($batchAfterRetry !== null && (int) $batchAfterRetry['updated_count'] ===
 $expect($batchAfterRetry !== null && (int) $batchAfterRetry['created_count'] === 0, 'Crash retry incorrectly counted a second CREATE.');
 $expect($identity->findPropertyIdByCode($code) === $propertyId, 'Crash retry changed property identity or created a duplicate.');
 
-$ready = $journal->findRow($uuid, 1);
+$ready = $journal->findRow($uuid, $sourceRowNumber);
 $expect($ready !== null && (string) $ready['journal_state'] === RollbackJournalState::READY, 'Crash retry did not finalize rollback journal.');
 $expect((string) $ready['original_action'] === RollbackJournalState::ACTION_CREATED, 'Crash retry overwrote original CREATED rollback intent.');
 $expect((int) $ready['property_id'] === $propertyId, 'Crash retry journal points to the wrong property.');
