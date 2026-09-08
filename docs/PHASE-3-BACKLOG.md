@@ -1,6 +1,6 @@
 # Fase 3 — Import/Export
 
-Estado: `IN_PROGRESS`  
+Estado: `DONE`  
 Dependencias: Fase 1 `DONE`, Fase 2 `DONE`  
 Issue de entrada: #43  
 Versión: `0.1.0-alpha`
@@ -26,13 +26,13 @@ Contrato funcional: `docs/IMPORT-EXPORT.md`.
 | 3.9 | Media remota segura | #64 / #63 | DONE |
 | 3.10 | Exportación CSV/XLSX | — | OMITTED / OUT_OF_SCOPE |
 | 3.11 | Rollback seguro best-effort | #67 / #66 | DONE |
-| 3.12 | Quality Gate Fase 3 | #70 / #69 | QA_PASSED / READY_TO_MERGE |
+| 3.12 | Quality Gate Fase 3 | #70 / #69 | DONE |
 
-La exportación CSV/XLSX se retiró explícitamente del alcance de Fase 3 el 2026-09-07. El número 3.10 se mantiene para auditoría y no se renumeran los hitos siguientes.
+La exportación CSV/XLSX se retiró explícitamente del alcance de Fase 3 el 2026-09-07. El número 3.10 se mantiene para auditoría y no se renumeraron los hitos siguientes.
 
-> La Fase 3 permanece `IN_PROGRESS` hasta que PR #70 sea mergeado en `main`. El estado `QA_PASSED / READY_TO_MERGE` describe únicamente el hito 3.12 pre-merge.
+Fase 3 quedó cerrada después del squash merge de PR #70 en `main` el 2026-09-08. Cierre post-merge: `docs/evidence/phase-3/PR-3.12-CLOSURE.md`.
 
-## Principios no negociables
+## Principios no negociables consolidados
 
 1. **Dry-run obligatorio.** La simulación no muta WordPress ni descarga media.
 2. **Identidad explícita.** `(source_key, external_id)` tiene prioridad y luego `property_code`; nunca título/dirección.
@@ -70,41 +70,6 @@ checkpoint
 ```
 
 JSON y XLSX se normalizan a NDJSON privado generado por servidor y reutilizan el mismo runner/executor.
-
-## Estados del batch
-
-Importación:
-
-```text
-uploaded
-  ↓
-mapped
-  ↓
-validated
-  ↓
-dry_run_ready
-  ↓
-confirmed
-  ↓
-processing
-  ├──> paused ──> processing
-  ├──> failed ──> processing
-  └──> completed
-```
-
-Cancelación segura puede terminar en `cancelled` desde checkpoints permitidos.
-
-Rollback 3.11:
-
-```text
-completed
-  ↓ preview read-only + confirmación explícita
-rollback_processing
-  ├──> rolled_back
-  └──> rollback_blocked
-```
-
-`rolled_back` y `rollback_blocked` son terminales.
 
 ## PR 3.1–3.6 — CSV, dominio, persistencia, runner y UI
 
@@ -177,48 +142,56 @@ Cierre post-merge: `docs/evidence/phase-3/PR-3.11-CLOSURE.md`.
 
 ## PR 3.12 — Quality Gate Fase 3
 
-Estado: `QA_PASSED / READY_TO_MERGE`. PR #70 / Issue #69.
+Estado: `DONE`. PR #70 / Issue #69. Squash `7152f43d0d0d2df3991d095102307755f2c85602`.
 
-### Diseño
+El gate maestro compone 16 suites reales mediante `workflow_call`; cada suite mantiene sus triggers normales y su entorno aislado. El job `Phase 3 Quality Gate / Summary` registra el PR head real y falla si cualquiera de los 16 child gates no termina en `success`.
 
-Los 16 workflows existentes mantienen sus triggers normales y agregan `workflow_call`. El nuevo `.github/workflows/phase3-quality-gate.yml` los compone sin duplicar la lógica de prueba y genera un summary único que falla si cualquier child gate no termina en `success`.
+### QA final
 
-### QA pre-merge auditada
+Head validado pre-merge: `387bcfb63e598cfcee17f0a7b7c2771706549664`.
 
-Run: `34276667461` (`Phase 3 Quality Gate`, run #2) sobre head `aec897f658cbe382cd3667108e3d0026721bd36c`.
-
+Phase 3 Quality Gate:
+- run #4 / ID `34278880095`: `SUCCESS`;
 - 16/16 child gates: `SUCCESS`;
-- Phase 1 CI / WPCS / PHPStan / PHPUnit / smoke / build: `SUCCESS`;
-- WordPress 6.6.2 / PHP 8.1 / MySQL 8: `SUCCESS`;
-- WordPress latest (7.1 observado) / PHP 8.3 / MySQL 8: `SUCCESS`;
-- CSV / JSON / XLSX / media / rollback / Core / Admin: `SUCCESS`;
-- Playwright Admin + Import UI: 14/14;
+- 16/16 workflows individuales del mismo head: `SUCCESS`;
+- manifest `pr_head_sha=387bcfb63e598cfcee17f0a7b7c2771706549664`;
+- WordPress 6.6.2 / PHP 8.1 / MySQL 8: PASS;
+- WordPress latest (7.1 observado) / PHP 8.3 / MySQL 8: PASS;
+- WPCS / PHPStan / PHPUnit / smoke / build: PASS;
+- CSV / JSON / XLSX / media / rollback / Core / Admin: PASS;
+- Playwright: 14/14 PASS;
 - responsive: 1440 / 1024 / 768 / 390 / 360;
 - axe WCAG 2.2 AA: sin findings `serious`/`critical` en superficies cubiertas;
-- review comments: 0;
-- reviews: 0;
-- inline threads: 0;
+- review comments / reviews / inline threads: 0 / 0 / 0;
 - P0/P1 abiertos conocidos: 0.
 
-Performance observada, solo como regresión de CI:
-
-- JSON 5k WP 6.6.2/PHP 8.1: 1079.68 ms, peak delta 8 MiB;
-- JSON 5k WP 7.1/PHP 8.3: 975.29 ms, peak delta 8 MiB;
-- dashboard 5k: 5 queries / 0.0080 s;
+Performance final observada — regresión sintética, no SLA:
+- JSON 5k WP 6.6.2/PHP 8.1: 1016.93 ms, peak delta 8 MiB;
+- JSON 5k WP 7.1/PHP 8.3: 673.41 ms, peak delta 8 MiB;
+- dashboard 5k: 5 queries / 0.0082 s;
 - property list 5k: 2 queries / 0.0039 s.
 
-Artifacts del mismo run:
+Artifact summary final: `10077046518`, digest `sha256:4b3f771564f8b009e9a1a332b939a0e7afd820e89918282ed3c5d8c65c9bd3bb`.
 
-- summary `10076114220`, digest `sha256:e2ac168091fe7a9732db6d6e70fbbc998f12416f9e550b815cee63a3a064da7d`;
-- quality ZIP `10076055577`, digest `sha256:51001c3b3653a0aa70eac5c7945c639dace20b77dc6cb7f7157afa26127cbb6a`;
-- installable ZIP `10076011626`, digest `sha256:e737694a4de9bcd7f1d4852f74f0c47896d99427a697919aad1d73994a6e2c3e`;
-- Admin E2E `10076060248`, digest `sha256:9d765fb30330ee73d17239d006fb7ad2c86a35bfd2cc32b7a90bb60f5f3fc267`.
-
-Evidencia: `docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md`.
+Evidencia QA: `docs/evidence/phase-3/PR-3.12-PHASE-3-QUALITY-GATE.md`.  
+Cierre post-merge: `docs/evidence/phase-3/PR-3.12-CLOSURE.md`.
 
 ### Deuda no bloqueante
 
-GitHub Actions emitió warnings de transición Node 20 → Node 24 en acciones oficiales. Se registra como deuda `LOW`; no produjo fallos ni findings P0/P1 y debe revisarse cuando las acciones upstream publiquen/estabilicen sus runtimes actualizados.
+`LOW-CI-NODE-RUNTIME`: GitHub Actions emitió warnings de transición Node 20 → Node 24 en acciones oficiales. No produjo fallos ni findings P0/P1. Se mantiene como mantenimiento futuro de CI.
+
+## Salida de Fase 3
+
+Fase 3 cumple su criterio de salida:
+- 3.1–3.9 y 3.11–3.12 `DONE`;
+- 3.10 preservado como `OMITTED / OUT_OF_SCOPE` por decisión explícita;
+- gate transversal reproducible en `main`;
+- evidence/artifacts/checksums asociados al head final;
+- Issue #69 `closed / completed`;
+- P0/P1 abiertos conocidos: 0;
+- producción no utilizada para QA.
+
+Siguiente fase: **Fase 4 — Frontend agnóstico al tema**.
 
 ## Producción
 
