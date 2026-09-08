@@ -165,7 +165,7 @@ Evidencia canónica: `docs/evidence/phase-3/PR-3.11-ROLLBACK.md`.
 | ROLLBACK-T022 | Nonces preview/confirm/run son independientes | Security/Integration | DONE |
 | ROLLBACK-T023 | IDOR respeta ownership o `manage_tools` | Security/Integration | DONE |
 | ROLLBACK-T024 | Activity no expone snapshots, UUID crudo ni payload privado | Security/Integration | DONE |
-| ROLLBACK-T025 | Matriz WP 6.6.2/PHP 8.1 + latest/PHP 8.3 sobre MySQL 8 | CI/Compatibility | QA_RUNNING |
+| ROLLBACK-T025 | Matriz WP 6.6.2/PHP 8.1 + latest/PHP 8.3 sobre MySQL 8 | CI/Compatibility | DONE |
 
 ## Frontend / Templates
 
