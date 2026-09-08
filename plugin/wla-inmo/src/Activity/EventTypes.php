@@ -12,6 +12,10 @@ final class EventTypes
 	public const SETTINGS_CHANGED = 'settings.changed';
 	public const PROPERTY_BASE_CHANGED = 'settings.property_base_changed';
 	public const REWRITE_RULES_APPLIED = 'settings.rewrite_rules_applied';
+	public const IMPORT_ROLLBACK_PREVIEWED = 'import.rollback_previewed';
+	public const IMPORT_ROLLBACK_STARTED = 'import.rollback_started';
+	public const IMPORT_ROLLBACK_COMPLETED = 'import.rollback_completed';
+	public const IMPORT_ROLLBACK_BLOCKED = 'import.rollback_blocked';
 
 	/** @return array<string,array<int,string>> */
 	public static function contextAllowlist(): array
@@ -25,6 +29,10 @@ final class EventTypes
 			self::SETTINGS_CHANGED => array('keys'),
 			self::PROPERTY_BASE_CHANGED => array('old', 'new'),
 			self::REWRITE_RULES_APPLIED => array('property_base'),
+			self::IMPORT_ROLLBACK_PREVIEWED => array('batch_ref', 'safe', 'noop', 'blocked', 'errors', 'created', 'updated'),
+			self::IMPORT_ROLLBACK_STARTED => array('batch_ref', 'revision'),
+			self::IMPORT_ROLLBACK_COMPLETED => array('batch_ref', 'revision'),
+			self::IMPORT_ROLLBACK_BLOCKED => array('batch_ref', 'row', 'reason'),
 		);
 	}
 
@@ -53,7 +61,14 @@ final class EventTypes
 				continue;
 			}
 
-			if ($key === 'field' || $key === 'currency' || $key === 'post_status' || $key === 'property_base') {
+			if (
+				$key === 'field'
+				|| $key === 'currency'
+				|| $key === 'post_status'
+				|| $key === 'property_base'
+				|| $key === 'batch_ref'
+				|| $key === 'reason'
+			) {
 				$clean[$key] = sanitize_key(is_scalar($value) ? (string) $value : '');
 				continue;
 			}
@@ -83,6 +98,10 @@ final class EventTypes
 			self::SETTINGS_CHANGED => __('Ajustes actualizados', 'wla-inmo'),
 			self::PROPERTY_BASE_CHANGED => __('Base de URL actualizada', 'wla-inmo'),
 			self::REWRITE_RULES_APPLIED => __('Reglas de enlaces aplicadas', 'wla-inmo'),
+			self::IMPORT_ROLLBACK_PREVIEWED => __('Rollback previsualizado', 'wla-inmo'),
+			self::IMPORT_ROLLBACK_STARTED => __('Rollback iniciado', 'wla-inmo'),
+			self::IMPORT_ROLLBACK_COMPLETED => __('Rollback completado', 'wla-inmo'),
+			self::IMPORT_ROLLBACK_BLOCKED => __('Rollback bloqueado', 'wla-inmo'),
 		);
 
 		return $labels[$eventType] ?? __('Actividad de WLA Inmo', 'wla-inmo');
