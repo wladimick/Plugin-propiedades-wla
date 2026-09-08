@@ -50,7 +50,10 @@ final class RollbackSnapshotCodec
 		return self::hash(self::decode($json));
 	}
 
-	/** @param array<string,mixed> $left @param array<string,mixed> $right */
+	/**
+	 * @param array<string,mixed> $left Left canonical snapshot.
+	 * @param array<string,mixed> $right Right canonical snapshot.
+	 */
 	public static function equals(array $left, array $right): bool
 	{
 		return hash_equals(self::hash($left), self::hash($right));
