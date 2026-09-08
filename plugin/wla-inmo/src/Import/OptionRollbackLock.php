@@ -14,7 +14,7 @@ final class OptionRollbackLock implements RollbackLockInterface
 			'expires' => time() + $ttlSeconds,
 		);
 
-		if (add_option($key, $value, '', false)) {
+		if ($this->addOption($key, $value)) {
 			return $token;
 		}
 
@@ -28,7 +28,11 @@ final class OptionRollbackLock implements RollbackLockInterface
 			return null;
 		}
 
-		return add_option($key, $value, '', false) ? $token : null;
+		if ($this->addOption($key, $value)) {
+			return $token;
+		}
+
+		return null;
 	}
 
 	public function release(string $batchUuid, string $token): void
@@ -45,6 +49,18 @@ final class OptionRollbackLock implements RollbackLockInterface
 		/** @var array<string,mixed> $current */
 
 		$this->deleteIfCurrent($key, $current);
+	}
+
+	/**
+	 * WordPress add_option() is intentionally invoked through an impure seam.
+	 * The same option may fail first, then succeed after an atomic expiry cleanup.
+	 *
+	 * @param array<string,mixed> $value Lock payload.
+	 * @phpstan-impure
+	 */
+	private function addOption(string $key, array $value): bool
+	{
+		return add_option($key, $value, '', false);
 	}
 
 	/**
