@@ -71,14 +71,14 @@ final class ImportRollbackFoundationTest extends TestCase
 		self::assertTrue(BatchStatus::canTransition(BatchStatus::ROLLBACK_PROCESSING, BatchStatus::ROLLED_BACK));
 		self::assertTrue(BatchStatus::canTransition(BatchStatus::ROLLBACK_PROCESSING, BatchStatus::ROLLBACK_BLOCKED));
 		self::assertFalse(BatchStatus::canTransition(BatchStatus::ROLLED_BACK, BatchStatus::ROLLBACK_PROCESSING));
-		self::assertContains(BatchStatus::ROLLED_BACK, BatchStatus::terminal(), true);
-		self::assertContains(BatchStatus::ROLLBACK_BLOCKED, BatchStatus::terminal(), true);
+		self::assertContains(BatchStatus::ROLLED_BACK, BatchStatus::terminal());
+		self::assertContains(BatchStatus::ROLLBACK_BLOCKED, BatchStatus::terminal());
 	}
 
 	public function testRollbackCapabilityIsAdministratorOnlyByDefault(): void
 	{
-		self::assertContains(AccessCapabilities::ROLLBACK_IMPORTS, RoleMatrix::administratorCapabilities(), true);
-		self::assertNotContains(AccessCapabilities::ROLLBACK_IMPORTS, RoleMatrix::managerCapabilities(), true);
+		self::assertContains(AccessCapabilities::ROLLBACK_IMPORTS, RoleMatrix::administratorCapabilities());
+		self::assertNotContains(AccessCapabilities::ROLLBACK_IMPORTS, RoleMatrix::managerCapabilities());
 	}
 
 	public function testPreviewCanConfirmOnlyWithoutBlockedOrErrors(): void
