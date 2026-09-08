@@ -1,11 +1,12 @@
 # Evidencia — PR 3.11 Rollback seguro best-effort
 
-Estado: `IN_PROGRESS / QA_RUNNING`.
+Estado: `QA_PASSED / READY_TO_MERGE`.
 
 Issue: #66  
-PR: #67 (draft)  
+PR: #67  
 Rama: `feat/phase3-safe-rollback`  
-Base: `main` post cierre 3.9 / PR #65
+Base: `main` post cierre 3.9 / PR #65  
+Head funcional validado: `f9dab169d02ee700417dbe375d03f585d9bb1075`
 
 ## Objetivo
 
@@ -78,7 +79,7 @@ rolled_back | rollback_blocked
 
 Nueva tabla `wla_import_rollback_journal`.
 
-Schema actual: `DB_VERSION = 2`.
+Schema final: `DB_VERSION = 2`.
 
 Clave física de fila: `source_row`, con UNIQUE `(batch_uuid,source_row)`. El dominio sigue exponiendo `row_number`; el nombre físico se mantiene aislado en `RollbackJournalRepository`.
 
@@ -191,6 +192,12 @@ El contexto usa referencia hash del batch, conteos/estado/código estable. No re
 - featured anterior restaurado;
 - attachments anteriores y nuevos permanecen en Media Library.
 
+`tests/integration/assert-import-rollback-lock.php`:
+
+- ownership del lock;
+- expiración controlada;
+- segundo runner no obtiene lock concurrente del mismo batch.
+
 `tests/integration/assert-rollback-admin-access.php` + administración:
 
 - capability destructiva separada;
@@ -215,7 +222,7 @@ Workflow dedicado: `.github/workflows/import-rollback-integration.yml` con matri
 
 **Corrección:** columna física renombrada a `source_row`, mapeada a `row_number` solo en el dominio. Schema incrementado a v2 para forzar upgrade en instalaciones de desarrollo que hubieran registrado la versión anterior.
 
-**Estado:** FIXED; pendiente confirmar toda la matriz final verde.
+**Estado:** FIXED / VERIFIED.
 
 ### F-3.11-02 — WPCS / exception chaining
 
@@ -223,7 +230,7 @@ Workflow dedicado: `.github/workflows/import-rollback-integration.yml` con matri
 
 **Corrección:** supresiones quirúrgicas `WordPress.Security.EscapeOutput.ExceptionNotEscaped` exclusivamente alrededor de chaining/rethrow interno, con justificación inline. No se relajó el estándar global ni se modificó escaping de UI.
 
-**Estado:** FIXED; pendiente confirmar quality gate final verde.
+**Estado:** FIXED / VERIFIED.
 
 ### F-3.11-03 — Migración de capability
 
@@ -231,21 +238,75 @@ Workflow dedicado: `.github/workflows/import-rollback-integration.yml` con matri
 
 **Corrección:** `RoleManager::VERSION = 2` + integración que simula upgrade v1 → v2 y comprueba mínimo privilegio.
 
-**Estado:** FIXED.
+**Estado:** FIXED / VERIFIED.
 
-## CI actual
+### F-3.11-04 — PHPStan / lock y narrowing redundante
 
-El workflow dedicado de rollback y las regresiones existentes están ejecutándose sobre el head actual de PR #67. No se declara QA aprobada hasta tener matrices finales verdes y revisar logs/reviews.
+**Síntoma:** el gate estático reportó tres errores en código nuevo: segunda llamada a `add_option()` asumida siempre falsa después de la primera, PHPDoc incompleto en `RollbackSnapshotCodec::equals()` y un `is_array()` redundante sobre `get_object_taxonomies(..., 'names')`.
 
-## Pendiente antes de READY_TO_MERGE
+**Corrección:** seam `addOption()` marcado `@phpstan-impure`, PHPDoc separado para ambos snapshots y eliminación del narrowing redundante. No se deshabilitó ninguna regla de PHPStan.
 
-- confirmar workflow `Import Rollback Integration` verde en ambas matrices;
-- confirmar regressions CSV/JSON/XLSX/runner/admin/core verdes;
-- revisar PHPStan/WPCS finales;
-- actualizar catálogo de tests/IMPORT-EXPORT/backlog/status;
-- revisar PR comments/threads y P0/P1;
-- registrar run IDs/head final/artifacts cuando existan;
-- cambiar a `QA_PASSED / READY_TO_MERGE` solo con evidencia final.
+**Estado:** FIXED / VERIFIED por Phase 1, XLSX y Remote Media finales.
+
+## CI final
+
+Head funcional validado: `f9dab169d02ee700417dbe375d03f585d9bb1075`.
+
+**16/16 workflows: SUCCESS**.
+
+| Workflow | Run ID | Resultado |
+|---|---:|---|
+| Phase 1 CI | 34221536838 | SUCCESS |
+| Bootstrap Smoke | 34221536738 | SUCCESS |
+| Administration Quality Gate | 34221536710 | SUCCESS |
+| Catalogue Quality Integration | 34221536759 | SUCCESS |
+| Dashboard Integration | 34221536925 | SUCCESS |
+| Settings UI Integration | 34221536793 | SUCCESS |
+| Help Center Integration | 34221536709 | SUCCESS |
+| Activity Integration | 34221536755 | SUCCESS |
+| Import UI Integration | 34221536892 | SUCCESS |
+| Import Persistence Integration | 34221536756 | SUCCESS |
+| Import Row Executor Integration | 34221536775 | SUCCESS |
+| Import Batch Runner Integration | 34221536762 | SUCCESS |
+| JSON WLA Integration | 34221536720 | SUCCESS |
+| XLSX Integration | 34221536702 | SUCCESS |
+| Remote Media Integration | 34221536727 | SUCCESS |
+| Import Rollback Integration | 34221536952 | SUCCESS |
+
+### Matriz específica rollback
+
+Run `34221536952`:
+
+- job `102045555045` — WordPress 6.6.2 / PHP 8.1: SUCCESS;
+- job `102045554606` — WordPress latest / PHP 8.3: SUCCESS.
+
+En ambas matrices pasaron access/nonces, rollback create/update, crash recovery, checkpoint recovery, media rollback, lock y source contracts.
+
+### Artifact
+
+Phase 1 CI run `34221536838` generó:
+
+- artifact ID: `10054036129`;
+- nombre: `wla-inmo-0.1.0-alpha-quality`;
+- tamaño: `1,573,710` bytes;
+- digest: `sha256:67a33a0584146041e3ecc777cc77240e61259eebea9e2ca5d5449719d38c6347`;
+- head asociado: `f9dab169d02ee700417dbe375d03f585d9bb1075`.
+
+## Review final
+
+- PR comments: 0;
+- submitted reviews: 0;
+- inline review threads: 0;
+- findings P0/P1 abiertos conocidos: 0;
+- PR mergeable: true.
+
+## Conclusión QA
+
+3.11 cumple el criterio D38 y el scope de Issue #66. El rollback es deliberadamente conservador: cuando WLA no puede demostrar seguridad, bloquea en lugar de sobreescribir o borrar. El head funcional pasó toda la regresión del repositorio, incluido PHP mínimo y WordPress mínimo/latest.
+
+Estado de entrega: `QA_PASSED / READY_TO_MERGE`.
+
+El estado `DONE` se registrará únicamente después del merge y cierre de Issue #66.
 
 ## Producción
 
