@@ -6,6 +6,7 @@ use JsonException;
 
 final class RollbackSnapshotCodec
 {
+	/** @param array<string,mixed> $snapshot */
 	public static function encode(array $snapshot): string
 	{
 		try {
@@ -38,6 +39,7 @@ final class RollbackSnapshotCodec
 		return self::normalize($decoded);
 	}
 
+	/** @param array<string,mixed> $snapshot */
 	public static function hash(array $snapshot): string
 	{
 		return hash('sha256', self::encode($snapshot));
@@ -48,6 +50,7 @@ final class RollbackSnapshotCodec
 		return self::hash(self::decode($json));
 	}
 
+	/** @param array<string,mixed> $left @param array<string,mixed> $right */
 	public static function equals(array $left, array $right): bool
 	{
 		return hash_equals(self::hash($left), self::hash($right));
