@@ -1,6 +1,7 @@
 name: Import Row Executor Integration
 
 on:
+  workflow_call:
   pull_request:
     paths:
       - 'plugin/wla-inmo/src/Import/**'
