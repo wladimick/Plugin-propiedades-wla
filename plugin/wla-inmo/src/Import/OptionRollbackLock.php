@@ -22,6 +22,7 @@ final class OptionRollbackLock implements RollbackLockInterface
 		if (!is_array($current) || (int) ($current['expires'] ?? 0) >= time()) {
 			return null;
 		}
+		/** @var array<string,mixed> $current */
 
 		if (!$this->deleteIfCurrent($key, $current)) {
 			return null;
@@ -41,6 +42,7 @@ final class OptionRollbackLock implements RollbackLockInterface
 		if (!is_array($current) || !hash_equals((string) ($current['token'] ?? ''), $token)) {
 			return;
 		}
+		/** @var array<string,mixed> $current */
 
 		$this->deleteIfCurrent($key, $current);
 	}
