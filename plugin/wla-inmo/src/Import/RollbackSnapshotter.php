@@ -88,8 +88,9 @@ final class RollbackSnapshotter
 
 	/**
 	 * Hash-only footprint for deciding whether a property created by a batch can
-	 * still be deleted safely. Unknown/third-party meta is intentionally part of
-	 * this fingerprint so later additions fail closed without persisting values.
+	 * still be deleted safely. Unknown/third-party meta, all property taxonomies
+	 * and native editorial fields are intentionally part of this fingerprint so
+	 * later additions or edits fail closed without persisting their values.
 	 */
 	public function createdObjectHash(int $propertyId): string
 	{
@@ -99,17 +100,24 @@ final class RollbackSnapshotter
 		}
 
 		$postState = array(
-			'post_status'    => (string) ($post->post_status ?? ''),
-			'post_title'     => (string) ($post->post_title ?? ''),
-			'post_content'   => (string) ($post->post_content ?? ''),
-			'post_excerpt'   => (string) ($post->post_excerpt ?? ''),
-			'post_author'    => (int) ($post->post_author ?? 0),
-			'post_parent'    => (int) ($post->post_parent ?? 0),
-			'menu_order'     => (int) ($post->menu_order ?? 0),
-			'post_password'  => (string) ($post->post_password ?? ''),
-			'comment_status' => (string) ($post->comment_status ?? ''),
-			'ping_status'    => (string) ($post->ping_status ?? ''),
-			'comment_count'  => (int) ($post->comment_count ?? 0),
+			'post_status'           => (string) ($post->post_status ?? ''),
+			'post_title'            => (string) ($post->post_title ?? ''),
+			'post_content'          => (string) ($post->post_content ?? ''),
+			'post_excerpt'          => (string) ($post->post_excerpt ?? ''),
+			'post_name'             => (string) ($post->post_name ?? ''),
+			'post_author'           => (int) ($post->post_author ?? 0),
+			'post_parent'           => (int) ($post->post_parent ?? 0),
+			'menu_order'            => (int) ($post->menu_order ?? 0),
+			'post_password'         => (string) ($post->post_password ?? ''),
+			'comment_status'        => (string) ($post->comment_status ?? ''),
+			'ping_status'           => (string) ($post->ping_status ?? ''),
+			'comment_count'         => (int) ($post->comment_count ?? 0),
+			'post_date_gmt'         => (string) ($post->post_date_gmt ?? ''),
+			'post_modified_gmt'     => (string) ($post->post_modified_gmt ?? ''),
+			'post_content_filtered' => (string) ($post->post_content_filtered ?? ''),
+			'post_mime_type'        => (string) ($post->post_mime_type ?? ''),
+			'to_ping'               => (string) ($post->to_ping ?? ''),
+			'pinged'                => (string) ($post->pinged ?? ''),
 		);
 
 		$meta = get_post_meta($propertyId);
