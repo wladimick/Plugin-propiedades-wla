@@ -144,8 +144,10 @@ final class RollbackService
 			}
 
 			if (!$this->journal->markRollback($batchUuid, $rowNumber, RollbackJournalState::ROLLBACK_ROLLED_BACK)) {
-				$this->batches->transition($batchUuid, BatchStatus::ROLLBACK_BLOCKED, $revision);
-				return new RollbackRunResult($batchUuid, RollbackRunResult::BLOCKED, $processed, 'rollback_journal_commit_failed');
+				// The WordPress mutation may already be durable. Keep the batch in
+				// rollback_processing so a retry can detect before-state/absence as
+				// NOOP and commit the journal checkpoint without mutating again.
+				return new RollbackRunResult($batchUuid, RollbackRunResult::CONFLICT, $processed, 'rollback_journal_commit_failed');
 			}
 
 			++$processed;
