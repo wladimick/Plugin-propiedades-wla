@@ -1,6 +1,7 @@
 name: Bootstrap Smoke
 
 on:
+  workflow_call:
   pull_request:
     paths:
       - 'plugin/wla-inmo/**'
