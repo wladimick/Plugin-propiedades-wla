@@ -52,17 +52,19 @@ final class ImportRollbackFoundationTest extends TestCase
 		RollbackSnapshotCodec::decode('{bad json');
 	}
 
-	public function testRollbackJournalSchemaIsScopedAndUniquePerBatchRow(): void
+	public function testRollbackJournalSchemaIsScopedUniqueAndMysqlPortable(): void
 	{
 		$database = new RollbackFoundationFakeDatabase();
 		$sql = RollbackJournalSchema::sql($database);
 
-		self::assertSame('1', RollbackJournalSchema::DB_VERSION);
+		self::assertSame('2', RollbackJournalSchema::DB_VERSION);
 		self::assertStringContainsString('batch_uuid char(36) NOT NULL', $sql);
+		self::assertStringContainsString('source_row int(10) unsigned NOT NULL', $sql);
 		self::assertStringContainsString('before_json longtext NULL', $sql);
 		self::assertStringContainsString('after_hash char(64)', $sql);
 		self::assertStringContainsString('created_object_hash char(64)', $sql);
-		self::assertStringContainsString('UNIQUE KEY batch_row (batch_uuid,row_number)', $sql);
+		self::assertStringContainsString('UNIQUE KEY batch_row (batch_uuid,source_row)', $sql);
+		self::assertStringNotContainsString("\nrow_number ", $sql);
 	}
 
 	public function testRollbackProcessingIsResumableButTerminalStatesRemainTerminal(): void
