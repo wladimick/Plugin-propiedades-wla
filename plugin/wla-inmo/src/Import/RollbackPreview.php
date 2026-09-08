@@ -14,6 +14,10 @@ final class RollbackPreview
 	private int $updatesToRestore;
 	private string $hash;
 
+	/** @var array<string,int> */
+	private array $reasonCounts;
+
+	/** @param array<string,int> $reasonCounts */
 	public function __construct(
 		string $batchUuid,
 		int $revision,
@@ -23,7 +27,8 @@ final class RollbackPreview
 		int $errors,
 		int $createdToDelete,
 		int $updatesToRestore,
-		string $hash
+		string $hash,
+		array $reasonCounts = array()
 	) {
 		$this->batchUuid = $batchUuid;
 		$this->revision = $revision;
@@ -34,6 +39,11 @@ final class RollbackPreview
 		$this->createdToDelete = max(0, $createdToDelete);
 		$this->updatesToRestore = max(0, $updatesToRestore);
 		$this->hash = $hash;
+		$this->reasonCounts = array_filter(
+			array_map('intval', $reasonCounts),
+			static fn (int $count): bool => $count > 0
+		);
+		ksort($this->reasonCounts, SORT_STRING);
 	}
 
 	public function batchUuid(): string { return $this->batchUuid; }
@@ -46,12 +56,15 @@ final class RollbackPreview
 	public function updatesToRestore(): int { return $this->updatesToRestore; }
 	public function hash(): string { return $this->hash; }
 
+	/** @return array<string,int> */
+	public function reasonCounts(): array { return $this->reasonCounts; }
+
 	public function canConfirm(): bool
 	{
 		return $this->blocked === 0 && $this->errors === 0 && ($this->safe + $this->noop) > 0;
 	}
 
-	/** @return array<string,int|string|bool> */
+	/** @return array<string,mixed> */
 	public function toArray(): array
 	{
 		return array(
@@ -65,6 +78,7 @@ final class RollbackPreview
 			'updates_to_restore' => $this->updatesToRestore,
 			'preview_hash'       => $this->hash,
 			'can_confirm'        => $this->canConfirm(),
+			'reasons'            => $this->reasonCounts,
 		);
 	}
 }
