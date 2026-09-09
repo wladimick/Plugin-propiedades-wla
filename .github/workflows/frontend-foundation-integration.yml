@@ -101,4 +101,4 @@ jobs:
       - name: Validate theme-agnostic frontend foundation
         run: |
           cd /tmp/wla-frontend-wordpress
-          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-foundation.php" --allow-root
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-foundation.php" --context=front --allow-root
