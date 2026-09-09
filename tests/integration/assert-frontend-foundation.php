@@ -10,6 +10,7 @@ $fail = static function (string $message): void {
 };
 
 if (!class_exists(WLA\Inmo\Frontend\TemplateResolver::class)
+	|| !class_exists(WLA\Inmo\Frontend\Renderer::class)
 	|| !class_exists(WLA\Inmo\Frontend\Bootstrap::class)
 	|| !class_exists(WLA\Inmo\Frontend\Assets::class)
 ) {
@@ -85,6 +86,27 @@ unlink($parentDir . '/wla-inmo/archive-property.php');
 if (WLA\Inmo\Frontend\TemplateResolver::locate('archive-property.php') !== $pluginArchive) {
 	$fail('Plugin fallback is not restored when theme overrides are absent.');
 }
+
+$childSinglePath = $childDir . '/wla-inmo/single-property.php';
+file_put_contents($childSinglePath, "<?php echo isset(\$marker) ? 'leaked-variable' : (string) (\$wla_args['marker'] ?? '');\n");
+$beforeHook = static function ($template, $args): void {
+	echo 'before:' . $template . ':' . ($args['marker'] ?? '') . '|';
+};
+$afterHook = static function ($template, $args): void {
+	echo '|after:' . $template . ':' . ($args['marker'] ?? '');
+};
+add_action('wla_inmo_before_template', $beforeHook, 10, 2);
+add_action('wla_inmo_after_template', $afterHook, 10, 2);
+$rendered = WLA\Inmo\Frontend\Renderer::render('single-property.php', array('marker' => 'integration-ok'));
+remove_action('wla_inmo_before_template', $beforeHook, 10);
+remove_action('wla_inmo_after_template', $afterHook, 10);
+if ($rendered !== 'before:single-property.php:integration-ok|integration-ok|after:single-property.php:integration-ok') {
+	$fail('Scoped renderer or public template hooks failed in WordPress.');
+}
+if (WLA\Inmo\Frontend\Renderer::render('../single-property.php') !== null) {
+	$fail('Renderer accepted an unsafe template path.');
+}
+unlink($childSinglePath);
 
 global $wp_query;
 $originalQuery = $wp_query;
@@ -173,6 +195,7 @@ wp_clean_themes_cache(true);
 
 foreach (array($childDir, $parentDir) as $dir) {
 	@unlink($dir . '/wla-inmo/archive-property.php');
+	@unlink($dir . '/wla-inmo/single-property.php');
 	@unlink($dir . '/style.css');
 	@unlink($dir . '/index.php');
 	@rmdir($dir . '/wla-inmo');
