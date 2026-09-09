@@ -6,8 +6,10 @@ parameters:
         - plugin/wla-inmo/src/Properties/Capabilities.php
         - plugin/wla-inmo/src/Taxonomies/Capabilities.php
         - plugin/wla-inmo/src/Import
+        - plugin/wla-inmo/src/Frontend
     bootstrapFiles:
         - tests/phpstan/wordpress-import-stubs.php
+        - tests/phpstan/wordpress-frontend-stubs.php
     ignoreErrors:
         -
             message: '#Strict comparison using === between non-empty-array<mixed, mixed> and array\{\} will always evaluate to false\.#'
