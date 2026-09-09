@@ -18,6 +18,7 @@ if (!defined('WLA_INMO_VERSION')) {
 function add_filter(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool { return true; }
 /** @return mixed */
 function apply_filters(string $hook_name, mixed $value, mixed ...$args) { return $value; }
+function do_action(string $hook_name, mixed ...$args): void {}
 /** @param array<int,string>|string $template_names @return mixed */
 function locate_template(array|string $template_names, bool $load = false, bool $load_once = true, array $args = array()) { return ''; }
 function get_stylesheet_directory(): string { return '/tmp/theme-child'; }
