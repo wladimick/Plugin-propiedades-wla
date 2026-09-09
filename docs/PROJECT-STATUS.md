@@ -6,18 +6,21 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 
 - Proyecto: WLA Inmo
 - Tema de referencia opcional: WLA Inmo Light
-- Etapa actual: `PHASE-4 / FRONTEND AGNÓSTICO — READY_TO_START`
+- Etapa actual: `PHASE-4 / FRONTEND AGNÓSTICO — IN_PROGRESS`
 - Versión de producto: `0.1.0-alpha`
 - Fase 0: `DONE`
 - Fase 1: `DONE`
 - Fase 2: `DONE`
 - Fase 3: `DONE`
+- Fase 4: `IN_PROGRESS`
 - Producción: `NO AFECTADA`
 - Decisiones críticas: D01–D75 `ACCEPTED`
 - Registro de decisiones: `docs/decisions/DECISION-REGISTER.md`
 - PR 3.10: `OMITTED / OUT_OF_SCOPE`
 - PR 3.12: `DONE` — PR #70 / Issue #69 / squash `7152f43d0d0d2df3991d095102307755f2c85602`
-- Siguiente hito: **Fase 4 — Frontend agnóstico al tema**
+- Cierre documental Fase 3: PR #71 / squash `05d92e82bcab0dbcb6b1ebe6fdfbe9635d909c00`
+- Fase 4 entry gate: Issue #72
+- Siguiente hito: **PR 4.1 — Frontend foundation / template resolver / assets**
 
 ## Fases
 
@@ -27,7 +30,7 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 | 1 | Core del plugin | DONE | `docs/evidence/phase-1/` |
 | 2 | Administración | DONE | `docs/evidence/phase-2/` |
 | 3 | Import/Export | DONE | `docs/PHASE-3-BACKLOG.md`, `docs/evidence/phase-3/PR-3.12-CLOSURE.md` |
-| 4 | Frontend agnóstico al tema | READY_TO_START | pendiente |
+| 4 | Frontend agnóstico al tema | IN_PROGRESS | `docs/PHASE-4-BACKLOG.md`, Issue #72 |
 | 5 | WLA Inmo Light | PLANNED | pendiente |
 | 6 | SEO/GEO/AEO | PLANNED | pendiente |
 | 7 | Leads e indicadores | PLANNED | pendiente |
@@ -97,11 +100,34 @@ Gate final:
 
 Evidencia de cierre: `docs/evidence/phase-3/PR-3.12-CLOSURE.md`.
 
+El cierre documental post-merge quedó integrado mediante PR #71 como `05d92e82bcab0dbcb6b1ebe6fdfbe9635d909c00`.
+
 ## Fase 4 — Frontend agnóstico al tema
 
-Estado: `READY_TO_START`.
+Estado: `IN_PROGRESS`.
 
-Objetivo de alto nivel: exponer archive/single/filtros/componentes frontend desde el plugin sin depender de WLA Inmo Light ni del tema activo, conservando override controlado desde tema y aislamiento CSS. El desglose formal de PRs se abrirá al iniciar la fase.
+Issue de entrada: #72  
+Backlog: `docs/PHASE-4-BACKLOG.md`  
+Evidencia: `docs/evidence/phase-4/`
+
+Objetivo: exponer archive/single/filtros/componentes frontend desde el plugin sin depender de WLA Inmo Light ni del tema activo, conservando override controlado desde tema y aislamiento CSS.
+
+La fase implementa decisiones ya aceptadas D15–D17, D20–D26, D62–D66 y D74–D75. No existe una nueva decisión estructural pendiente para iniciar PR 4.1.
+
+Secuencia planificada:
+
+| PR | Alcance | Estado |
+|---|---|---|
+| 4.1 | Frontend foundation / template resolver / assets | NEXT |
+| 4.2 | Archive + property card + pagination | PLANNED |
+| 4.3 | Search + filtros GET | PLANNED |
+| 4.4 | Single + detalles + galería | PLANNED |
+| 4.5 | Mapa + privacidad de ubicación | PLANNED |
+| 4.6 | CTA + API de presentación | PLANNED |
+| 4.7 | Theme overrides + compatibility matrix | PLANNED |
+| 4.8 | Quality Gate final Fase 4 | PLANNED |
+
+Regla de implementación: SSR primero, Vanilla JS progresivo, CSS `wla-inmo-*`, assets condicionales, datos privados fuera de templates públicos y compatibilidad sin Elementor/WooCommerce/ACF/jQuery.
 
 ## Findings / deuda no bloqueante
 
