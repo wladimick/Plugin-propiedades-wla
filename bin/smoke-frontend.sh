@@ -23,6 +23,7 @@ PLUGIN_DIR="$STAGE_ROOT/wla-inmo"
 
 required_files=(
 	"src/Frontend/TemplateResolver.php"
+	"src/Frontend/Renderer.php"
 	"src/Frontend/Bootstrap.php"
 	"src/Frontend/Assets.php"
 	"templates/archive-property.php"
@@ -43,12 +44,13 @@ if [[ -f "$PLUGIN_DIR/assets/js/frontend.js" ]]; then
 fi
 
 php -l "$PLUGIN_DIR/src/Frontend/TemplateResolver.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/Renderer.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Bootstrap.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Assets.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/archive-property.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/single-property.php" >/dev/null
 
-php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Frontend\\Bootstrap','WLA\\Inmo\\Frontend\\Assets'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Frontend Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
+php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Frontend\\Renderer','WLA\\Inmo\\Frontend\\Bootstrap','WLA\\Inmo\\Frontend\\Assets'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Frontend Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
 if grep -RIEq 'private_address|internal_notes|external_id|get_post_meta[[:space:]]*\(' "$PLUGIN_DIR/templates" "$PLUGIN_DIR/src/Frontend"; then
 	echo "Frontend foundation references private or arbitrary property meta." >&2
