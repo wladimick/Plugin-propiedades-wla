@@ -17,6 +17,10 @@ if (!class_exists(WLA\Inmo\Frontend\TemplateResolver::class)
 	$fail('Frontend foundation classes are unavailable from the active release ZIP.');
 }
 
+if (is_admin()) {
+	$fail('Frontend integration must run in WP-CLI --context=front.');
+}
+
 WLA\Inmo\Frontend\Bootstrap::register();
 
 if (has_filter('template_include', array(WLA\Inmo\Frontend\Bootstrap::class, 'filterTemplate')) === false) {
@@ -110,15 +114,6 @@ unlink($childSinglePath);
 
 global $wp_query;
 $originalQuery = $wp_query;
-$hadCurrentScreen = array_key_exists('current_screen', $GLOBALS);
-$originalScreen = $GLOBALS['current_screen'] ?? null;
-$GLOBALS['current_screen'] = new class {
-	public function in_admin($admin = null): bool
-	{
-		unset($admin);
-		return false;
-	}
-};
 $currentTemplate = $themeRoot . '/index.php';
 
 $wp_query = new WP_Query();
@@ -184,11 +179,6 @@ foreach (array($pluginArchive, $pluginSingle) as $templatePath) {
 }
 
 $wp_query = $originalQuery;
-if ($hadCurrentScreen) {
-	$GLOBALS['current_screen'] = $originalScreen;
-} else {
-	unset($GLOBALS['current_screen']);
-}
 wp_delete_post($propertyId, true);
 switch_theme($originalTheme);
 wp_clean_themes_cache(true);
