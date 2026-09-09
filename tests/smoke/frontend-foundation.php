@@ -75,6 +75,18 @@ function add_action($hook, $callback, $priority = 10, $accepted_args = 1)
 	return true;
 }
 
+function do_action($hook, ...$args)
+{
+	foreach ($GLOBALS['wla_frontend_hooks'] as $row) {
+		if (($row[0] ?? '') !== 'action' || ($row[1] ?? '') !== $hook || !is_callable($row[2] ?? null)) {
+			continue;
+		}
+
+		$accepted = max(0, (int) ($row[4] ?? 1));
+		($row[2])(...array_slice($args, 0, $accepted));
+	}
+}
+
 function is_post_type_archive($post_types = '')
 {
 	unset($post_types);
@@ -111,11 +123,13 @@ function wp_enqueue_style($handle, $src = '', $deps = array(), $version = false,
 $root = dirname(__DIR__, 2) . '/plugin/wla-inmo/src/';
 require_once $root . 'Properties/PostType.php';
 require_once $root . 'Frontend/TemplateResolver.php';
+require_once $root . 'Frontend/Renderer.php';
 require_once $root . 'Frontend/Assets.php';
 require_once $root . 'Frontend/Bootstrap.php';
 
 use WLA\Inmo\Frontend\Assets;
 use WLA\Inmo\Frontend\Bootstrap;
+use WLA\Inmo\Frontend\Renderer;
 use WLA\Inmo\Frontend\TemplateResolver;
 
 function wlaFrontendExpect(bool $condition, string $message): void
@@ -166,6 +180,33 @@ $GLOBALS['wla_frontend_filter_callbacks']['wla_inmo_template_candidates'] = stat
 wlaFrontendExpect(TemplateResolver::locate('archive-property.php') === $pluginArchive, 'Unsafe filtered candidate must not escape to the filesystem.');
 unset($GLOBALS['wla_frontend_filter_callbacks']['wla_inmo_template_candidates']);
 unlink($outside);
+
+$childSingle = $GLOBALS['wla_frontend_child'] . '/wla-inmo/single-property.php';
+file_put_contents($childSingle, "<?php echo isset(\$marker) ? 'leaked-variable' : (string) (\$wla_args['marker'] ?? '');\n");
+add_action(
+	'wla_inmo_before_template',
+	static function ($template, $args): void {
+		echo 'before:' . $template . ':' . ($args['marker'] ?? '') . '|';
+	},
+	10,
+	2
+);
+add_action(
+	'wla_inmo_after_template',
+	static function ($template, $args): void {
+		echo '|after:' . $template . ':' . ($args['marker'] ?? '');
+	},
+	10,
+	2
+);
+$rendered = Renderer::render('single-property.php', array('marker' => 'renderer-ok'));
+wlaFrontendExpect(
+	$rendered === 'before:single-property.php:renderer-ok|renderer-ok|after:single-property.php:renderer-ok',
+	'Renderer must keep explicit local scope and execute component hooks.'
+);
+wlaFrontendExpect(Renderer::render('../single-property.php', array()) === null, 'Renderer accepted traversal input.');
+wlaFrontendExpect(Renderer::render('parts/card.php', array()) === null, 'Renderer accepted a non-allowlisted template.');
+unlink($childSingle);
 
 Bootstrap::register();
 $registeredHooks = array_map(static fn ($row) => $row[1], $GLOBALS['wla_frontend_hooks']);
