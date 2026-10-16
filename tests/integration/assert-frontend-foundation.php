@@ -123,6 +123,7 @@ if (WLA\Inmo\Frontend\Bootstrap::filterTemplate($currentTemplate) !== $currentTe
 
 $wp_query = new WP_Query();
 $wp_query->is_post_type_archive = true;
+$wp_query->set('post_type', WLA\Inmo\Properties\PostType::POST_TYPE);
 $wp_query->queried_object = get_post_type_object(WLA\Inmo\Properties\PostType::POST_TYPE);
 if (WLA\Inmo\Frontend\Bootstrap::filterTemplate($currentTemplate) !== $pluginArchive) {
 	$fail('WLA property archive did not route to the fallback template.');
@@ -161,6 +162,7 @@ if (wp_style_is(WLA\Inmo\Frontend\Assets::STYLE_HANDLE, 'enqueued')) {
 
 $wp_query = new WP_Query();
 $wp_query->is_post_type_archive = true;
+$wp_query->set('post_type', WLA\Inmo\Properties\PostType::POST_TYPE);
 $wp_query->queried_object = get_post_type_object(WLA\Inmo\Properties\PostType::POST_TYPE);
 WLA\Inmo\Frontend\Assets::enqueue();
 if (!wp_style_is(WLA\Inmo\Frontend\Assets::STYLE_HANDLE, 'enqueued')) {
