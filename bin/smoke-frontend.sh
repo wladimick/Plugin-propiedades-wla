@@ -58,7 +58,7 @@ php -l "$PLUGIN_DIR/templates/single-property.php" >/dev/null
 
 php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Frontend\\Renderer','WLA\\Inmo\\Frontend\\Bootstrap','WLA\\Inmo\\Frontend\\Assets'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Frontend Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
-for archive_contract in 'have_posts' 'get_permalink' 'get_the_excerpt' 'the_posts_pagination'; do
+for archive_contract in 'have_posts' 'Renderer::render' 'the_posts_pagination'; do
 	if ! grep -q "$archive_contract" "$PLUGIN_DIR/templates/archive-property.php"; then
 		echo "Archive fallback lost Issue #74 contract: $archive_contract" >&2
 		exit 1
