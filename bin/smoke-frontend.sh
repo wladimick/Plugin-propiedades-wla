@@ -72,7 +72,7 @@ for single_contract in 'get_the_title' 'get_the_content'; do
 	fi
 done
 
-if grep -RIEq 'private_address|internal_notes|external_id|get_post_meta[[:space:]]*\(' "$PLUGIN_DIR/templates" "$PLUGIN_DIR/src/Frontend"; then
+if grep -RIEq 'private_address|internal_notes|external_id' "$PLUGIN_DIR/templates" "$PLUGIN_DIR/src/Frontend" || grep -RIEq 'get_post_meta[[:space:]]*\(' "$PLUGIN_DIR/templates"; then
 	echo "Frontend foundation references private or arbitrary property meta." >&2
 	exit 1
 fi
