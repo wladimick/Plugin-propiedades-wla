@@ -46,7 +46,7 @@ if (!is_string($archiveTitle) || $archiveTitle === '') {
 				<?php endwhile; ?>
 			</div>
 
-			<nav class="wla-inmo-pagination" aria-label="<?php echo esc_attr__('Páginas de propiedades', 'wla-inmo'); ?>">
+			<div class="wla-inmo-pagination">
 				<?php
 				the_posts_pagination(
 					array(
@@ -57,7 +57,7 @@ if (!is_string($archiveTitle) || $archiveTitle === '') {
 					)
 				);
 				?>
-			</nav>
+			</div>
 		<?php else : ?>
 			<p class="wla-inmo-empty-state"><?php echo esc_html__('Por ahora no hay propiedades publicadas.', 'wla-inmo'); ?></p>
 		<?php endif; ?>
