@@ -18,6 +18,7 @@ final class Bootstrap
 
 		add_filter('template_include', array(self::class, 'filterTemplate'), 99);
 		add_action('wp_enqueue_scripts', array(Assets::class, 'enqueue'));
+		ArchiveQuery::register();
 	}
 
 	public static function filterTemplate(string $template): string
