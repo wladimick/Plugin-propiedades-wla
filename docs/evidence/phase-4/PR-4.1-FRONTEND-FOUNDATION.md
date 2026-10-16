@@ -1,6 +1,6 @@
 # PR 4.1 — Frontend foundation / template resolver / assets
 
-Estado: `FINAL_GATE_PENDING`
+Estado: `DONE / MERGED`
 
 - Issue: #74
 - PR: #75
@@ -260,3 +260,17 @@ No marcar PR #75 ready ni mergear hasta confirmar:
 ## Producción
 
 `propiedadesmartinez.cl` permanece sin cambios. No se utiliza producción como entorno de QA para PR 4.1.
+
+
+## Cierre post-merge — 15 octubre 2026
+
+- Head funcional validado: `9ab1c12830cbd2b7cd593128e95c615699ea1653`.
+- Frontend Foundation Integration: workflow `38837961631`, ambas matrices `SUCCESS`.
+- Phase 1 CI: `38837961592`, `SUCCESS`.
+- Phase 3 Quality Gate: `38837961761`, `SUCCESS`.
+- Bootstrap Smoke: `38837961612`, `SUCCESS`.
+- Resto de workflows del head: `SUCCESS`, **15/15**.
+- Review submissions/inline threads conocidos: 0/0.
+- PR #75 fue squash-mergeado en `main` como `a11876e25c215fb6b7923060bb3ae6fc045d2b6a`.
+- Correcciones: WP-CLI context, stubs PHPStan duplicados y fixture WP_Query post_type.
+- Producción sin cambios; archive/cards se desarrollan en PR 4.2.
