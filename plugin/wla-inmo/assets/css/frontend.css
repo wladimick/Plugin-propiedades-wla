@@ -47,3 +47,127 @@
 .wla-inmo-empty-state {
 	margin-block: var(--wla-inmo-space-2);
 }
+
+
+/* Phase 4.2 — property archive and cards. No global resets or builder dependencies. */
+.wla-inmo-archive__description {
+	margin: 0;
+}
+
+.wla-inmo-property-list {
+	grid-template-columns: minmax(0, 1fr);
+	gap: var(--wla-inmo-space-3);
+	align-items: stretch;
+}
+
+.wla-inmo-card {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var(--wla-inmo-border, #d9dfe5);
+	border-radius: var(--wla-inmo-radius);
+	background: var(--wla-inmo-card-background, #fff);
+	color: var(--wla-inmo-card-text, #222);
+}
+
+.wla-inmo-card__media {
+	display: block;
+	overflow: hidden;
+	aspect-ratio: 4 / 3;
+	background: var(--wla-inmo-media-background, #eef1f3);
+}
+
+.wla-inmo-card__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.wla-inmo-card__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: var(--wla-inmo-space-1);
+	padding: var(--wla-inmo-space-2);
+}
+
+.wla-inmo-card__title {
+	margin: 0;
+	font-size: clamp(1.05rem, 1.5vw, 1.25rem);
+	line-height: 1.35;
+	overflow-wrap: anywhere;
+}
+
+.wla-inmo-card__classification,
+.wla-inmo-card__location,
+.wla-inmo-card__excerpt {
+	margin: 0;
+}
+
+.wla-inmo-card__classification {
+	font-size: .875rem;
+	font-weight: 600;
+}
+
+.wla-inmo-card__location,
+.wla-inmo-card__excerpt {
+	color: var(--wla-inmo-muted, #525b64);
+	font-size: .9375rem;
+}
+
+.wla-inmo-card__price {
+	margin: 0;
+	font-size: 1.25rem;
+	font-weight: 700;
+}
+
+.wla-inmo-card__features {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .4rem 1rem;
+	margin: .25rem 0;
+	padding: 0;
+	list-style: none;
+	font-size: .875rem;
+}
+
+.wla-inmo-card__feature-label {
+	font-weight: 400;
+}
+
+.wla-inmo-card__action {
+	margin-top: auto;
+	align-self: flex-start;
+	padding-block: .5rem;
+	font-weight: 600;
+	text-underline-offset: .2em;
+}
+
+.wla-inmo-card__action:focus-visible,
+.wla-inmo-card__title a:focus-visible,
+.wla-inmo-card__media:focus-visible {
+	outline: 3px solid currentColor;
+	outline-offset: 3px;
+}
+
+.wla-inmo-pagination .nav-links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: .75rem;
+}
+
+@media (min-width: 42rem) {
+	.wla-inmo-property-list {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (min-width: 68rem) {
+	.wla-inmo-property-list {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
