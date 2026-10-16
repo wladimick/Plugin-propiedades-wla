@@ -80,7 +80,7 @@ final class PropertyCard
 		return is_object($term) && isset($term->name) ? (string) $term->name : '';
 	}
 
-	private static function meta(int $postId, string $field)
+	private static function meta(int $postId, string $field): mixed
 	{
 		$key = MetaSchema::metaKey($field);
 		return $key === null ? null : get_post_meta($postId, $key, true);
