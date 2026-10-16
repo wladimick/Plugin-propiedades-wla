@@ -18,7 +18,7 @@ if (!class_exists(WLA\Inmo\Frontend\TemplateResolver::class)
 }
 
 if (is_admin()) {
-	$fail('Frontend integration must run in WP-CLI --context=front.');
+	$fail('Frontend integration must run with an explicitly non-admin WP-CLI context.');
 }
 
 WLA\Inmo\Frontend\Bootstrap::register();
