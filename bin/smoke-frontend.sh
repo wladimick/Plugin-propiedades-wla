@@ -50,6 +50,9 @@ php -l "$PLUGIN_DIR/src/Frontend/TemplateResolver.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Renderer.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Bootstrap.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Assets.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/ArchiveQuery.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/PropertyCard.php" >/dev/null
+php -l "$PLUGIN_DIR/templates/parts/property-card.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/archive-property.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/single-property.php" >/dev/null
 
