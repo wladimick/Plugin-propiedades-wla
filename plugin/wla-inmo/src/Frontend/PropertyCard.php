@@ -89,7 +89,7 @@ final class PropertyCard
 	private static function numberMeta(int $postId, string $field): ?float
 	{
 		$value = self::meta($postId, $field);
-		if ((!is_string($value) && !is_numeric($value)) || $value === '' || !is_numeric($value)) {
+		if (!is_scalar($value) || $value === '' || !is_numeric($value)) {
 			return null;
 		}
 
