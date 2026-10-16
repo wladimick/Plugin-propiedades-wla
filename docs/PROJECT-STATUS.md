@@ -6,7 +6,7 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 
 - Proyecto: WLA Inmo
 - Tema de referencia opcional: WLA Inmo Light
-- Etapa actual: `PHASE-4 / PR-4.1 FRONTEND FOUNDATION — FINAL_GATE_PENDING`
+- Etapa actual: `PHASE-4 / PR-4.2 ARCHIVE + CARDS — IN_PROGRESS`
 - Versión de producto: `0.1.0-alpha`
 - Fase 0: `DONE`
 - Fase 1: `DONE`
@@ -20,8 +20,8 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 - PR 3.12: `DONE` — PR #70 / Issue #69 / squash `7152f43d0d0d2df3991d095102307755f2c85602`
 - Cierre documental Fase 3: PR #71 / squash `05d92e82bcab0dbcb6b1ebe6fdfbe9635d909c00`
 - Fase 4 entry gate: Issue #72 / PR #73
-- PR 4.1: PR #75 / Issue #74 / `FINAL_GATE_PENDING`
-- Siguiente hito después del cierre 4.1: **PR 4.2 — Archive + property card + pagination**
+- PR 4.1: `DONE` — PR #75 / Issue #74 / merge `a11876e25c215fb6b7923060bb3ae6fc045d2b6a`, 15/15 workflows `SUCCESS`
+- PR 4.2: Issue #76 / PR #77 / `IN_PROGRESS / QA_PENDING`
 
 ## Fases
 
@@ -105,7 +105,7 @@ El cierre documental post-merge quedó integrado mediante PR #71 como `05d92e82b
 
 ## Fase 4 — Frontend agnóstico al tema
 
-Estado: `IN_PROGRESS / PR-4.1-FINAL-GATE`.
+Estado: `IN_PROGRESS / PR-4.2`. 
 
 Issue de entrada: #72  
 Backlog: `docs/PHASE-4-BACKLOG.md`  
@@ -120,8 +120,8 @@ Secuencia:
 
 | PR | Alcance | GitHub | Estado | Evidencia |
 |---|---|---|---|---|
-| 4.1 | Frontend foundation / template resolver / assets | #75 / #74 | FINAL_GATE_PENDING | `PR-4.1-FRONTEND-FOUNDATION.md` |
-| 4.2 | Archive + property card + pagination | — | PLANNED | pendiente |
+| 4.1 | Frontend foundation / template resolver / assets | #75 / #74 | DONE | `PR-4.1-FRONTEND-FOUNDATION.md` |
+| 4.2 | Archive + property card + pagination | #77 / #76 | IN_PROGRESS | `PR-4.2-ARCHIVE-CARDS.md` |
 | 4.3 | Search + filtros GET | — | PLANNED | pendiente |
 | 4.4 | Single + detalles + galería | — | PLANNED | pendiente |
 | 4.5 | Mapa + privacidad de ubicación | — | PLANNED | pendiente |
