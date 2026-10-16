@@ -189,3 +189,19 @@ La matriz ampliada con tema core, tema tercero y WLA Inmo Light se completa prog
 ## Producción
 
 `propiedadesmartinez.cl` no se modifica durante Fase 4. La migración productiva permanece reservada para Fase 9 o una instrucción explícita posterior.
+
+## Extensión de contrato — PR 4.2 / archivo y tarjetas
+
+Estado: `IN_PROGRESS / QA_PENDING`. La fundación PR 4.1 ya fue integrada en `main` con QA 15/15.
+
+- `Frontend\ArchiveQuery` se conecta a `pre_get_posts` solo para el main query del archivo público WLA, con 12 publicaciones por página y orden estable.
+- `Frontend\PropertyCard::forPost($propertyId)` produce un array explícito de campos públicos; devuelve null para drafts, privados y otros post types.
+- `templates/archive-property.php` itera los resultados nativos WordPress y llama a `Renderer::render('parts/property-card.php', array('property' => $public))`.
+- `TemplateResolver` amplía la allowlist únicamente con `parts/property-card.php`. El tema puede crear `wla-inmo/parts/property-card.php` y mantiene prioridad child → parent → plugin.
+- Hooks de tarjeta: `wla_inmo_before_property_card` y `wla_inmo_after_property_card`, con ID de propiedad publicada.
+- Tarjeta: foto, tipo/operación, título, comuna/sector, precio canonizado con moneda elegida, atributos presentes y enlace al detalle.
+- La privacidad de la tarjeta se garantiza desde la proyección, no depende de que un template omita mostrar meta arbitraria.
+- CSS responsivo independiente del tema; sin JS obligatorio. El tema controla branding global vía variables `--wla-inmo-*`.
+- Filtros GET complejos y reglas de URLs para búsquedas combinadas quedan en PR 4.3.
+
+Release smoke e integración WordPress validan el alcance; no introducir datos privados ni supuestos sobre el tema activo.
