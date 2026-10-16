@@ -169,11 +169,12 @@ wlaSettingsExpect(($args['rewrite']['slug'] ?? '') === 'casas-y-terrenos', 'Sing
 
 $GLOBALS['wla_locate_template_result'] = '/tmp/theme/wla-inmo/single-property.php';
 $located = TemplateResolver::locate('single-property.php');
-wlaSettingsExpect($located === '/tmp/theme/wla-inmo/single-property.php', 'Theme override must win over plugin fallback.');
+wlaSettingsExpect($located === null, 'Resolver must reject a theme path that does not exist inside an approved root.');
 wlaSettingsExpect(($GLOBALS['wla_last_template_candidates'][0] ?? '') === 'wla-inmo/single-property.php', 'Theme override contract must live under wla-inmo/.');
 wlaSettingsExpect(TemplateResolver::locate('../wp-config.php') === null, 'Template resolver must reject parent traversal.');
 wlaSettingsExpect(TemplateResolver::locate('single-property.html') === null, 'Template resolver must accept PHP templates only.');
 wlaSettingsExpect(TemplateResolver::locate("parts/evil\0.php") === null, 'Template resolver must reject null bytes.');
-wlaSettingsExpect(TemplateResolver::pluginFallbackPath('parts/card.php') === WLA_INMO_DIR . 'templates/parts/card.php', 'Plugin fallback path contract changed unexpectedly.');
+wlaSettingsExpect(TemplateResolver::pluginFallbackPath('single-property.php') === WLA_INMO_DIR . 'templates/single-property.php', 'Supported plugin fallback path contract changed unexpectedly.');
+wlaSettingsExpect(TemplateResolver::pluginFallbackPath('parts/card.php') === '', 'Non-allowlisted plugin fallback must be rejected.');
 
 echo "WLA Inmo settings and template contract smoke tests passed.\n";

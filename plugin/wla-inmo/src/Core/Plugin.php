@@ -7,6 +7,7 @@ use WLA\Inmo\Activity\Observer as ActivityObserver;
 use WLA\Inmo\Activity\Retention as ActivityRetention;
 use WLA\Inmo\Activity\RollbackObserver;
 use WLA\Inmo\Admin\Bootstrap as AdminBootstrap;
+use WLA\Inmo\Frontend\Bootstrap as FrontendBootstrap;
 use WLA\Inmo\Import\IdentityIndexer;
 use WLA\Inmo\Import\IdentityMeta;
 use WLA\Inmo\Import\WorkspaceJanitor;
@@ -65,6 +66,8 @@ final class Plugin
 
 		if (is_admin()) {
 			AdminBootstrap::register();
+		} else {
+			FrontendBootstrap::register();
 		}
 
 		/**

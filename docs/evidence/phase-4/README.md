@@ -1,25 +1,27 @@
 # Evidencia — Fase 4 Frontend agnóstico al tema
 
-Estado: `IN_PROGRESS / ENTRY_GATE`
+Estado: `IN_PROGRESS / PR-4.1-FINAL-GATE`
 
 Issue de entrada: #72  
+PR activo: #75 / Issue #74  
 Backlog: `docs/PHASE-4-BACKLOG.md`  
+Contrato frontend: `docs/FRONTEND.md`  
 Producción: `NO AFECTADA`.
 
 ## Objetivo de la carpeta
 
 Concentrar evidencia auditable de cada PR de Fase 4: arquitectura aplicada, tests, matrices WordPress/PHP, accesibilidad, performance, artifacts, findings y decisión de merge.
 
-## Estructura esperada
+## Estructura
 
-- `PR-4.1-FRONTEND-FOUNDATION.md`
-- `PR-4.2-ARCHIVE-CARD.md`
-- `PR-4.3-SEARCH-FILTERS.md`
-- `PR-4.4-SINGLE-GALLERY.md`
-- `PR-4.5-MAP-PRIVACY.md`
-- `PR-4.6-CTA-PRESENTATION-API.md`
-- `PR-4.7-THEME-COMPATIBILITY.md`
-- `PR-4.8-PHASE-4-QUALITY-GATE.md`
+- `PR-4.1-FRONTEND-FOUNDATION.md` — activo / final gate pendiente;
+- `PR-4.2-ARCHIVE-CARD.md` — planificado;
+- `PR-4.3-SEARCH-FILTERS.md` — planificado;
+- `PR-4.4-SINGLE-GALLERY.md` — planificado;
+- `PR-4.5-MAP-PRIVACY.md` — planificado;
+- `PR-4.6-CTA-PRESENTATION-API.md` — planificado;
+- `PR-4.7-THEME-COMPATIBILITY.md` — planificado;
+- `PR-4.8-PHASE-4-QUALITY-GATE.md` — planificado;
 - cierre post-merge si 4.8 requiere registrar el squash definitivo.
 
 Los nombres pueden ajustarse si el scope real de un PR cambia documentalmente, pero la trazabilidad 4.1–4.8 debe preservarse.
@@ -59,9 +61,11 @@ Cada archivo de evidencia debe registrar como mínimo:
 - WCAG 2.2 AA y navegación por teclado;
 - tema core + tema de terceros antes del cierre de fase.
 
-## Entrada de la fase
+## PR 4.1
 
-La fase queda formalmente iniciada cuando el entry gate documental se integre a `main`, `PROJECT-STATUS.md` marque `PHASE-4 / IN_PROGRESS` y PR 4.1 tenga issue/scope propios.
+La foundation introduce resolver seguro, routing archive/single, fallbacks mínimos, CSS condicional, renderer con `$wla_args` y hooks base de presentación. La evidencia detallada vive en `PR-4.1-FRONTEND-FOUNDATION.md`.
+
+PR 4.1 no se considera terminado por existir la implementación: debe completar el gate final sobre el head documental definitivo, review sin P0/P1 y merge posterior. El estado `DONE` se registra únicamente post-merge.
 
 ## Producción
 
