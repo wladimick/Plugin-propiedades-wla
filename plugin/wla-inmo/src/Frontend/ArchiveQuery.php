@@ -40,6 +40,9 @@ final class ArchiveQuery
 		$query->set('update_post_meta_cache', true);
 		$query->set('update_post_term_cache', true);
 
+		// Public GET search is read-only: no state change or privileged action requires a nonce.
+		// phpcs:disable WordPress.Security.NonceVerification -- Public archive GET parameters only.
 		SearchFilters::apply($query, is_array($_GET) ? $_GET : array());
+		// phpcs:enable WordPress.Security.NonceVerification
 	}
 }
