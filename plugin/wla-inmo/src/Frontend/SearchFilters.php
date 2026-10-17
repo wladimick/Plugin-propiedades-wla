@@ -21,7 +21,10 @@ final class SearchFilters
 		'sector'    => Registry::SECTOR,
 	);
 
-	/** @return array<string,string> Normalized allowlisted GET values. */
+	/**
+	 * @param array<string,mixed> $raw Untrusted query string parameters.
+	 * @return array<string,string> Normalized allowlisted GET values.
+	 */
 	public static function normalize(array $raw): array
 	{
 		$normalized = array();
