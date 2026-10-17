@@ -13,6 +13,7 @@ final class TemplateResolver
 		'archive-property.php',
 		'single-property.php',
 		'parts/property-card.php',
+		'parts/property-search.php',
 	);
 
 	/**

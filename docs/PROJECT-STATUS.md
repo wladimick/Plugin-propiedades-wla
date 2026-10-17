@@ -6,7 +6,7 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 
 - Proyecto: WLA Inmo
 - Tema de referencia opcional: WLA Inmo Light
-- Etapa actual: `PHASE-4 / PR-4.2 ARCHIVE + CARDS — IN_PROGRESS`
+- Etapa actual: `PHASE-4 / PR-4.3 SEARCH FILTERS — IN_PROGRESS`
 - Versión de producto: `0.1.0-alpha`
 - Fase 0: `DONE`
 - Fase 1: `DONE`
@@ -21,7 +21,8 @@ Registro vivo para auditorías rápidas. La evidencia detallada permanece en `do
 - Cierre documental Fase 3: PR #71 / squash `05d92e82bcab0dbcb6b1ebe6fdfbe9635d909c00`
 - Fase 4 entry gate: Issue #72 / PR #73
 - PR 4.1: `DONE` — PR #75 / Issue #74 / merge `a11876e25c215fb6b7923060bb3ae6fc045d2b6a`, 15/15 workflows `SUCCESS`
-- PR 4.2: Issue #76 / PR #77 / `IN_PROGRESS / QA_PENDING`
+- PR 4.2: `DONE` — PR #77 / Issue #76 / squash `96950721ba8e8d08ef9f0ee52aae9bf504d084b4`, 15/15 workflows `SUCCESS`.
+- PR 4.3: Issue #78 / `IN_PROGRESS / QA_PENDING`
 
 ## Fases
 
@@ -121,8 +122,8 @@ Secuencia:
 | PR | Alcance | GitHub | Estado | Evidencia |
 |---|---|---|---|---|
 | 4.1 | Frontend foundation / template resolver / assets | #75 / #74 | DONE | `PR-4.1-FRONTEND-FOUNDATION.md` |
-| 4.2 | Archive + property card + pagination | #77 / #76 | IN_PROGRESS | `PR-4.2-ARCHIVE-CARDS.md` |
-| 4.3 | Search + filtros GET | — | PLANNED | pendiente |
+| 4.2 | Archive + property card + pagination | #77 / #76 | DONE | `PR-4.2-ARCHIVE-CARDS.md` |
+| 4.3 | Search + filtros GET | Issue #78 | IN_PROGRESS | `PR-4.3-SEARCH-FILTERS.md` |
 | 4.4 | Single + detalles + galería | — | PLANNED | pendiente |
 | 4.5 | Mapa + privacidad de ubicación | — | PLANNED | pendiente |
 | 4.6 | CTA + API de presentación | — | PLANNED | pendiente |

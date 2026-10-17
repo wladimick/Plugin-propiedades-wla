@@ -39,5 +39,7 @@ final class ArchiveQuery
 		$query->set('no_found_rows', false);
 		$query->set('update_post_meta_cache', true);
 		$query->set('update_post_term_cache', true);
+
+		SearchFilters::apply($query, is_array($_GET) ? $_GET : array());
 	}
 }
