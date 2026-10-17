@@ -22,6 +22,14 @@ if (!is_string($archiveTitle) || $archiveTitle === '') {
 			<p class="wla-inmo-archive__description"><?php echo esc_html__('Explora las propiedades disponibles.', 'wla-inmo'); ?></p>
 		</header>
 
+		<?php
+		$activeFilters = \WLA\Inmo\Frontend\SearchFilters::normalize(is_array($_GET) ? $_GET : array());
+		$searchForm = \WLA\Inmo\Frontend\Renderer::render('parts/property-search.php', array('filters' => $activeFilters));
+		if (is_string($searchForm)) {
+			echo $searchForm; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Allowlisted SSR partial escapes dynamic values.
+		}
+		?>
+
 		<?php if (have_posts()) : ?>
 			<div class="wla-inmo-property-list">
 				<?php while (have_posts()) : ?>
@@ -54,6 +62,7 @@ if (!is_string($archiveTitle) || $archiveTitle === '') {
 						'prev_text' => __('Anterior', 'wla-inmo'),
 						'next_text' => __('Siguiente', 'wla-inmo'),
 						'screen_reader_text' => __('Navegación de propiedades', 'wla-inmo'),
+						'add_args' => $activeFilters,
 					)
 				);
 				?>

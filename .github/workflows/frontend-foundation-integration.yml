@@ -13,6 +13,7 @@ on:
       - 'tests/smoke/frontend-foundation.php'
       - 'tests/integration/assert-frontend-foundation.php'
       - 'tests/integration/assert-frontend-archive.php'
+      - 'tests/integration/assert-frontend-search.php'
       - 'phpstan.neon.dist'
       - 'tests/phpstan/wordpress-frontend-stubs.php'
       - '.github/workflows/frontend-foundation-integration.yml'
@@ -108,3 +109,8 @@ jobs:
         run: |
           cd /tmp/wla-frontend-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-archive.php" --context=cli --allow-root
+
+      - name: Validate read-only public search filters
+        run: |
+          cd /tmp/wla-frontend-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-search.php" --context=cli --allow-root

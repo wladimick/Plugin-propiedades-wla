@@ -27,8 +27,10 @@ required_files=(
 	"src/Frontend/Bootstrap.php"
 	"src/Frontend/Assets.php"
 	"src/Frontend/ArchiveQuery.php"
+	"src/Frontend/SearchFilters.php"
 	"src/Frontend/PropertyCard.php"
 	"templates/parts/property-card.php"
+	"templates/parts/property-search.php"
 	"templates/archive-property.php"
 	"templates/single-property.php"
 	"assets/css/frontend.css"
@@ -51,8 +53,10 @@ php -l "$PLUGIN_DIR/src/Frontend/Renderer.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Bootstrap.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Assets.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/ArchiveQuery.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/SearchFilters.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/PropertyCard.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/parts/property-card.php" >/dev/null
+php -l "$PLUGIN_DIR/templates/parts/property-search.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/archive-property.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/single-property.php" >/dev/null
 

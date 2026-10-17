@@ -16,6 +16,7 @@ final class FrontendTemplateResolverTest extends TestCase
 		self::assertTrue(TemplateResolver::isSupportedTemplate('archive-property.php'));
 		self::assertTrue(TemplateResolver::isSupportedTemplate('single-property.php'));
 		self::assertTrue(TemplateResolver::isSupportedTemplate('parts/property-card.php'));
+		self::assertTrue(TemplateResolver::isSupportedTemplate('parts/property-search.php'));
 		self::assertFalse(TemplateResolver::isSupportedTemplate('page.php'));
 	}
 
