@@ -16,7 +16,7 @@ final class FrontendSearchFiltersTest extends TestCase
 	public function testOnlyAllowlistedNormalizedSlugsAreAccepted(): void
 	{
 		self::assertSame(
-			array('operacion' => 'venta', 'comuna' => 'curico', 'tipo' => 'departamento'),
+			array('operacion' => 'venta', 'tipo' => 'departamento', 'comuna' => 'curico'),
 			SearchFilters::normalize(array(
 				'operacion' => 'venta',
 				'comuna' => 'curico',
