@@ -11,11 +11,11 @@ if (!defined('WLA_INMO_DIR')) {
 
 final class FrontendTemplateResolverTest extends TestCase
 {
-	public function testOnlyPhaseFourFoundationTemplatesAreAllowlisted(): void
+	public function testOnlyExplicitPublicTemplatesAreAllowlisted(): void
 	{
 		self::assertTrue(TemplateResolver::isSupportedTemplate('archive-property.php'));
 		self::assertTrue(TemplateResolver::isSupportedTemplate('single-property.php'));
-		self::assertFalse(TemplateResolver::isSupportedTemplate('parts/property-card.php'));
+		self::assertTrue(TemplateResolver::isSupportedTemplate('parts/property-card.php'));
 		self::assertFalse(TemplateResolver::isSupportedTemplate('page.php'));
 	}
 

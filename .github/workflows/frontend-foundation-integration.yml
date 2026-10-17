@@ -12,6 +12,7 @@ on:
       - 'tests/unit/FrontendTemplateResolverTest.php'
       - 'tests/smoke/frontend-foundation.php'
       - 'tests/integration/assert-frontend-foundation.php'
+      - 'tests/integration/assert-frontend-archive.php'
       - 'phpstan.neon.dist'
       - 'tests/phpstan/wordpress-frontend-stubs.php'
       - '.github/workflows/frontend-foundation-integration.yml'
@@ -102,3 +103,8 @@ jobs:
         run: |
           cd /tmp/wla-frontend-wordpress
           wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-foundation.php" --context=cli --allow-root
+
+      - name: Validate public archive cards and bounded pagination
+        run: |
+          cd /tmp/wla-frontend-wordpress
+          wp eval-file "$GITHUB_WORKSPACE/tests/integration/assert-frontend-archive.php" --context=cli --allow-root

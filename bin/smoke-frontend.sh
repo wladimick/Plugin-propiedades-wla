@@ -26,6 +26,9 @@ required_files=(
 	"src/Frontend/Renderer.php"
 	"src/Frontend/Bootstrap.php"
 	"src/Frontend/Assets.php"
+	"src/Frontend/ArchiveQuery.php"
+	"src/Frontend/PropertyCard.php"
+	"templates/parts/property-card.php"
 	"templates/archive-property.php"
 	"templates/single-property.php"
 	"assets/css/frontend.css"
@@ -47,12 +50,15 @@ php -l "$PLUGIN_DIR/src/Frontend/TemplateResolver.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Renderer.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Bootstrap.php" >/dev/null
 php -l "$PLUGIN_DIR/src/Frontend/Assets.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/ArchiveQuery.php" >/dev/null
+php -l "$PLUGIN_DIR/src/Frontend/PropertyCard.php" >/dev/null
+php -l "$PLUGIN_DIR/templates/parts/property-card.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/archive-property.php" >/dev/null
 php -l "$PLUGIN_DIR/templates/single-property.php" >/dev/null
 
 php -r "require '$PLUGIN_DIR/vendor/autoload.php'; foreach (['WLA\\Inmo\\Frontend\\TemplateResolver','WLA\\Inmo\\Frontend\\Renderer','WLA\\Inmo\\Frontend\\Bootstrap','WLA\\Inmo\\Frontend\\Assets'] as \$class) { if (!class_exists(\$class)) { fwrite(STDERR, 'Frontend Composer autoload failed for '.\$class.'\\n'); exit(1); } }"
 
-for archive_contract in 'have_posts' 'get_permalink' 'get_the_excerpt' 'the_posts_pagination'; do
+for archive_contract in 'have_posts' 'Renderer::render' 'the_posts_pagination'; do
 	if ! grep -q "$archive_contract" "$PLUGIN_DIR/templates/archive-property.php"; then
 		echo "Archive fallback lost Issue #74 contract: $archive_contract" >&2
 		exit 1
@@ -66,7 +72,7 @@ for single_contract in 'get_the_title' 'get_the_content'; do
 	fi
 done
 
-if grep -RIEq 'private_address|internal_notes|external_id|get_post_meta[[:space:]]*\(' "$PLUGIN_DIR/templates" "$PLUGIN_DIR/src/Frontend"; then
+if grep -RIEq 'private_address|internal_notes|external_id' "$PLUGIN_DIR/templates" "$PLUGIN_DIR/src/Frontend" || grep -RIEq 'get_post_meta[[:space:]]*\(' "$PLUGIN_DIR/templates"; then
 	echo "Frontend foundation references private or arbitrary property meta." >&2
 	exit 1
 fi

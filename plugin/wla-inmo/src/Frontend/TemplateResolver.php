@@ -12,6 +12,7 @@ final class TemplateResolver
 	private const ALLOWED_TEMPLATES = array(
 		'archive-property.php',
 		'single-property.php',
+		'parts/property-card.php',
 	);
 
 	/**

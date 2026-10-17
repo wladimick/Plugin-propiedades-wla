@@ -178,4 +178,4 @@ Cuando se solicite una auditoría del proyecto, el repositorio y sus evidencias 
 
 **Fase 0 — Gobierno y diseño: DONE.** Las decisiones críticas D01–D75 fueron aprobadas y registradas en ADR-001–ADR-013.
 
-**Fase 1 — Core del plugin: entrada aprobada / PLANNED.** La implementación debe seguir `docs/PHASE-1-BACKLOG.md`, comenzar por bootstrap/build y mantenerse aislada del sitio productivo hasta que las fases de migración correspondientes estén aprobadas.
+**Fases 0–3: completadas. Fase 4: frontend independiente del tema en desarrollo.** El PR #75 de foundation está integrado en `main`; el PR #77 incorpora archivo y tarjetas públicas con QA en curso. Consulta `docs/PROJECT-STATUS.md` para el estado canónico. Ninguna migración ni cambio en producción está autorizado por estos avances.

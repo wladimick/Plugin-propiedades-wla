@@ -21,6 +21,16 @@ function apply_filters(string $hook_name, mixed $value, mixed ...$args) { return
 // do_action() is declared in wordpress-import-stubs.php, loaded by the shared PHPStan bootstrap.
 /** @param array<int,string>|string $template_names @return mixed */
 function locate_template(array|string $template_names, bool $load = false, bool $load_once = true, array $args = array()) { return ''; }
+/** @return string|false */
+function get_permalink(int $post = 0) { return ''; }
+function get_the_title(int $post = 0): string { return ''; }
+function get_the_excerpt(int $post = 0): string { return ''; }
+function get_the_post_thumbnail(int $post = 0, string $size = 'post-thumbnail', array $attr = array()): string { return ''; }
+function wp_strip_all_tags(string $text, bool $remove_breaks = false): string { return ''; }
+function wp_trim_words(string $text, int $num_words = 55, string $more = '…'): string { return ''; }
+/** @return mixed */
+function get_the_terms(int $post_id, string $taxonomy) { return array(); }
+function number_format_i18n(float|int $number, int $decimals = 0): string { return ''; }
 function get_stylesheet_directory(): string { return '/tmp/theme-child'; }
 function get_template_directory(): string { return '/tmp/theme-parent'; }
 function is_admin(): bool { return false; }

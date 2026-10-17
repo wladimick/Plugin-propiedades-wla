@@ -125,6 +125,7 @@ require_once $root . 'Properties/PostType.php';
 require_once $root . 'Frontend/TemplateResolver.php';
 require_once $root . 'Frontend/Renderer.php';
 require_once $root . 'Frontend/Assets.php';
+require_once $root . 'Frontend/ArchiveQuery.php';
 require_once $root . 'Frontend/Bootstrap.php';
 
 use WLA\Inmo\Frontend\Assets;

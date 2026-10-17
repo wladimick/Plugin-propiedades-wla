@@ -1,6 +1,6 @@
 # Fase 4 — Backlog frontend agnóstico al tema
 
-Estado: `IN_PROGRESS / PR-4.1-FINAL-GATE`
+Estado: `IN_PROGRESS / PR-4.2-ARCHIVE-CARDS`
 
 Issue de entrada: #72  
 Base de entrada: Fase 3 `DONE` en `main` (`05d92e82bcab0dbcb6b1ebe6fdfbe9635d909c00`).  
@@ -80,8 +80,8 @@ El request público nunca proporciona un path de template. Los nombres/rutas res
 
 | PR | Alcance | Estado | Issue/Evidencia |
 |---|---|---|---|
-| 4.1 | Frontend foundation / template resolver / assets | FINAL_GATE_PENDING | #75 / #74 / `docs/evidence/phase-4/PR-4.1-FRONTEND-FOUNDATION.md` |
-| 4.2 | Archive + property card + pagination | PLANNED | pendiente |
+| 4.1 | Frontend foundation / template resolver / assets | DONE | #75 / #74 / merge `a11876e2` |
+| 4.2 | Archive + property card + pagination | IN_PROGRESS | #77 / #76 / `docs/evidence/phase-4/PR-4.2-ARCHIVE-CARDS.md` |
 | 4.3 | Search + filtros GET | PLANNED | pendiente |
 | 4.4 | Single + detalles + galería | PLANNED | pendiente |
 | 4.5 | Mapa + privacidad de ubicación | PLANNED | pendiente |

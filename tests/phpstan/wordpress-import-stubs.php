@@ -14,6 +14,11 @@ class WP_Query
 	public function __construct(array $args = array())
 	{
 	}
+
+	public function is_main_query(): bool { return true; }
+	/** @param array<int,string>|string $post_types */
+	public function is_post_type_archive(array|string $post_types = ''): bool { return false; }
+	public function set(string $query_var, mixed $value): void {}
 }
 
 function add_action(string $hook_name, callable $callback, int $priority = 10, int $accepted_args = 1): bool { return true; }
